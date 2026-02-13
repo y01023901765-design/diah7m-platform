@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import T from '../theme';
 import { t, LANG_LIST } from '../i18n';
+import * as API from '../api';
 
 function MyPage({user,onNav,lang,setGlobalLang}){
   const [tab,setTab]=useState('profile');
   const [msg,setMsg]=useState('');
   const [profile,setProfile]=useState({name:user.name||'',phone:''});
-  const [pw,setPw]=useState({cur:'',new1:'',new2:''});
   const [mileage,setMileage]=useState(3500);
+
+  useEffect(()=>{
+    API.getMileage().then(d=>setMileage(d.balance||d.mileage||3500)).catch(()=>{});
+  },[]);
+  const [pw,setPw]=useState({cur:'',new1:'',new2:''});
   const [notifs,setNotifs]=useState({email:true,sms:false,kakao:true,slack:false,push:true});
   const [selectedLang,setSelectedLang]=useState(LANG_LIST.findIndex(l=>l.code===lang)||0);
   const [confirmDelete,setConfirmDelete]=useState(false);

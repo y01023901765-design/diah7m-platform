@@ -208,7 +208,7 @@ const doc = new Document({
         ]
       }),
 
-      new PageBreak(),
+      new Paragraph({ children: [new PageBreak()] }),
 
       // ═══ REMAINING ═══
       new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("4. Remaining Items (Non-blocking)")] }),

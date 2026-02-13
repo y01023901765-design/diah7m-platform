@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import T from '../theme';
 import { t, LANG_LIST } from '../i18n';
+import * as API from '../api';
 
 function AuthPage({mode,onNavigate,onLogin,lang}){
   const L=lang||'ko';
@@ -46,7 +47,7 @@ function AuthPage({mode,onNavigate,onLogin,lang}){
   ];
 
   // ── 핸들러 ──
-  const handleNext=()=>{
+  const handleNext=async()=>{
     setError('');
     if(step===1){
       if(!form.name.trim()){setError(t('nameRequired',L));return;}
@@ -58,15 +59,33 @@ function AuthPage({mode,onNavigate,onLogin,lang}){
     } else if(step===3){
       if(!form.terms||!form.privacy){setError(t('termsRequired',L));return;}
       setLoading(true);
-      setTimeout(()=>{setLoading(false);onLogin({email:form.email,name:form.name,plan:form.plan});},1500);
+      try {
+        const data = await API.register(form.name, form.email, form.password);
+        API.storeUser({ email: form.email, name: form.name, plan: form.plan, ...data.user });
+        onLogin({ email: form.email, name: form.name, plan: form.plan, ...data.user });
+      } catch(e) {
+        setError(e.data?.error || e.message || 'Registration failed');
+      } finally { setLoading(false); }
     }
   };
-  const handleLoginSubmit=()=>{
+  const handleLoginSubmit=async()=>{
     setError('');
     if(!form.email.includes('@')){setError(t('emailInvalid',L));return;}
     if(form.password.length<1){setError(t('pwEnterRequired',L));return;}
     setLoading(true);
-    setTimeout(()=>{setLoading(false);onLogin({email:form.email,name:'Investor'});},1200);
+    try {
+      const data = await API.login(form.email, form.password);
+      const user = data.user || { email: form.email, name: data.name || 'Investor' };
+      API.storeUser(user);
+      onLogin(user);
+    } catch(e) {
+      // 서버 미연결 시 데모 로그인 폴백
+      if(e.message?.includes('Failed to fetch') || e.status === undefined) {
+        onLogin({ email: form.email, name: 'Investor', plan: 'PRO', demo: true });
+      } else {
+        setError(e.data?.error || e.message || 'Login failed');
+      }
+    } finally { setLoading(false); }
   };
   const handleReset=()=>{
     setError('');

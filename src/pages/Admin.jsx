@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import T from '../theme';
 import { t } from '../i18n';
 import { SYS, sysN } from '../components/TierLock';
 import ProductMgmt from './ProductMgmt';
+import * as API from '../api';
 
 function AdminPage({lang}){
   const L=lang||'ko';
+  const [liveKPI,setLiveKPI]=useState(null);
+
+  useEffect(()=>{
+    API.adminKPI().then(setLiveKPI).catch(()=>{});
+  },[]);
   const [tab,setTab]=useState('kpi');
   const [search,setSearch]=useState('');
   const tabs=[{id:'kpi',label:'📊 KPI'},{id:'members',label:'👥 회원'},{id:'products',label:'🛒 상품'},{id:'pipeline',label:'🔄 파이프라인'},{id:'billing',label:'💳 결제'},{id:'engine',label:'🔧 엔진'},{id:'audit',label:'📋 감사'},{id:'settings',label:'⚙️ 설정'}];

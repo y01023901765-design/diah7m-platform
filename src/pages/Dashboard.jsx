@@ -1,22 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import T from '../theme';
 import { t, gc } from '../i18n';
 import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
 import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components/TierLock';
 import { TIER_ACCESS, tierLevel } from '../data/gauges';
+import * as API from '../api';
 
 function DashboardPage({user,onNav,lang}){
   const L=lang||'ko';
   const [expanded,setExpanded]=useState({});
   const [tab,setTab]=useState('overview');
   const [demoPlan,setDemoPlan]=useState(user?.plan||'PRO');
+  const [apiStatus,setApiStatus]=useState('checking'); // checking|live|demo
   const toggle=k=>setExpanded(p=>({...p,[k]:!p[k]}));
+
+  // API 연결 확인
+  useEffect(()=>{
+    API.healthCheck()
+      .then(()=>setApiStatus('live'))
+      .catch(()=>setApiStatus('demo'));
+  },[]);
+
   const allG=Object.values(D);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
   const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)}];
   const demoUser={...user,plan:demoPlan};
   return(<div style={{maxWidth:780,margin:"0 auto",padding:"20px 16px"}}>
+    {/* Connection Status */}
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+      <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:10,
+        background:apiStatus==='live'?`${T.good}15`:apiStatus==='demo'?`${T.warn}15`:`${T.textDim}15`,
+        color:apiStatus==='live'?T.good:apiStatus==='demo'?T.warn:T.textDim}}>
+        {apiStatus==='live'?'● LIVE':apiStatus==='demo'?'● DEMO':'● ...'}
+      </span>
+    </div>
     {/* Demo Plan Switcher */}
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 10px",borderRadius:8,background:`${T.accent}08`,border:`1px solid ${T.accent}15`}}>
       <span style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}>DEMO</span>

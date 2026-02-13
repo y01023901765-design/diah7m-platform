@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ── Core ──
 import T from './theme';
 import { detectLang } from './i18n';
+import * as API from './api';
 
 // ── Pages ──
 import LandingPage from './pages/Landing';
@@ -47,14 +48,27 @@ const RESPONSIVE_CSS = `
 
 export default function App(){
   const [page,setPage]=useState('landing');
-  const [user,setUser]=useState(null);
+  const [user,setUser]=useState(()=>API.getStoredUser());
   const [lang,setLang]=useState(detectLang());
 
+  // 토큰 있으면 자동 로그인 시도
+  useEffect(()=>{
+    if(API.isAuthenticated() && !user){
+      API.getMe().then(data=>{
+        const u = data.user || data;
+        setUser(u);
+        API.storeUser(u);
+      }).catch(()=>{ API.logout(); });
+    }
+  },[]);
+
   const handleLogin=(u)=>{
-    setUser({...u, name:u.name||'종원', email:u.email||'admin@diah7m.com', plan:'PRO'});
+    const merged = {...u, name:u.name||'종원', email:u.email||'admin@diah7m.com', plan:u.plan||'PRO'};
+    setUser(merged);
+    API.storeUser(merged);
     setPage('dashboard');
   };
-  const handleLogout=()=>{setUser(null);setPage('landing');};
+  const handleLogout=()=>{API.logout();setUser(null);setPage('landing');};
   const nav=(p)=>{
     if(['dashboard','stock','mypage','admin'].includes(p)&&!user){setPage('login');return;}
     if(p==='admin'&&user&&user.email!=='admin@diah7m.com'){setPage('dashboard');return;}

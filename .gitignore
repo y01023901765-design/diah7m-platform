@@ -36,3 +36,7 @@ secrets/
 server/node_modules/
 server/data/
 server/.env
+
+# Cowork generated files
+*.docx
+gen_report.cjs
