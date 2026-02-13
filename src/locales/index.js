@@ -1,5 +1,5 @@
 // DIAH-7M Locale Loader
-// 28개 언어 · 329키/언어 · SSOT: ko.js · 검증: validate-i18n.cjs
+// 27개 언어 · 329키/언어 · SSOT: ko.js · 검증: validate-i18n.cjs
 
 import ko from './ko';
 import en from './en';

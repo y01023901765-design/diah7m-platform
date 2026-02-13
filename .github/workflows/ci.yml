@@ -17,7 +17,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install
-      - name: Validate i18n (329 keys × 28 locales)
+      - name: Validate i18n (329 keys × 27 locales)
         run: npm run i18n:validate
       - run: npm run build:only
       - name: Check dist exists
