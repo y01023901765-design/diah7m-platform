@@ -434,7 +434,14 @@ app.get('/api/v1/data/kosis-search', async (req, res) => {
         }).on('error', reject);
       });
       if (Array.isArray(r)) {
-        results[kw.trim()] = r.slice(0, 5).map(x => ({ orgId: x.ORG_ID, tblId: x.TBL_ID, tblNm: x.TBL_NM, prdSe: x.PRD_SE }));
+        results[kw.trim()] = r.slice(0, 3).map(x => {
+          // Return all fields to discover correct field names
+          const entry = {};
+          for (const [k, v] of Object.entries(x)) {
+            if (v && v !== '') entry[k] = v;
+          }
+          return entry;
+        });
       } else {
         results[kw.trim()] = r;
       }
