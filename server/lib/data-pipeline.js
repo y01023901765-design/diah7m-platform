@@ -375,4 +375,79 @@ function diagnoseMapping() {
   };
 }
 
-module.exports = { GAUGE_MAP, fetchGauge, fetchAll, diagnoseMapping, fetchECOS, fetchKOSIS };
+// ═══════════════════════════════════════════════════════════════
+// 개별 게이지 테스트 (디버그용 — 원시 URL/응답 노출)
+// ═══════════════════════════════════════════════════════════════
+async function testGauge(gaugeId, ecosKey, kosisKey) {
+  const spec = GAUGE_MAP[gaugeId];
+  if (!spec) return { error: `Unknown gauge: ${gaugeId}` };
+  
+  const { start, end } = getDateRange(spec.cycle || 'M');
+  
+  if (spec.source === 'ECOS') {
+    const url = `${ECOS_BASE}/${ecosKey}/json/kr/1/10/${spec.stat}/${spec.cycle}/${start}/${end}/${spec.item}`;
+    const safeUrl = url.replace(ecosKey, 'KEY***');
+    const result = await safeFetch(url, `ECOS:${gaugeId}`);
+    return {
+      gaugeId, source: 'ECOS', name: spec.name, url: safeUrl,
+      dateRange: { start, end, cycle: spec.cycle },
+      httpOk: result.ok, latency: result.latency,
+      rawResponse: result.ok ? result.json : { error: result.error },
+      rows: result.ok && result.json?.StatisticSearch?.row ? result.json.StatisticSearch.row.length : 0,
+      ecosError: result.ok ? (result.json?.RESULT?.MESSAGE || null) : null,
+    };
+  } else if (spec.source === 'KOSIS') {
+    const params = new URLSearchParams({
+      method: 'getList', apiKey: kosisKey, itmId: spec.item, objL1: 'ALL',
+      format: 'json', jsonVD: 'Y',
+      prdSe: spec.cycle === 'M' ? 'M' : spec.cycle === 'Q' ? 'Q' : 'Y',
+      startPrdDe: start, endPrdDe: end, orgId: spec.orgId, tblId: spec.tblId,
+    });
+    const safeParams = params.toString().replace(kosisKey, 'KEY***');
+    const result = await safeFetch(`${KOSIS_BASE}?${params}`, `KOSIS:${gaugeId}`);
+    return {
+      gaugeId, source: 'KOSIS', name: spec.name, url: `${KOSIS_BASE}?${safeParams}`,
+      dateRange: { start, end, cycle: spec.cycle },
+      httpOk: result.ok, latency: result.latency,
+      rawResponse: result.ok ? (Array.isArray(result.json) ? { count: result.json.length, sample: result.json.slice(0, 2) } : result.json) : { error: result.error },
+      rows: result.ok && Array.isArray(result.json) ? result.json.length : 0,
+      kosisError: result.ok && !Array.isArray(result.json) ? JSON.stringify(result.json).slice(0, 200) : null,
+    };
+  } else {
+    return { gaugeId, source: spec.source, name: spec.name, status: 'NOT_API', note: spec.note || spec.source };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 전체 진단 (각 게이지 원시 응답 확인)
+// ═══════════════════════════════════════════════════════════════
+async function diagnoseAll(ecosKey, kosisKey) {
+  const ids = Object.keys(GAUGE_MAP);
+  const results = {};
+  const summary = { ok: 0, noData: 0, ecosError: 0, kosisError: 0, notApi: 0, httpError: 0 };
+  
+  // 5개씩 배치
+  for (let i = 0; i < ids.length; i += 5) {
+    const batch = ids.slice(i, i + 5);
+    const batchResults = await Promise.allSettled(
+      batch.map(id => testGauge(id, ecosKey, kosisKey))
+    );
+    batchResults.forEach((r, j) => {
+      const id = batch[j];
+      const data = r.status === 'fulfilled' ? r.value : { error: r.reason?.message };
+      results[id] = data;
+      
+      if (data.status === 'NOT_API') summary.notApi++;
+      else if (!data.httpOk) summary.httpError++;
+      else if (data.rows > 0) summary.ok++;
+      else if (data.ecosError) summary.ecosError++;
+      else if (data.kosisError) summary.kosisError++;
+      else summary.noData++;
+    });
+    if (i + 5 < ids.length) await new Promise(r => setTimeout(r, 200));
+  }
+  
+  return { total: ids.length, summary, gauges: results };
+}
+
+module.exports = { GAUGE_MAP, fetchGauge, fetchAll, diagnoseMapping, fetchECOS, fetchKOSIS, testGauge, diagnoseAll };
