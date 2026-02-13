@@ -119,6 +119,28 @@ export async function healthCheck() {
   return api('/api/health');
 }
 
+// ── Data Pipeline ──
+export async function dataStatus() {
+  return api('/api/v1/data/status');
+}
+
+export async function dataLatest() {
+  return api('/api/v1/data/latest');
+}
+
+export async function dataRefresh() {
+  return api('/api/v1/data/refresh', { method: 'POST' });
+}
+
+export async function autoReport(opts = {}) {
+  const params = new URLSearchParams(opts).toString();
+  return api(`/api/v1/report/auto${params ? '?' + params : ''}`);
+}
+
+export async function dataMapping() {
+  return api('/api/v1/data/mapping');
+}
+
 // ── Connection state ──
 export function isAuthenticated() {
   return !!getToken();

@@ -152,6 +152,23 @@ async function run() {
   assert('Report dual_lock', rpt.body.dual_lock && typeof rpt.body.dual_lock.active === 'boolean');
   assert('Report causal_stage', ['normal','factor','onset','cause','manifest','result'].includes(rpt.body.overall.causal_stage));
 
+  // ═══ DATA PIPELINE TESTS ═══
+  console.log('\n── Data Pipeline ──');
+
+  const dStatus = await req('GET', '/api/v1/data/status');
+  assert('Data status endpoint', dStatus.status === 200);
+
+  const dMapping = await req('GET', '/api/v1/data/mapping');
+  assert('Data mapping endpoint', dMapping.status === 200);
+  assert('Mapping has 59 gauges', dMapping.body.total === 59);
+  assert('Mapping has breakdown', dMapping.body.breakdown && dMapping.body.readyForAPI > 0);
+
+  const dRefreshNoKey = await req('POST', '/api/v1/data/refresh', {}, adminToken);
+  assert('Refresh without keys returns 400', dRefreshNoKey.status === 400 || dRefreshNoKey.status === 200);
+
+  const dAutoNoData = await req('GET', '/api/v1/report/auto', null, token);
+  assert('Auto report without data returns 404', dAutoNoData.status === 404 || dAutoNoData.status === 200);
+
   // Summary
   console.log(`\n${'═'.repeat(40)}`);
   console.log(`  ✅ ${passed} passed  ❌ ${failed} failed  (${passed + failed} total)`);

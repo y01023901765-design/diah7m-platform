@@ -41,6 +41,22 @@ function safeRequire(name, modulePath) {
 const db = safeRequire('db', './lib/db');
 const auth = safeRequire('auth', './lib/auth');
 const engine = safeRequire('core-engine', './lib/core-engine');
+const pipeline = safeRequire('data-pipeline', './lib/data-pipeline');
+const DataStore = safeRequire('data-store', './lib/data-store');
+
+// ═══ 3.1 데이터 스토어 초기화 (서버 시작 시 호출) ═══
+let dataStore = null;
+async function initDataStore() {
+  if (DataStore && db && db.connected) {
+    dataStore = new DataStore(db);
+    await dataStore.init();
+    console.log('  ✅ DataStore initialized');
+  } else if (DataStore) {
+    // DB 없이 메모리 캐시만 사용
+    dataStore = new DataStore(null);
+    console.log('  ⚠️  DataStore (memory-only, no DB)');
+  }
+}
 
 // ═══ 4. 글로벌 미들웨어 ═══
 app.use(express.json({ limit: '10mb' }));
@@ -104,6 +120,7 @@ app.get('/api/health', (req, res) => {
     uptime: Math.round((Date.now() - state.startedAt) / 1000),
     modules: state.modules,
     requests: state.totalRequests,
+    dataStore: dataStore ? dataStore.getStatus() : null,
   });
 });
 
@@ -310,6 +327,73 @@ app.get('/api/v1/me/mileage', auth?.authMiddleware || ((req, res) => res.status(
 });
 
 // ═══ 7. 관리자 API ═══
+// ═══ DATA PIPELINE ENDPOINTS ═══
+
+// -- 캐시 상태 조회 (인증 불필요) --
+app.get('/api/v1/data/status', (req, res) => {
+  if (!dataStore) return res.json({ available: false, reason: 'DataStore not initialized' });
+  res.json({ available: true, ...dataStore.getStatus() });
+});
+
+// -- 최신 캐시 데이터 조회 --
+app.get('/api/v1/data/latest', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), (req, res) => {
+  if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
+  const cached = dataStore.getAll();
+  const status = dataStore.getStatus();
+  res.json({ data: cached, status });
+});
+
+// -- 데이터 수동 새로고침 (관리자 전용) --
+app.post('/api/v1/data/refresh', auth?.authMiddleware || ((req, res, next) => next()), auth?.adminMiddleware || ((req, res, next) => next()), async (req, res) => {
+  if (!pipeline || !dataStore) return res.status(503).json({ error: 'Pipeline/Store unavailable' });
+  if (dataStore.fetching) return res.status(429).json({ error: 'Fetch already in progress' });
+
+  const ecosKey = process.env.ECOS_API_KEY;
+  const kosisKey = process.env.KOSIS_API_KEY;
+  if (!ecosKey && !kosisKey) return res.status(400).json({ error: 'API keys not configured. Set ECOS_API_KEY and KOSIS_API_KEY in .env' });
+
+  dataStore.fetching = true;
+  try {
+    const { results, stats, errors } = await pipeline.fetchAll(ecosKey, kosisKey);
+    const stored = await dataStore.store(results);
+    dataStore.fetching = false;
+    res.json({ ok: true, stats, stored, errors: errors.slice(0, 10) });
+  } catch (e) {
+    dataStore.fetching = false;
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// -- 자동 보고서 (캐시 데이터 → 엔진 진단) --
+app.get('/api/v1/report/auto', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), (req, res) => {
+  if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine unavailable' });
+  if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
+
+  const gaugeData = dataStore.toGaugeData();
+  if (Object.keys(gaugeData).length === 0) {
+    return res.status(404).json({ error: 'No cached data. Call POST /api/v1/data/refresh first', hint: 'Set ECOS_API_KEY and KOSIS_API_KEY then refresh' });
+  }
+
+  const report = engine.generateReport(gaugeData, {
+    countryCode: req.query.country || 'KR',
+    countryName: req.query.country_name || '대한민국',
+    productType: 'national',
+    frequency: req.query.frequency || 'monthly',
+    tier: req.user?.plan || 'FREE',
+    language: req.query.lang || 'ko',
+    channel: 'web',
+  });
+
+  res.json(report);
+});
+
+// -- 파이프라인 매핑 진단 --
+app.get('/api/v1/data/mapping', (req, res) => {
+  if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
+  res.json(pipeline.diagnoseMapping());
+});
+
+// ═══ ADMIN ═══
 const adminAuth = [
   auth?.authMiddleware || ((req, res, next) => next()),
   auth?.adminMiddleware || ((req, res, next) => next()),
@@ -441,6 +525,9 @@ async function start() {
     console.log(`\n  Modules: ${JSON.stringify(state.modules)}`);
     console.log(`  Engine: ${engine ? '✅' : '❌'}`);
     console.log(`  DB: ${db?.connected ? '✅' : '❌'}`);
+
+    // DataStore 초기화 (DB 연결 후)
+    await initDataStore();
 
     // 서버 시작
     const server = app.listen(PORT, () => {
