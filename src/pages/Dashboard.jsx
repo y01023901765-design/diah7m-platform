@@ -3,10 +3,8 @@ import T from '../theme';
 import { t, gc } from '../i18n';
 import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
-import { SatEvidencePanel } from '../components/Satellite';
 import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components/TierLock';
 import { TIER_ACCESS, tierLevel } from '../data/gauges';
-import { SAT_EV } from '../data/satellite';
 
 function DashboardPage({user,onNav,lang}){
   const L=lang||'ko';

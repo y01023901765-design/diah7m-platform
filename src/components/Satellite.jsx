@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import T from '../theme';
 import { t } from '../i18n';
+import { SAT_META, isSat, SAT_XREF, TP, LEAD, EV_STYLE } from './TierLock';
 
 function SatBadge({code}){
   const s=SAT_META[code]; if(!s) return null;

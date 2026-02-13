@@ -29,7 +29,7 @@ function LandingPage({onNavigate,lang,setLang}){
     {icon:"🛰️",title:t('feat1',L),desc:t('featDesc1',L),color:T.accent},
     {icon:"⏱️",title:t('feat2',L),desc:t('featDesc2',L),color:T.good},
     {icon:"🏥",title:t('feat3',L),desc:t('featDesc3',L),color:T.warn},
-    {icon:"🔒",title:t('feat4',L),desc:t('featDesc4',L),color:"#f97316"},
+    {icon:"🔒",title:t('feat4',L),desc:t('featDesc4',L),color:T.orange},
     {icon:"📐",title:t('feat5',L),desc:t('featDesc5',L),color:T.info},
     {icon:"🎯",title:t('feat6',L),desc:t('featDesc6',L),color:T.danger},
   ];
