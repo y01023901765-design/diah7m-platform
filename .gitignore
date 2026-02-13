@@ -31,3 +31,8 @@ npm-debug.log*
 *.key
 *.pem
 secrets/
+
+# Server
+server/node_modules/
+server/data/
+server/.env
