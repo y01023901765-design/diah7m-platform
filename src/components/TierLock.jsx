@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import T from '../theme';
-import { t, KO } from '../i18n';
+import { t } from '../i18n';
 import { TIER_ACCESS, tierLevel } from '../data/gauges';
 // Re-export all data for backward compatibility
 export { SAT_META, isSat, LEAD, EV_STYLE, TP, SAT_XREF, D, SYS, sysN, sysB, sysM, gN } from '../data/gaugeData';

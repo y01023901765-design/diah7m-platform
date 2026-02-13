@@ -64,7 +64,12 @@ function AuthPage({mode,onNavigate,onLogin,lang}){
         API.storeUser({ email: form.email, name: form.name, plan: form.plan, ...data.user });
         onLogin({ email: form.email, name: form.name, plan: form.plan, ...data.user });
       } catch(e) {
-        setError(e.data?.error || e.message || 'Registration failed');
+        // 서버 미연결 시 데모 가입 폴백
+        if(e.message?.includes('Failed to fetch') || e.status === undefined) {
+          onLogin({ email: form.email, name: form.name, plan: form.plan, demo: true });
+        } else {
+          setError(e.data?.error || e.message || 'Registration failed');
+        }
       } finally { setLoading(false); }
     }
   };
