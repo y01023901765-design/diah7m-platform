@@ -14,7 +14,7 @@ function LangSelector({lang,setLang}){
   return(
     <div ref={ref} style={{position:"relative"}}>
       <button onClick={function(){setOpen(!open);}} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:8,border:"1px solid "+T.border,background:T.surface+"80",color:T.text,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-        {cur.flag} {cur.code.toUpperCase()} <span style={{fontSize:8,opacity:0.6}}>▼</span>
+        {cur.flag} {cur.code.toUpperCase()} <span style={{fontSize:9,opacity:0.6}}>▼</span>
       </button>
       {open&&<div style={{position:"absolute",top:"100%",right:0,marginTop:4,width:180,maxHeight:320,overflowY:"auto",background:T.bg1,border:"1px solid "+T.border,borderRadius:10,boxShadow:"0 8px 32px rgba(0,0,0,.5)",zIndex:500,padding:4}}>
         {LANG_LIST.map(function(l){return(

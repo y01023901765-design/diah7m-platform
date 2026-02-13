@@ -26,7 +26,10 @@ const RESPONSIVE_CSS = `
   ::-webkit-scrollbar-track { background: ${T.bg1}; }
   ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
   input:focus, select:focus { border-color: ${T.accent} !important; }
+  button { transition: opacity .15s, transform .1s; }
   button:hover { opacity: 0.9; }
+  button:active { transform: scale(0.97); }
+  button:focus-visible, a:focus-visible { outline: 2px solid ${T.accent}; outline-offset: 2px; border-radius: 4px; }
   @media (max-width: 768px) {
     .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
     .grid-3 { grid-template-columns: 1fr !important; }

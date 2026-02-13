@@ -21,7 +21,7 @@ function GaugeRow({d,open,toggle,lang}){
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontSize:13,fontWeight:700,color:T.text}}>{gN(d.c,L)}</span>
             {sat&&<SatBadge code={d.c}/>}
-            {TIER[d.c]&&<span style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:8,padding:"2px 7px",borderRadius:4,fontWeight:700,
+            {TIER[d.c]&&<span style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:9,padding:"2px 7px",borderRadius:4,fontWeight:700,
               background:`${TIER_LABEL[TIER[d.c]].color}15`,color:TIER_LABEL[TIER[d.c]].color,
               border:`1px solid ${TIER_LABEL[TIER[d.c]].color}30`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:11}}>🛰️</span>}{TIER_LABEL[TIER[d.c]].ko}</span>}
           </div>
@@ -57,7 +57,7 @@ function GaugeRow({d,open,toggle,lang}){
             {d.act?.map((a,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:5}}>
                 <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600,color:T.text}}>{a.s}</div><div style={{fontSize:10,color:T.textMid}}>{a.a}</div></div>
-                <span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:4,background:a.tg.includes(t('sigBuy',L))?T.good+"18":a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?T.danger+"18":T.warn+"18",color:a.tg.includes(t('sigBuy',L))?T.good:a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?T.danger:T.warn,whiteSpace:"nowrap"}}>{a.tg}</span>
+                <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,background:a.tg.includes(t('sigBuy',L))?T.good+"18":a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?T.danger+"18":T.warn+"18",color:a.tg.includes(t('sigBuy',L))?T.good:a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?T.danger:T.warn,whiteSpace:"nowrap"}}>{a.tg}</span>
               </div>
             ))}
           </div>
@@ -89,7 +89,7 @@ function SystemSection({sysKey,sys,expanded,toggle,lang}){
             <span style={{fontSize:20}}>{sys.icon}</span>
             <span style={{fontSize:16,fontWeight:800,color:T.text}}>{sysN(sysKey,L)}</span>
             <span style={{fontSize:11,color:sys.color,fontWeight:600}}>({sysB(sysKey,L)})</span>
-            {satCount>0&&<span style={{fontSize:8,fontWeight:700,padding:"2px 8px",borderRadius:10,background:`${T.sat}15`,color:T.sat,border:`1px solid ${T.sat}30`}}>🛰️ ×{satCount}</span>}
+            {satCount>0&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,background:`${T.sat}15`,color:T.sat,border:`1px solid ${T.sat}30`}}>🛰️ ×{satCount}</span>}
           </div>
           <div style={{fontSize:11,color:T.textDim,marginTop:4}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>
         </div>

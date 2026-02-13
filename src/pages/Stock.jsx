@@ -89,15 +89,15 @@ function StockPage({user,lang}){
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontSize:12,fontWeight:700,color:T.text}}>{getName(s)}</span>
-                <span style={{fontSize:8,color:T.textDim,fontFamily:"monospace"}}>{s.sid}</span>
-                <span style={{fontSize:7,padding:"1px 5px",borderRadius:4,background:`${tierLb.color}15`,color:tierLb.color,fontWeight:700}}>T{s.tier}</span>
+                <span style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}>{s.sid}</span>
+                <span style={{fontSize:9,padding:"1px 5px",borderRadius:4,background:`${tierLb.color}15`,color:tierLb.color,fontWeight:700}}>T{s.tier}</span>
               </div>
               <div style={{fontSize:9,color:T.textDim}}>{s.sec} · {s.fac}{L==='ko'?'시설':' fac'} · {L==='ko'?ARCHETYPE_LABELS[s.a].ko:ARCHETYPE_LABELS[s.a].en}</div>
             </div>
           </div>
         </div>
         <div style={{display:"flex",gap:3,marginTop:6,flexWrap:"wrap"}}>
-          {s.sat.map(st=>(<span key={st} style={{fontSize:7,padding:"2px 5px",borderRadius:3,background:`${T.sat}12`,color:T.sat,fontWeight:600}}>🛰️{st}</span>))}
+          {s.sat.map(st=>(<span key={st} style={{fontSize:9,padding:"2px 5px",borderRadius:3,background:`${T.sat}12`,color:T.sat,fontWeight:600}}>🛰️{st}</span>))}
         </div>
       </div>);
     })}

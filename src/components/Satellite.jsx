@@ -17,7 +17,7 @@ function SatXrefBanner({code,lang}){
       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
         <span style={{fontSize:13}}>🛰️</span>
         <span style={{fontSize:11,fontWeight:700,color:T.sat}}>{t('satEarlyDetect',L)}</span>
-        <span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:6,background:ld.color+"18",color:ld.color,marginLeft:"auto"}}>{ld.emoji} {tp.rng} {t('satStatBefore',L)}</span>
+        <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:6,background:ld.color+"18",color:ld.color,marginLeft:"auto"}}>{ld.emoji} {tp.rng} {t('satStatBefore',L)}</span>
       </div>
       <div style={{fontSize:10,color:T.textMid,lineHeight:1.7,marginBottom:10,padding:"8px 12px",background:`${T.sat}08`,borderRadius:6,borderLeft:`3px solid ${T.sat}`}}>{tp.lk}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -33,7 +33,7 @@ function SatXrefBanner({code,lang}){
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"5px 10px",background:`${T.bg1}80`,borderRadius:6}}>
-        <span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:4,background:evs.color+"18",color:evs.color}}>{t('satEvidence',L)} {evs.label}</span>
+        <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:4,background:evs.color+"18",color:evs.color}}>{t('satEvidence',L)} {evs.label}</span>
         <span style={{fontSize:9,color:T.textDim}}>{evs.desc}</span>
       </div>
     </div>
@@ -55,20 +55,20 @@ function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,color})
     {[{lb:bf.date,val:bf.val,ac:T.textDim,bd:T.border,ds:"수집 후 표시"},
       {lb:af.date,val:af.val,ac:color||T.accent,bd:(color||T.accent)+"40",ds:"최신 촬영분"}].map((s,i)=>(
       <div key={i} style={{flex:1}}>
-        <div style={{fontSize:8,color:s.ac,fontFamily:"monospace",marginBottom:4,textAlign:"center",fontWeight:i?600:400}}>{i?"오늘 · ":"30일 전 · "}{s.lb}</div>
+        <div style={{fontSize:9,color:s.ac,fontFamily:"monospace",marginBottom:4,textAlign:"center",fontWeight:i?600:400}}>{i?"오늘 · ":"30일 전 · "}{s.lb}</div>
         <div style={{width:"100%",aspectRatio:"1",borderRadius:6,border:`1px solid ${s.bd}`,overflow:"hidden",position:"relative",
           background:"linear-gradient(135deg,#0a1628,#0d1f3c)",boxShadow:i?`0 0 8px ${(color||T.accent)}15`:"none"}}>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
             <div style={{fontSize:28,marginBottom:4}}>🛰️</div>
-            <div style={{fontSize:8,color:s.ac,fontFamily:"monospace",textAlign:"center",padding:"0 8px",lineHeight:1.4}}>{sensor}<br/>{product}<br/>{s.ds}</div>
+            <div style={{fontSize:9,color:s.ac,fontFamily:"monospace",textAlign:"center",padding:"0 8px",lineHeight:1.4}}>{sensor}<br/>{product}<br/>{s.ds}</div>
           </div>
           <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 6px",background:"rgba(0,0,0,0.7)"}}>
-            <div style={{fontSize:7,fontFamily:"monospace",color:s.ac}}>{coord} · {radius}</div>
+            <div style={{fontSize:9,fontFamily:"monospace",color:s.ac}}>{coord} · {radius}</div>
           </div>
         </div>
         <div style={{textAlign:"center",marginTop:4}}>
           <span style={{fontSize:12,fontFamily:"monospace",fontWeight:700,color:i?(color||T.accent):"#fff"}}>{s.val}</span>
-          <span style={{fontSize:8,color:T.textDim,fontFamily:"monospace"}}> {unit}</span>
+          <span style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}> {unit}</span>
         </div>
       </div>
     ))}
@@ -76,15 +76,15 @@ function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,color})
 }
 function EvPkg({ev}){
   return(<div style={{marginTop:8,padding:"6px 8px",borderRadius:4,background:T.bg0,border:`1px solid ${T.border}`}}>
-    <div style={{fontSize:8,fontWeight:600,color:"#ccc",marginBottom:3}}>📎 증거 패키지</div>
+    <div style={{fontSize:9,fontWeight:600,color:"#ccc",marginBottom:3}}>📎 증거 패키지</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-      <div style={{fontSize:6,color:T.textDim,fontFamily:"monospace",lineHeight:1.5}}>출처: {ev.source}<br/>센서: {ev.sensor}<br/>제품: {ev.product}<br/>해상도: {ev.resolution}</div>
-      <div style={{fontSize:6,color:T.textDim,fontFamily:"monospace",lineHeight:1.5}}>처리: {ev.process}<br/>크롭: {ev.crop}<br/>해시: {ev.hash}<br/>결측: {ev.missing}</div>
+      <div style={{fontSize:9,color:T.textDim,fontFamily:"monospace",lineHeight:1.5}}>출처: {ev.source}<br/>센서: {ev.sensor}<br/>제품: {ev.product}<br/>해상도: {ev.resolution}</div>
+      <div style={{fontSize:9,color:T.textDim,fontFamily:"monospace",lineHeight:1.5}}>처리: {ev.process}<br/>크롭: {ev.crop}<br/>해시: {ev.hash}<br/>결측: {ev.missing}</div>
     </div>
     <div style={{display:"flex",gap:4,marginTop:4}}>
       {ev.qg.map((g,i)=>(<div key={i} style={{flex:1,textAlign:"center",padding:"2px 0",borderRadius:2,
         background:g.ok?`${T.good}10`:`${T.danger}10`,border:`1px solid ${g.ok?T.good:T.danger}20`}}>
-        <span style={{fontSize:6,fontFamily:"monospace",color:g.ok?T.good:T.danger}}>{g.ok?"✓":"✗"} {g.l}</span>
+        <span style={{fontSize:9,fontFamily:"monospace",color:g.ok?T.good:T.danger}}>{g.ok?"✓":"✗"} {g.l}</span>
       </div>))}
     </div>
   </div>);
@@ -95,9 +95,9 @@ function BtPanel({entries}){
     {entries.map((b,i)=>(<div key={i} style={{padding:6,borderRadius:4,background:T.bg0,border:`1px solid ${T.border}`,marginBottom:i<entries.length-1?4:0}}>
       <div style={{fontSize:9,color:T.accent,fontWeight:600,marginBottom:3}}>{b.signal}</div>
       <div style={{display:"flex",gap:8}}>
-        <div><div style={{fontSize:7,color:T.textDim}}>표본</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.text}}>N={b.n}</div></div>
-        <div><div style={{fontSize:7,color:T.textDim}}>적중</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.good}}>{b.hit}/{b.n} ({Math.round(b.hit/b.n*100)}%)</div></div>
-        <div><div style={{fontSize:7,color:T.textDim}}>리드타임</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.warn}}>{b.median}</div><div style={{fontSize:7,color:T.textDim}}>IQR {b.iqr}</div></div>
+        <div><div style={{fontSize:9,color:T.textDim}}>표본</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.text}}>N={b.n}</div></div>
+        <div><div style={{fontSize:9,color:T.textDim}}>적중</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.good}}>{b.hit}/{b.n} ({Math.round(b.hit/b.n*100)}%)</div></div>
+        <div><div style={{fontSize:9,color:T.textDim}}>리드타임</div><div style={{fontSize:10,fontFamily:"monospace",fontWeight:700,color:T.warn}}>{b.median}</div><div style={{fontSize:9,color:T.textDim}}>IQR {b.iqr}</div></div>
       </div>
     </div>))}
   </div>);
@@ -115,8 +115,8 @@ function LtPanel({layers}){
           left:`${(parseInt(l.median)/100)*100}%`,transform:"translateX(-50%)",boxShadow:`0 0 4px ${T.accent}66`}}/>
       </div></div>
       <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:8,fontFamily:"monospace",color:T.accent,fontWeight:700}}>중앙 {l.median}</div>
-        <div style={{fontSize:6,color:T.textDim,fontFamily:"monospace"}}>N={l.n}</div>
+        <div style={{fontSize:9,fontFamily:"monospace",color:T.accent,fontWeight:700}}>중앙 {l.median}</div>
+        <div style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}>N={l.n}</div>
       </div>
     </div>))}
   </div>);
@@ -128,17 +128,17 @@ function SatEvidencePanel({data:d}){
     <div style={{background:`linear-gradient(135deg,${T.sat}08,${T.sat}04)`,borderRadius:T.smRadius,padding:12,border:`1px solid ${T.sat}30`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <span style={{fontSize:10,fontWeight:700,color:T.sat}}>🛰️ 위성 물리 증거</span>
-        <span style={{fontSize:7,fontFamily:"monospace",padding:"2px 6px",borderRadius:3,
+        <span style={{fontSize:9,fontFamily:"monospace",padding:"2px 6px",borderRadius:3,
           background:`${isUp?T.good:T.danger}15`,color:isUp?T.good:T.danger,fontWeight:700}}>{isUp?"▲":"▼"}{Math.abs(chg)}%</span>
       </div>
       <div style={{display:"flex",gap:4,marginBottom:8,overflowX:"auto"}}>
         {d.layers.map((l,i)=>(<button key={i} style={{padding:"3px 7px",borderRadius:4,border:`1px solid ${i===0?T.accent:T.border}`,
-          background:i===0?`${T.accent}15`:"transparent",color:i===0?T.accent:T.textDim,fontSize:8,
+          background:i===0?`${T.accent}15`:"transparent",color:i===0?T.accent:T.textDim,fontSize:9,
           fontFamily:"monospace",cursor:"pointer",whiteSpace:"nowrap",fontWeight:i===0?600:400}}>{l}</button>))}
       </div>
       <SatCompare before={d.before} after={d.after} sensor={d.sensor} product={d.product} coord={d.coord} radius={d.radius} unit={d.unit} color={d.color}/>
       {d.coverage&&<div style={{marginTop:6,padding:"4px 8px",borderRadius:3,background:`${T.warn}10`,border:`1px solid ${T.warn}20`}}>
-        <span style={{fontSize:7,color:T.warn,fontFamily:"monospace"}}>⚠ 커버리지: {d.coverage}</span>
+        <span style={{fontSize:9,color:T.warn,fontFamily:"monospace"}}>⚠ 커버리지: {d.coverage}</span>
       </div>}
       <EvPkg ev={d.ev}/>
     </div>
@@ -146,9 +146,9 @@ function SatEvidencePanel({data:d}){
       <div style={{fontSize:10,fontWeight:700,color:T.text,marginBottom:6}}>📈 30일 추세</div>
       <div style={{display:"flex",gap:14}}>
         {d.trends.map((tr,i)=>(<div key={i}>
-          <div style={{fontSize:7,color:tr.color,fontFamily:"monospace",marginBottom:2}}>{tr.label}</div>
+          <div style={{fontSize:9,color:tr.color,fontFamily:"monospace",marginBottom:2}}>{tr.label}</div>
           <SparkLine data={tr.data} c={tr.color}/>
-          <div style={{fontSize:7,color:tr.change>0?T.good:T.danger,fontFamily:"monospace"}}>{tr.change>0?"▲":"▼"}{Math.abs(tr.change)}%</div>
+          <div style={{fontSize:9,color:tr.change>0?T.good:T.danger,fontFamily:"monospace"}}>{tr.change>0?"▲":"▼"}{Math.abs(tr.change)}%</div>
         </div>))}
       </div>
     </div>
@@ -162,23 +162,23 @@ function SatEvidencePanel({data:d}){
       <div style={{display:"flex",gap:8}}>
         <div style={{flex:1,padding:8,borderRadius:6,background:T.bg0,border:`1px solid ${T.accent}25`}}>
           <div style={{fontSize:9,fontWeight:700,color:T.accent,marginBottom:4}}>📡 과거 신호 → 오늘 결과</div>
-          <div style={{fontSize:8,color:"#ccc",lineHeight:1.5,marginBottom:6}}>{d.trust||"과거 위성 변화와 후행 통계 일치 확인."}</div>
+          <div style={{fontSize:9,color:"#ccc",lineHeight:1.5,marginBottom:6}}>{d.trust||"과거 위성 변화와 후행 통계 일치 확인."}</div>
           <div style={{padding:"3px 6px",borderRadius:3,background:`${T.accent}10`,textAlign:"center"}}>
-            <span style={{fontSize:8,color:T.accent,fontFamily:"monospace",fontWeight:700}}>"이 계기판은 정확하다" = 신뢰</span>
+            <span style={{fontSize:9,color:T.accent,fontFamily:"monospace",fontWeight:700}}>"이 계기판은 정확하다" = 신뢰</span>
           </div>
         </div>
         <div style={{flex:1,padding:8,borderRadius:6,background:T.bg0,border:`1px solid ${T.warn}25`}}>
           <div style={{fontSize:9,fontWeight:700,color:T.warn,marginBottom:4}}>🔎 선행 신호 추적 중</div>
-          <div style={{fontSize:8,color:"#ccc",lineHeight:1.5,marginBottom:6}}>{d.value||"현재 위성 변화가 유사 구간 후행 분포에 해당."}</div>
+          <div style={{fontSize:9,color:"#ccc",lineHeight:1.5,marginBottom:6}}>{d.value||"현재 위성 변화가 유사 구간 후행 분포에 해당."}</div>
           <div style={{padding:"3px 6px",borderRadius:3,background:`${T.warn}10`,textAlign:"center"}}>
-            <span style={{fontSize:8,color:T.warn,fontFamily:"monospace",fontWeight:700}}>"남보다 먼저 본다" = 가치</span>
+            <span style={{fontSize:9,color:T.warn,fontFamily:"monospace",fontWeight:700}}>"남보다 먼저 본다" = 가치</span>
           </div>
         </div>
       </div>
     </div>
     <div style={{padding:"5px 8px",borderRadius:4,background:`${T.danger}08`,border:`1px solid ${T.danger}20`,marginTop:8}}>
-      <div style={{fontSize:7,color:T.danger,fontFamily:"monospace",fontWeight:600}}>⚠ 관측 전용 · 예측 금지</div>
-      <div style={{fontSize:7,color:T.textDim,lineHeight:1.4,marginTop:1}}>물리적 관측 사실만 표시. 전망·추천 표현은 시스템 레벨에서 차단됩니다.</div>
+      <div style={{fontSize:9,color:T.danger,fontFamily:"monospace",fontWeight:600}}>⚠ 관측 전용 · 예측 금지</div>
+      <div style={{fontSize:9,color:T.textDim,lineHeight:1.4,marginTop:1}}>물리적 관측 사실만 표시. 전망·추천 표현은 시스템 레벨에서 차단됩니다.</div>
     </div>
   </div>);
 }

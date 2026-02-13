@@ -79,7 +79,7 @@ function ProductMgmt(){
           <div style={{display:"grid",gap:6}}>
             {[["판매 중지",T.danger,"이 상품을 즉시 비공개합니다"],["품절 처리",T.warn,"재고 소진 표시 (페이지 유지)"],["가격 변경",T.accent,"정가/할인가 즉시 변경"],["시즌 종료","#8b5cf6","시즌 상품 마감 처리"],["상품 복제",T.info,"동일 구성으로 새 상품 생성"],["삭제",T.danger,"영구 삭제 (복구 불가)"]].map(([lb,c,desc])=>(<button key={lb} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,border:`1px solid ${c}20`,background:`${c}06`,cursor:"pointer",textAlign:"left"}}>
               <span style={{fontSize:10,fontWeight:700,color:c}}>{lb}</span>
-              <span style={{fontSize:8,color:T.textDim}}>{desc}</span>
+              <span style={{fontSize:9,color:T.textDim}}>{desc}</span>
             </button>))}
           </div>
         </div>
@@ -103,7 +103,7 @@ function ProductMgmt(){
       {/* 요약 카드 */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:16}}>
         {[["전체 상품",products.length,T.accent],["판매중",products.filter(p=>p.status==='판매중').length,T.good],["준비중",products.filter(p=>p.status==='준비중').length,T.warn],["품절",products.filter(p=>p.status==='품절').length,T.danger],["총 매출","₩19.8M",T.accent]].map(([n,v,c])=>(<div key={n} style={{background:T.surface,borderRadius:T.smRadius,padding:10,border:`1px solid ${T.border}`,textAlign:"center"}}>
-          <div style={{fontSize:16,fontWeight:800,color:c,fontFamily:"monospace"}}>{v}</div><div style={{fontSize:8,color:T.textDim}}>{n}</div>
+          <div style={{fontSize:16,fontWeight:800,color:c,fontFamily:"monospace"}}>{v}</div><div style={{fontSize:9,color:T.textDim}}>{n}</div>
         </div>))}
       </div>
       {/* 필터 + 검색 + 신규버튼 */}
@@ -119,7 +119,7 @@ function ProductMgmt(){
           <span>상품명</span><span>카테고리</span><span>판매가</span><span>상태</span><span>재고</span><span>판매</span><span>상세</span>
         </div>
         {filtered.map(p=>(<div key={p.id} style={{display:"grid",gridTemplateColumns:"2.5fr 1fr 1fr 1fr 0.8fr 0.8fr 0.6fr",padding:"10px 12px",borderBottom:`1px solid ${T.border}`,fontSize:10,alignItems:"center"}}>
-          <div><div style={{fontWeight:600,color:T.text}}>{p.name}</div><div style={{fontSize:8,color:T.textDim,fontFamily:"monospace"}}>{p.id}</div></div>
+          <div><div style={{fontWeight:600,color:T.text}}>{p.name}</div><div style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}>{p.id}</div></div>
           <span style={{color:T.textMid}}>{p.cat}</span>
           <div>{p.salePrice&&<span style={{textDecoration:"line-through",color:T.textDim,fontSize:9,marginRight:4}}>₩{(p.price/1000).toFixed(0)}K</span>}<span style={{fontWeight:700,color:p.salePrice?T.danger:T.text,fontFamily:"monospace"}}>₩{((p.salePrice||p.price)/1000).toFixed(0)}K</span></div>
           <span style={{fontSize:9,padding:"2px 8px",borderRadius:4,background:`${statusC[p.status]}12`,color:statusC[p.status],fontWeight:700,display:"inline-block",width:"fit-content"}}>{p.status}</span>
@@ -134,7 +134,7 @@ function ProductMgmt(){
     {sub==='price'&&<>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <span style={{fontSize:13,fontWeight:700,color:T.text}}>💰 가격 정책 관리</span>
-        <div style={{display:"flex",gap:6}}><span style={{fontSize:8,padding:"3px 10px",borderRadius:6,background:`${T.good}15`,color:T.good,fontWeight:600}}>현행 v2 · 2026-02-10</span>
+        <div style={{display:"flex",gap:6}}><span style={{fontSize:9,padding:"3px 10px",borderRadius:6,background:`${T.good}15`,color:T.good,fontWeight:600}}>현행 v2 · 2026-02-10</span>
           <button style={{padding:"4px 10px",borderRadius:6,border:"none",background:T.accent,color:"#fff",fontSize:9,fontWeight:700,cursor:"pointer"}}>새 버전</button></div>
       </div>
       {/* 구독 플랜 */}
@@ -142,10 +142,10 @@ function ProductMgmt(){
         <div style={{fontSize:11,fontWeight:700,color:T.text,marginBottom:10}}>📋 구독 플랜 (월간/연간)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8}}>
           {[["Free","₩0","₩0","7게이지·1축",T.textMid,580],["Basic","₩19,000","₩190,000","21게이지·3축·알림",T.info,320],["Pro","₩49,000","₩490,000","59게이지·위성·전체",T.accent,285],["Enterprise","₩450,000","협의","API·팀·커스텀","#f59e0b",62]].map(([n,m,y,d,c,cnt])=>(<div key={n} style={{padding:12,borderRadius:8,background:`${c}06`,border:`1px solid ${c}15`}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:700,color:c}}>{n}</span><span style={{fontSize:8,color:T.textDim}}>{cnt}명</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:700,color:c}}>{n}</span><span style={{fontSize:9,color:T.textDim}}>{cnt}명</span></div>
             <div style={{fontSize:16,fontWeight:800,color:T.text,fontFamily:"monospace",marginTop:6}}>{m}</div>
             <div style={{fontSize:9,color:T.textDim}}>연간: {y}</div>
-            <div style={{fontSize:8,color:T.textDim,marginTop:4}}>{d}</div>
+            <div style={{fontSize:9,color:T.textDim,marginTop:4}}>{d}</div>
             <button style={{marginTop:8,padding:"4px 10px",borderRadius:4,border:`1px solid ${c}30`,background:"transparent",color:c,fontSize:9,fontWeight:600,cursor:"pointer",width:"100%"}}>가격 수정</button>
           </div>))}
         </div>
@@ -174,7 +174,7 @@ function ProductMgmt(){
           <span style={{fontSize:10,fontWeight:700,color:s==='현행'?T.good:T.textDim,minWidth:24}}>{ver}</span>
           <span style={{fontSize:9,color:T.textDim,fontFamily:"monospace",minWidth:70}}>{d}</span>
           <span style={{fontSize:9,color:T.textMid,flex:1}}>{desc}</span>
-          <span style={{fontSize:8,padding:"2px 6px",borderRadius:4,background:s==='현행'?`${T.good}15`:`${T.textDim}15`,color:s==='현행'?T.good:T.textDim}}>{s}</span>
+          <span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:s==='현행'?`${T.good}15`:`${T.textDim}15`,color:s==='현행'?T.good:T.textDim}}>{s}</span>
         </div>))}
       </div>
     </>}
@@ -199,9 +199,9 @@ function ProductMgmt(){
           <span style={{fontWeight:700,color:T.good}}>{cp.disc}</span>
           <span style={{color:T.textDim,fontSize:9}}>{cp.scope}</span>
           <span style={{color:T.textDim,fontSize:9}}>{cp.start}~{cp.expire}</span>
-          <div><div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden",marginBottom:2}}><div style={{width:`${cp.used/cp.max*100}%`,height:"100%",background:cp.used/cp.max>0.8?T.warn:T.accent}}/></div><span style={{fontSize:8,color:T.textDim}}>{cp.used}/{cp.max}</span></div>
+          <div><div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden",marginBottom:2}}><div style={{width:`${cp.used/cp.max*100}%`,height:"100%",background:cp.used/cp.max>0.8?T.warn:T.accent}}/></div><span style={{fontSize:9,color:T.textDim}}>{cp.used}/{cp.max}</span></div>
           <span style={{fontSize:9,color:cp.abuse>0?T.danger:T.textDim}}>{cp.abuse>0?`⚠️ ${cp.abuse}건 의심`:'정상'}</span>
-          <span style={{fontSize:8,padding:"2px 6px",borderRadius:4,background:`${cp.status==='활성'?T.good:cp.status==='만료임박'?T.warn:cp.status==='내부'?T.sat:T.textDim}15`,color:cp.status==='활성'?T.good:cp.status==='만료임박'?T.warn:cp.status==='내부'?T.sat:T.textDim,fontWeight:600}}>{cp.status}</span>
+          <span style={{fontSize:9,padding:"2px 6px",borderRadius:4,background:`${cp.status==='활성'?T.good:cp.status==='만료임박'?T.warn:cp.status==='내부'?T.sat:T.textDim}15`,color:cp.status==='활성'?T.good:cp.status==='만료임박'?T.warn:cp.status==='내부'?T.sat:T.textDim,fontWeight:600}}>{cp.status}</span>
         </div>))}
       </div>
       <div style={{background:`${T.warn}08`,borderRadius:T.smRadius,padding:12,border:`1px solid ${T.warn}15`,marginTop:10}}>

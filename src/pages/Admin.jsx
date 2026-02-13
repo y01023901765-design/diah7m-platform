@@ -96,7 +96,7 @@ function AdminPage({lang}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
         {[["ECOS",32,"정상","2/12",T.good],["KOSIS",27,"지연","미수신",T.warn],["VIIRS",1,"정상","2/12",T.good],["S-5P",1,"결측","구름92%",T.danger],["S-1 SAR",1,"정상","2/08",T.good],["Landsat",1,"정상","2/05",T.good]].map(([n,cnt,s,d,c])=>(<div key={n} style={{background:T.surface,borderRadius:T.smRadius,padding:12,border:`1px solid ${c}20`}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:T.text}}>{n}</span><span style={{width:6,height:6,borderRadius:3,background:c}}/></div>
-          <div style={{fontSize:9,color:c,fontWeight:600,marginTop:4}}>{s}</div><div style={{fontSize:8,color:T.textDim}}>{cnt}지표 · {d}</div>
+          <div style={{fontSize:9,color:c,fontWeight:600,marginTop:4}}>{s}</div><div style={{fontSize:9,color:T.textDim}}>{cnt}지표 · {d}</div>
         </div>))}
       </div>
       {/* QA/Hold */}
@@ -104,7 +104,7 @@ function AdminPage({lang}){
         <div style={{fontSize:12,fontWeight:700,color:T.text,marginBottom:10}}>🎯 QA / Hold</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
           {[["관측품질",94,T.good],["센서일관",87,T.good],["결측안정",71,T.warn],["Hold",2,T.danger]].map(([n,v,c])=>(<div key={n} style={{textAlign:"center",padding:6,background:`${c}08`,borderRadius:6}}>
-            <div style={{fontSize:16,fontWeight:800,color:c,fontFamily:"monospace"}}>{n==='Hold'?v+'건':v+'%'}</div><div style={{fontSize:8,color:T.textDim}}>{n}</div>
+            <div style={{fontSize:16,fontWeight:800,color:c,fontFamily:"monospace"}}>{n==='Hold'?v+'건':v+'%'}</div><div style={{fontSize:9,color:T.textDim}}>{n}</div>
           </div>))}
         </div>
       </div>
@@ -133,7 +133,7 @@ function AdminPage({lang}){
       <div style={{background:T.surface,borderRadius:T.cardRadius,padding:20,border:`1px solid ${T.border}`}}>
         <div style={{fontSize:12,fontWeight:700,color:T.text,marginBottom:12}}>📈 월별 매출</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:6,height:100}}>
-          {[8.2,9.5,10.8,11.2,12.5,13.8,14.2,15.0,15.8,16.5,17.2,18.5].map((v,i)=>(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:"100%",height:`${v/18.5*100}%`,background:`linear-gradient(180deg,${T.accent},${T.accent}60)`,borderRadius:3,minHeight:3}}/><span style={{fontSize:7,color:T.textDim}}>{i+1}</span></div>))}
+          {[8.2,9.5,10.8,11.2,12.5,13.8,14.2,15.0,15.8,16.5,17.2,18.5].map((v,i)=>(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:"100%",height:`${v/18.5*100}%`,background:`linear-gradient(180deg,${T.accent},${T.accent}60)`,borderRadius:3,minHeight:3}}/><span style={{fontSize:9,color:T.textDim}}>{i+1}</span></div>))}
         </div>
       </div>
     </>}
@@ -162,7 +162,7 @@ function AdminPage({lang}){
           <span style={{color:T.textDim,fontFamily:"monospace"}}>{tgt}</span>
         </div>))}
       </div>
-      <div style={{fontSize:8,color:T.textDim,marginTop:6,textAlign:"right"}}>최근 10건 / 전체 2,847건</div>
+      <div style={{fontSize:9,color:T.textDim,marginTop:6,textAlign:"right"}}>최근 10건 / 전체 2,847건</div>
     </>}
 
     {tab==='settings'&&<>
