@@ -116,6 +116,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     uptime: Math.round((Date.now() - state.startedAt) / 1000),
+    buildCommit: process.env.RENDER_GIT_COMMIT || 'local',
     modules: state.modules,
     requests: state.totalRequests,
     dataStore: dataStore ? dataStore.getStatus() : null,
@@ -131,6 +132,48 @@ app.get('/api/test/:id', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// -- KOSIS 테이블 자동 발견 (짧은 라우트) --
+app.get('/api/kosis-search', async (req, res) => {
+  const kosisKey = process.env.KOSIS_API_KEY;
+  if (!kosisKey) return res.json({ error: 'KOSIS_API_KEY not set' });
+  
+  const keywords = (req.query.q || '수출입,소비자물가,산업생산,소매판매,실업률,고용률,경기종합지수,설비투자,주택가격,출산,제조업가동률,미분양,생산자물가,국가채무,건설기성,컨테이너,외국인직접투자,서비스업생산,신규수주,제조업재고,카드매출').split(',');
+  const results = {};
+  
+  for (const kw of keywords) {
+    try {
+      const url = `https://kosis.kr/openapi/statisticsList.do?method=getList&vwCd=MT_ZTITLE&parentListId=&apiKey=${encodeURIComponent(kosisKey)}&format=json&jsonVD=Y&searchNm=${encodeURIComponent(kw.trim())}`;
+      const r = await new Promise((resolve, reject) => {
+        require('https').get(url, { timeout: 8000 }, (resp) => {
+          const ct = resp.headers['content-type'] || '';
+          let d = ''; resp.on('data', c => d += c);
+          resp.on('end', () => {
+            if (!ct.includes('json') && !ct.includes('text/plain')) {
+              resolve({ blocked: true, contentType: ct, snippet: d.slice(0, 100) });
+              return;
+            }
+            try { resolve(JSON.parse(d)); } catch (e) { resolve({ parseError: e.message, snippet: d.slice(0, 200) }); }
+          });
+        }).on('error', e => reject(e));
+      });
+      if (Array.isArray(r)) {
+        results[kw.trim()] = r.slice(0, 3).map(x => {
+          const e = {};
+          for (const [k, v] of Object.entries(x)) { if (v && v !== '') e[k] = v; }
+          return e;
+        });
+      } else {
+        results[kw.trim()] = r;
+      }
+    } catch (e) {
+      results[kw.trim()] = { error: e.message };
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  
+  res.json({ total: keywords.length, results });
 });
 
 // -- 회원가입 --
@@ -606,6 +649,13 @@ async function start() {
     const server = app.listen(PORT, () => {
       console.log(`\n  🚀 http://localhost:${PORT}`);
       console.log(`  📡 API: http://localhost:${PORT}/api/health`);
+      console.log(`  🔖 Commit: ${process.env.RENDER_GIT_COMMIT || 'local'}`);
+      // Route listing
+      const routes = [];
+      app._router.stack.forEach(r => {
+        if (r.route) routes.push(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
+      });
+      console.log(`  📋 Routes (${routes.length}): ${routes.filter(r => r.includes('/api/')).join(' | ')}`);
       console.log('══════════════════════════════════════\n');
     });
 
