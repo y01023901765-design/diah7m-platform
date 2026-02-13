@@ -1,0 +1,35 @@
+/* DIAH-7M Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: #04060e;
+  color: #e8ecf4;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tierPulse {
+  0%, 100% { box-shadow: 0 4px 20px #00d4ff40; }
+  50% { box-shadow: 0 4px 30px #00d4ff70; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0f1e; }
+::-webkit-scrollbar-thumb { background: #1e2a42; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a3a58; }
