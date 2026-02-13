@@ -2,93 +2,126 @@ import { useState } from 'react';
 import T from '../theme';
 import { t } from '../i18n';
 import TierLock from '../components/TierLock';
+import { STOCKS, ARCHETYPE_LABELS, TIER_LABELS } from '../data/stocks';
 
 function StockPage({user,lang}){
   const L=lang||'ko';
-  const stocks=[
-    {t:'TSLA',n:'Tesla',c:'🇺🇸',sec:'EV/Energy',fac:6,sat:['VIIRS','NO₂','Thermal','SAR'],sc:74,g:'주의',d:'+2.3%',p:'$248.50'},
-    {t:'005930',n:L==='ko'?'삼성전자':'Samsung',c:'🇰🇷',sec:'Semiconductor',fac:5,sat:['VIIRS','NO₂','Thermal'],sc:82,g:'양호',d:'-0.8%',p:'₩72,400'},
-    {t:'TSM',n:'TSMC',c:'🇹🇼',sec:'Semiconductor',fac:8,sat:['VIIRS','NO₂','Thermal','SAR'],sc:88,g:'양호',d:'+1.5%',p:'$178.30'},
-    {t:'NVDA',n:'NVIDIA',c:'🇺🇸',sec:'AI/GPU',fac:3,sat:['VIIRS','NO₂'],sc:71,g:'주의',d:'+4.2%',p:'$721.60'},
-    {t:'ASML',n:'ASML',c:'🇳🇱',sec:'Semiconductor Equip',fac:2,sat:['VIIRS','NO₂','SAR'],sc:79,g:'양호',d:'+0.9%',p:'€654.20'},
-    {t:'000660',n:L==='ko'?'SK하이닉스':'SK Hynix',c:'🇰🇷',sec:'Memory',fac:4,sat:['VIIRS','NO₂','Thermal'],sc:68,g:'주의',d:'-1.2%',p:'₩198,500'},
-  ];
-  const tiers=[
-    {n:L==='ko'?'킬러 10종목':'Killer 10',cnt:10,desc:L==='ko'?'위성 직접 감시 가능 · 시장 관심 최고':'Direct satellite monitoring · Highest market interest',c:T.danger},
-    {n:L==='ko'?'섹터 40종목':'Sector 40',cnt:40,desc:L==='ko'?'핵심 산업 대표 종목 · 공급망 추적':'Key sector leaders · Supply chain tracking',c:T.warn},
-    {n:L==='ko'?'글로벌 60종목':'Global 60',cnt:60,desc:L==='ko'?'21개국 주요 종목 · 매크로 연결':'21 countries · Macro correlation',c:T.info},
-  ];
+  const [search,setSearch]=useState('');
+  const [filterTier,setFilterTier]=useState(0); // 0=all
+  const [filterArch,setFilterArch]=useState('');
+
+  const getName=s=>L==='ko'?s.n:(s.ne||s.n);
+
+  // Filter + Search
+  const filtered=STOCKS.filter(s=>{
+    if(filterTier && s.tier!==filterTier) return false;
+    if(filterArch && s.a!==filterArch) return false;
+    if(search){
+      const q=search.toLowerCase();
+      return getName(s).toLowerCase().includes(q)||s.sid.toLowerCase().includes(q)||s.sec.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // Stats
+  const countries=[...new Set(STOCKS.map(s=>s.c))].length;
+  const totalFac=STOCKS.reduce((a,s)=>a+s.fac,0);
+
   return(<div style={{maxWidth:780,margin:"0 auto",padding:"20px 16px"}}>
     {/* Header */}
-    <div style={{marginBottom:20}}>
+    <div style={{marginBottom:16}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
         <span style={{fontSize:20}}>📈</span>
         <span style={{fontSize:18,fontWeight:800,color:T.text}}>{L==='ko'?'주식종목 위성감시':'Stock Satellite Monitor'}</span>
         <span style={{fontSize:9,padding:"2px 8px",borderRadius:6,background:`${T.sat}15`,color:T.sat,fontWeight:600}}>Phase 2</span>
       </div>
-      <div style={{fontSize:11,color:T.textMid}}>{L==='ko'?'100종목 · 276시설 · 21개국 · 위성 직접 감시':'100 stocks · 276 facilities · 21 countries · Direct satellite monitoring'}</div>
+      <div style={{fontSize:11,color:T.textMid}}>
+        {STOCKS.length}{L==='ko'?'종목':'stocks'} · {totalFac}{L==='ko'?'시설':'facilities'} · {countries}{L==='ko'?'개국':'countries'} · {L==='ko'?'위성 직접 감시':'Direct satellite monitoring'}
+      </div>
     </div>
 
-    {/* 3-Tier Structure */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
-      {tiers.map(tr=>(<div key={tr.n} style={{background:T.surface,borderRadius:T.cardRadius,padding:16,border:`1px solid ${tr.c}20`}}>
-        <div style={{fontSize:24,fontWeight:900,color:tr.c,fontFamily:"monospace"}}>{tr.cnt}</div>
-        <div style={{fontSize:12,fontWeight:700,color:T.text,marginTop:4}}>{tr.n}</div>
-        <div style={{fontSize:9,color:T.textDim,marginTop:4,lineHeight:1.5}}>{tr.desc}</div>
-      </div>))}
+    {/* 3-Tier Cards */}
+    <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+      {[1,2,3].map(tier=>{
+        const cnt=STOCKS.filter(s=>s.tier===tier).length;
+        const lb=TIER_LABELS[tier];
+        const active=filterTier===tier;
+        return(<div key={tier} onClick={()=>setFilterTier(active?0:tier)}
+          style={{background:active?`${lb.color}15`:T.surface,borderRadius:T.cardRadius,padding:14,
+          border:`1px solid ${active?lb.color:T.border}`,cursor:"pointer",transition:"all .2s"}}>
+          <div style={{fontSize:22,fontWeight:900,color:lb.color,fontFamily:"monospace"}}>{cnt}</div>
+          <div style={{fontSize:11,fontWeight:700,color:T.text,marginTop:2}}>{L==='ko'?lb.ko:lb.en}</div>
+        </div>);
+      })}
+    </div>
+
+    {/* Search + Archetype Filter */}
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <input value={search} onChange={e=>setSearch(e.target.value)}
+        placeholder={L==='ko'?'🔍 종목명·티커·섹터 검색':'🔍 Search name, ticker, sector'}
+        style={{flex:1,minWidth:200,padding:"8px 12px",borderRadius:8,border:`1px solid ${T.border}`,
+        background:T.surface,color:T.text,fontSize:12,outline:"none"}}/>
+      <div style={{display:"flex",gap:4}}>
+        {Object.entries(ARCHETYPE_LABELS).map(([k,v])=>{
+          const active=filterArch===k;
+          return(<button key={k} onClick={()=>setFilterArch(active?'':k)}
+            style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${active?T.accent:T.border}`,
+            background:active?`${T.accent}15`:T.surface,color:active?T.accent:T.textDim,
+            fontSize:9,fontWeight:600,cursor:"pointer"}}>{L==='ko'?v.ko:v.en}</button>);
+        })}
+      </div>
+    </div>
+
+    {/* Result Count */}
+    <div style={{fontSize:10,color:T.textDim,marginBottom:8}}>
+      {filtered.length}/{STOCKS.length} {L==='ko'?'종목 표시':'shown'}
     </div>
 
     {/* Stock List */}
-    <div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:10}}>{L==='ko'?'🔥 킬러 종목 미리보기':'🔥 Killer Stocks Preview'}</div>
-    {stocks.map(s=>{const col=s.g==='양호'?T.good:T.warn;return(
-      <div key={s.t} style={{background:T.surface,borderRadius:T.smRadius,padding:"14px 16px",border:`1px solid ${T.border}`,marginBottom:8}}>
+    {filtered.slice(0,user?.plan==='PRO'||user?.plan==='ENTERPRISE'?100:10).map(s=>{
+      const tierLb=TIER_LABELS[s.tier];
+      return(
+      <div key={s.id} style={{background:T.surface,borderRadius:T.smRadius,padding:"12px 14px",
+        border:`1px solid ${T.border}`,marginBottom:6,animation:"fadeIn 0.2s ease"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:14}}>{s.c}</span>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:13,fontWeight:700,color:T.text}}>{s.n}</span>
-                <span style={{fontSize:9,color:T.textDim,fontFamily:"monospace"}}>{s.t}</span>
+                <span style={{fontSize:12,fontWeight:700,color:T.text}}>{getName(s)}</span>
+                <span style={{fontSize:8,color:T.textDim,fontFamily:"monospace"}}>{s.sid}</span>
+                <span style={{fontSize:7,padding:"1px 5px",borderRadius:4,background:`${tierLb.color}15`,color:tierLb.color,fontWeight:700}}>T{s.tier}</span>
               </div>
-              <div style={{fontSize:9,color:T.textDim}}>{s.sec} · {s.fac}{L==='ko'?'개 시설':' facilities'}</div>
-            </div>
-          </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:15,fontWeight:800,color:T.text,fontFamily:"monospace"}}>{s.p}</div>
-            <div style={{fontSize:10,color:parseFloat(s.d)>0?T.good:T.danger,fontWeight:600}}>{s.d}</div>
-          </div>
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10}}>
-          <div style={{display:"flex",gap:4}}>
-            {s.sat.map(st=>(<span key={st} style={{fontSize:8,padding:"2px 6px",borderRadius:4,background:`${T.sat}12`,color:T.sat,fontWeight:600}}>🛰️ {st}</span>))}
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${T.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:20,height:20,borderRadius:10,background:T.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:col}}>{s.sc}</div>
+              <div style={{fontSize:9,color:T.textDim}}>{s.sec} · {s.fac}{L==='ko'?'시설':' fac'} · {L==='ko'?ARCHETYPE_LABELS[s.a].ko:ARCHETYPE_LABELS[s.a].en}</div>
             </div>
           </div>
         </div>
-      </div>
-    );})}
+        <div style={{display:"flex",gap:3,marginTop:6,flexWrap:"wrap"}}>
+          {s.sat.map(st=>(<span key={st} style={{fontSize:7,padding:"2px 5px",borderRadius:3,background:`${T.sat}12`,color:T.sat,fontWeight:600}}>🛰️{st}</span>))}
+        </div>
+      </div>);
+    })}
 
-    {/* Coming Soon */}
-    <TierLock plan="FREE" req="PRO" lang={L}>
-      <div style={{background:T.surface,borderRadius:T.cardRadius,padding:40,textAlign:"center"}}>
-        <div style={{fontSize:16,fontWeight:800,color:T.text,marginBottom:8}}>{L==='ko'?'나머지 94종목':'94 More Stocks'}</div>
-        <div style={{fontSize:11,color:T.textMid}}>Sector 40 + Global 60</div>
-      </div>
-    </TierLock>
+    {/* TierLock for non-PRO */}
+    {filtered.length>10 && user?.plan!=='PRO' && user?.plan!=='ENTERPRISE' && (
+      <TierLock plan={user?.plan||'FREE'} req="PRO" lang={L}>
+        <div style={{background:T.surface,borderRadius:T.cardRadius,padding:30,textAlign:"center"}}>
+          <div style={{fontSize:14,fontWeight:800,color:T.text,marginBottom:6}}>
+            +{filtered.length-10} {L==='ko'?'종목 더보기':'more stocks'}
+          </div>
+          <div style={{fontSize:10,color:T.textMid}}>PRO {L==='ko'?'플랜에서 전체 종목 감시':'plan for full stock monitoring'}</div>
+        </div>
+      </TierLock>
+    )}
 
     {/* Video Funnel */}
-    <div style={{background:`${T.accent}08`,borderRadius:T.cardRadius,padding:20,border:`1px solid ${T.accent}15`,marginTop:16}}>
-      <div style={{fontSize:12,fontWeight:700,color:T.accent,marginBottom:8}}>📺 YouTube {L==='ko'?'연동 콘텐츠':'Content'}</div>
-      <div style={{fontSize:11,color:T.textMid,lineHeight:1.6}}>{L==='ko'?
-        '첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 종목 시그널은 구독자 전용.':
-        'First videos: Tesla → TSMC → Samsung. Free factory satellite views, detailed stock signals for subscribers only.'}</div>
+    <div style={{background:`${T.accent}08`,borderRadius:T.cardRadius,padding:16,border:`1px solid ${T.accent}15`,marginTop:14}}>
+      <div style={{fontSize:11,fontWeight:700,color:T.accent,marginBottom:6}}>📺 YouTube {L==='ko'?'연동 콘텐츠':'Content'}</div>
+      <div style={{fontSize:10,color:T.textMid,lineHeight:1.6}}>{L==='ko'?
+        '첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 시그널은 구독자 전용.':
+        'First videos: Tesla → TSMC → Samsung. Free factory satellite views, detailed signals for subscribers only.'}</div>
     </div>
   </div>);
 }
-
-
 
 export default StockPage;
