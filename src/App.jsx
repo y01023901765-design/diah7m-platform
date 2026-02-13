@@ -22,7 +22,6 @@ const RESPONSIVE_CSS = `
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
   @keyframes tierPulse { 0%,100% { box-shadow: 0 4px 20px #00d4ff40; } 50% { box-shadow: 0 4px 30px #00d4ff70; } }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${T.bg0}; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: ${T.bg1}; }
   ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }

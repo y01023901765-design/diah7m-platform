@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import T from '../theme';
-import { t } from '../i18n';
+import { t, gc } from '../i18n';
 import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
 import { SatEvidencePanel } from '../components/Satellite';
-import TierLock from '../components/TierLock';
+import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components/TierLock';
+import { TIER_ACCESS, tierLevel } from '../data/gauges';
 import { SAT_EV } from '../data/satellite';
 
 function DashboardPage({user,onNav,lang}){
@@ -29,7 +30,7 @@ function DashboardPage({user,onNav,lang}){
     </div>
     {tab==='overview'&&<>
       {/* Score + State + Radar */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         <div style={{background:`linear-gradient(135deg,${T.bg3},${T.surface})`,borderRadius:T.cardRadius,padding:20,border:`1px solid ${T.border}`}}>
           <div style={{fontSize:10,color:T.textDim}}>{t('dateLabel',L)}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:8}}>
@@ -46,7 +47,7 @@ function DashboardPage({user,onNav,lang}){
         </div>
       </div>
       {/* Dual Lock + Delta */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         <DualLockIndicator lang={L}/>
         <DeltaAnalysis lang={L}/>
       </div>
@@ -63,14 +64,14 @@ function DashboardPage({user,onNav,lang}){
       {/* Satellite summary */}
       <div style={{background:`${T.sat}08`,borderRadius:T.cardRadius,padding:20,marginBottom:16,border:`1px solid ${T.sat}25`}}>
         <div style={{fontSize:13,fontWeight:700,color:T.sat,marginBottom:10}}>{t('satTimeline',L)}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div style={{background:`${T.good}06`,borderRadius:8,padding:12,border:`1px solid ${T.good}15`}}><div style={{fontSize:10,fontWeight:700,color:T.good,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:10,color:T.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
           <div style={{background:`${T.warn}06`,borderRadius:8,padding:12,border:`1px solid ${T.warn}15`}}><div style={{fontSize:10,fontWeight:700,color:T.warn,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:10,color:T.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
         </div>
       </div>
       {/* 9 Systems */}
       <div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:12}}>{t("nineSystems",L)}</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+      <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
         {Object.entries(SYS).map(([k,s])=>{const col=gc(s.g);return(<div key={k} style={{background:`${s.color}08`,borderRadius:8,padding:"12px 10px",border:`1px solid ${s.color}18`}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:16}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${T.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:T.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:col}}>{s.sc}</div></div></div><div style={{fontSize:12,fontWeight:700,color:T.text,marginTop:4}}>{sysN(k,L)}</div><div style={{fontSize:9,color:T.textDim}}>{sysB(k,L)} · {s.keys.length} {t('gaugesLabel',L)}</div></div>);})}
       </div>
     </>}
@@ -89,7 +90,7 @@ function DashboardPage({user,onNav,lang}){
     {tab==='satellite'&&<>
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:T.text}}>{t("satStatus",L)}</div></div>
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
         {Object.values(D).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:`${T.sat}08`,borderRadius:T.cardRadius,padding:16,border:`1px solid ${T.sat}25`}}><div style={{fontSize:13,fontWeight:700,color:T.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:9,color:T.sat}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:T.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:10,color:T.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:10,color:T.textMid,marginTop:4}}>{g.note}</div></div>);})}
       </div>
       </TierLock>

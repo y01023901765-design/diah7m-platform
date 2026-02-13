@@ -2,6 +2,7 @@ import { useState } from 'react';
 import T from '../theme';
 import { t, LANG_LIST } from '../i18n';
 import LangSelector from '../components/LangSelector';
+import { SYS, sysN, sysB } from '../components/TierLock';
 
 function LandingPage({onNavigate,lang,setLang}){
   const L=lang||'ko';
@@ -67,7 +68,7 @@ function LandingPage({onNavigate,lang,setLang}){
           <div style={{fontSize:11,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>WHY DIAH-7M</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('whyTitle',L)}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
+        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
           {featList.map(f=>(<div key={f.title} style={{background:T.surface,borderRadius:T.cardRadius,padding:24,border:`1px solid ${T.border}`}}>
             <div style={{fontSize:28,marginBottom:12}}>{f.icon}</div>
             <div style={{fontSize:15,fontWeight:700,color:f.color,marginBottom:8}}>{f.title}</div>
@@ -100,7 +101,7 @@ function LandingPage({onNavigate,lang,setLang}){
           <div style={{fontSize:11,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>DATA SOURCES</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>4 {t('satTab',L)} — {t('satCost',L)}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+        <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
           {[
             {icon:"🛰️",name:"VIIRS DNB",sat:"Suomi NPP",freq:t("freqDaily",L),res:"750m"},
             {icon:"💨",name:"Sentinel-5P",sat:"TROPOMI",freq:t("freqDaily",L),res:"7km"},
@@ -125,7 +126,7 @@ function LandingPage({onNavigate,lang,setLang}){
           <div style={{fontSize:11,fontWeight:700,color:T.warn,letterSpacing:2,marginBottom:8}}>9 BODY SYSTEMS</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('nineSystems',L)}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
           {Object.entries(SYS).map(([k,s])=>(<div key={k} style={{background:`${s.color}06`,borderRadius:T.cardRadius,padding:"18px 16px",border:`1px solid ${s.color}15`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:20}}>{s.icon}</span>
@@ -144,7 +145,7 @@ function LandingPage({onNavigate,lang,setLang}){
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('pricingTitle',L)}</h2>
           <p style={{fontSize:13,color:T.textMid,marginTop:10}}>{t('pricingSub',L)}</p>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+        <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
           {plans.map(p=>(<div key={p.id} style={{background:T.surface,borderRadius:T.cardRadius,padding:24,border:`2px solid ${p.pop?T.accent:T.border}`,position:"relative",display:"flex",flexDirection:"column"}}>
             {p.pop&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:800,padding:"3px 14px",borderRadius:10,background:T.accent,color:T.bg0}}>POPULAR</div>}
             <div style={{fontSize:24,marginBottom:8}}>{p.icon}</div>

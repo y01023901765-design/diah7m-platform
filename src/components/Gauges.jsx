@@ -2,14 +2,18 @@ import { useState } from 'react';
 import T from '../theme';
 import { t, gc, gi } from '../i18n';
 import { SatBadge, SatXrefBanner, SatEvidencePanel, SparkLine } from './Satellite';
-import TierLock from './TierLock';
+import TierLock, { isSat, SAT_META, D, gN, sysN, sysB, sysM } from './TierLock';
+import { TIER_ACCESS, tierLevel } from '../data/gauges';
 import { SAT_EV } from '../data/satellite';
+
+// Tier/label data for gauge badges
+const TIER={};const TIER_LABEL={T1:{ko:'직접관측',color:T.sat},T2:{ko:'물리인과',color:T.accent},T3:{ko:'간접참고',color:T.warn}};
 
 function GaugeRow({d,open,toggle,lang}){
   const L=lang||'ko';
   const col=gc(d.g), sat=isSat(d.c);
   return(
-    <div style={{background:sat?`linear-gradient(135deg,${T.sat}06,${T.bg2})`:T.surface,borderRadius:T.smRadius,border:`1px solid ${sat?T.sat+"25":T.border}`,marginBottom:6,overflow:"hidden",cursor:"pointer",transition:"all .2s"}} onClick={toggle}>
+    <div style={{background:sat?`linear-gradient(135deg,${T.sat}06,${T.bg2})`:T.surface,borderRadius:T.smRadius,border:`1px solid ${sat?T.sat+"25":T.border}`,marginBottom:6,overflow:"hidden",cursor:"pointer",transition:"all .2s",position:"relative"}} onClick={toggle}>
       {sat&&<div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:`linear-gradient(90deg,transparent,${T.sat},transparent)`}}/>}
       <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,position:"relative"}}>
         <span style={{fontSize:12,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:sat?T.sat:T.textMid,width:32,flexShrink:0}}>{d.c}</span>

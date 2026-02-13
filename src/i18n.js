@@ -35,11 +35,14 @@ const LANG_LIST=[
   {code:'he',flag:'🇮🇱',name:'עברית'},
 ];
 
+let _cachedLang=null;
 const detectLang=()=>{
+  if(_cachedLang)return _cachedLang;
   const saved=typeof localStorage!=='undefined'&&localStorage.getItem('diah7m-lang');
-  if(saved)return saved;
+  if(saved){_cachedLang=saved;return saved;}
   const nav=typeof navigator!=='undefined'?navigator.language?.slice(0,2):'ko';
-  return LOCALES[nav]?nav:'en';
+  _cachedLang=LOCALES[nav]?nav:'en';
+  return _cachedLang;
 };
 
 // Source of truth

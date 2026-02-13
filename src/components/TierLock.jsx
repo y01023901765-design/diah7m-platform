@@ -137,4 +137,4 @@ const gN=(code,L)=>t('g'+code,L);
 // ═══ LANG SELECTOR ═══
 
 export default TierLock;
-export { TIER_ACCESS, tierLevel };
+export { TIER_ACCESS, tierLevel, SYS, SAT_META, isSat, D, sysN, sysB, sysM, gN, LEAD, EV_STYLE, TP, SAT_XREF };

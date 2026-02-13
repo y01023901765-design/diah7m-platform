@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import T from '../theme';
 import { t } from '../i18n';
+import { SYS, sysN } from '../components/TierLock';
 import ProductMgmt from './ProductMgmt';
 
 function AdminPage({lang}){
@@ -25,7 +26,7 @@ function AdminPage({lang}){
     </div>
 
     {tab==='kpi'&&<>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+      <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
         {[["총 회원","1,247",T.accent,"+12%↑"],["월 매출","₩18.5M",T.good,"+8.3%↑"],["활성 구독","892",T.info,"71.5%"],["마일리지","1.2M P",T.warn,"+15%↑"]].map(([n,v,c,d])=>(<div key={n} style={{background:T.surface,borderRadius:T.cardRadius,padding:16,border:`1px solid ${T.border}`}}><div style={{fontSize:10,color:T.textDim}}>{n}</div><div style={{fontSize:22,fontWeight:800,color:c,marginTop:6,fontFamily:"monospace"}}>{v}</div><div style={{fontSize:10,color:T.good,marginTop:4}}>{d}</div></div>))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>

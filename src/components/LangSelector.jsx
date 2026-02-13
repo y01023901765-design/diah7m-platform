@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import T from '../theme';
 import { LANG_LIST } from '../i18n';
 

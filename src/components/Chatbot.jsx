@@ -31,7 +31,7 @@ function ChatbotWidget({lang}){
     </div>
     <div style={{padding:"10px 12px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
       <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder={t('chatPlaceholder',L)} style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1px solid ${T.border}`,background:T.bg2,color:T.text,fontSize:12,outline:"none"}}/>
-      <button onClick={()=>send()} style={{padding:"10px 16px",borderRadius:10,border:"none",background:T.accent,color:"#fff",fontWeight:700,cursor:"pointer",fontSize:12}}>{t('chatSend',lang)}</button>
+      <button onClick={()=>send()} style={{padding:"10px 16px",borderRadius:10,border:"none",background:T.accent,color:T.white,fontWeight:700,cursor:"pointer",fontSize:12}}>{t('chatSend',L)}</button>
     </div>
   </div>);
 }
