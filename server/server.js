@@ -122,6 +122,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// -- 게이지 개별 테스트 (임시 디버그) --
+app.get('/api/test/:id', async (req, res) => {
+  try {
+    if (!pipeline || !pipeline.testGauge) return res.status(503).json({ error: 'Pipeline unavailable' });
+    const result = await pipeline.testGauge(req.params.id, process.env.ECOS_API_KEY, process.env.KOSIS_API_KEY);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // -- 회원가입 --
 app.post('/api/v1/auth/register', async (req, res) => {
   try {
@@ -405,6 +416,35 @@ app.get('/api/v1/data/test-gauge/:id', async (req, res) => {
   const kosisKey = process.env.KOSIS_API_KEY;
   const result = await pipeline.testGauge(req.params.id, ecosKey, kosisKey);
   res.json(result);
+});
+
+// -- KOSIS 테이블 검색 (올바른 tblId 발견용) --
+app.get('/api/v1/data/kosis-search', async (req, res) => {
+  const kosisKey = process.env.KOSIS_API_KEY;
+  const keywords = (req.query.q || '수출입,소비자물가,산업생산,소매판매,실업률,고용률,경기종합지수,설비투자,주택가격,출산,제조업가동률,미분양,생산자물가,경상수지,국가채무,건설기성,컨테이너,외국인직접투자,서비스업생산,신규수주,제조업재고').split(',');
+  const results = {};
+  
+  for (const kw of keywords) {
+    try {
+      const url = `https://kosis.kr/openapi/statisticsList.do?method=getList&vwCd=MT_ZTITLE&parentListId=&apiKey=${encodeURIComponent(kosisKey)}&format=json&jsonVD=Y&searchNm=${encodeURIComponent(kw.trim())}`;
+      const r = await new Promise((resolve, reject) => {
+        require('https').get(url, { timeout: 8000 }, (resp) => {
+          let d = ''; resp.on('data', c => d += c);
+          resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve({ parseError: d.slice(0, 200) }); } });
+        }).on('error', reject);
+      });
+      if (Array.isArray(r)) {
+        results[kw.trim()] = r.slice(0, 5).map(x => ({ orgId: x.ORG_ID, tblId: x.TBL_ID, tblNm: x.TBL_NM, prdSe: x.PRD_SE }));
+      } else {
+        results[kw.trim()] = r;
+      }
+    } catch (e) {
+      results[kw.trim()] = { error: e.message };
+    }
+    await new Promise(r => setTimeout(r, 200));
+  }
+  
+  res.json({ total: keywords.length, results });
 });
 
 // -- 전체 게이지 API 원시 응답 진단 --
