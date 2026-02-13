@@ -398,11 +398,8 @@ app.get('/api/v1/data/mapping', (req, res) => {
   res.json(pipeline.diagnoseMapping());
 });
 
-// -- 개별 게이지 API 테스트 (디버그용) --
-app.get('/api/v1/data/test-gauge/:id',
-  auth?.authMiddleware || ((req, res, next) => next()),
-  auth?.adminMiddleware || ((req, res, next) => next()),
-  async (req, res) => {
+// -- 개별 게이지 API 테스트 (디버그용, 임시 공개) --
+app.get('/api/v1/data/test-gauge/:id', async (req, res) => {
   if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
   const ecosKey = process.env.ECOS_API_KEY;
   const kosisKey = process.env.KOSIS_API_KEY;
