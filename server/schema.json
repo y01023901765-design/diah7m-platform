@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://diah7m.com/schema/report-v1.1.json",
+  "title": "DIAH-7M Report Schema v1.1",
+  "description": "Master contract for all DIAH-7M reports. 3 channels × 5 frequencies × 4 products",
+
+  "type": "object",
+  "required": ["report_id", "product_type", "frequency", "context", "systems", "overall", "metadata"],
+  "additionalProperties": false,
+
+  "properties": {
+    "report_id": { "type": "string", "pattern": "^RPT-[A-Z]{2,4}-[0-9]{8}-[A-Z0-9]+$" },
+    "product_type": { "$ref": "#/$defs/ProductType" },
+    "frequency": { "$ref": "#/$defs/Frequency" },
+    "frequency_window": { "$ref": "#/$defs/FrequencyWindow" },
+    "context": { "$ref": "#/$defs/Context" },
+    "systems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SystemDiagnosis" },
+      "minItems": 1,
+      "maxItems": 9
+    },
+    "gauges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Gauge" }
+    },
+    "cross_signals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/CrossSignal" }
+    },
+    "dual_lock": { "$ref": "#/$defs/DualLock" },
+    "delta": { "$ref": "#/$defs/Delta" },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ActionSignal" },
+      "maxItems": 10
+    },
+    "verdict": { "type": "string", "maxLength": 2000 },
+    "overall": { "$ref": "#/$defs/OverallScore" },
+    "satellite_evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SatelliteEvidence" }
+    },
+    "metadata": { "$ref": "#/$defs/Metadata" }
+  },
+
+  "$defs": {
+    "ProductType": {
+      "type": "string",
+      "enum": ["national", "stock", "corporate", "sector"],
+      "description": "national=L4 body systems, stock=L2 causal chain, corporate/sector=L2~L3"
+    },
+
+    "Frequency": {
+      "type": "string",
+      "enum": ["daily", "weekly", "monthly", "quarterly", "annual"]
+    },
+
+    "FrequencyWindow": {
+      "type": "object",
+      "required": ["frequency", "delta_only", "full_diagnosis"],
+      "properties": {
+        "frequency": { "$ref": "#/$defs/Frequency" },
+        "delta_only": { "type": "boolean" },
+        "trend_kernel_days": { "type": ["integer", "null"] },
+        "full_diagnosis": { "type": "boolean" },
+        "include_history": { "type": "boolean" },
+        "include_forecast": { "type": "boolean" }
+      }
+    },
+
+    "Context": {
+      "type": "object",
+      "required": ["country_code", "date", "tier_min"],
+      "properties": {
+        "country_code": { "type": "string", "pattern": "^[A-Z]{2,3}$" },
+        "country_name": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "period_label": { "type": "string" },
+        "tier_min": { "type": "string", "enum": ["FREE", "BASIC", "PRO", "ENTERPRISE"] },
+        "cross_level": { "$ref": "#/$defs/CrossLevel" },
+        "stock_code": { "type": ["string", "null"] },
+        "company_name": { "type": ["string", "null"] }
+      }
+    },
+
+    "CrossLevel": {
+      "type": "string",
+      "enum": ["L0", "L1", "L2", "L3", "L4", "L5", "L6"],
+      "description": "L0=가계, L1=골목상권, L2=공장/종목, L3=지자체, L4=국가, L5=대륙, L6=세계"
+    },
+
+    "SystemDiagnosis": {
+      "type": "object",
+      "required": ["system_id", "system_name", "body_name", "score", "level", "gauge_count"],
+      "properties": {
+        "system_id": { "type": "string", "pattern": "^[A-Z]$" },
+        "system_name": { "type": "string" },
+        "body_name": { "type": "string" },
+        "body_metaphor": { "type": "string" },
+        "score": { "type": "number", "minimum": 0, "maximum": 5 },
+        "level": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "status": { "type": "string", "enum": ["정상", "관측", "트리거", "봉쇄", "위기"] },
+        "gauge_count": { "type": "integer", "minimum": 0 },
+        "tier_min": { "type": "string", "enum": ["FREE", "BASIC", "PRO", "ENTERPRISE"] }
+      }
+    },
+
+    "Gauge": {
+      "type": "object",
+      "required": ["gauge_id", "name", "system_id", "value", "unit", "status"],
+      "properties": {
+        "gauge_id": { "type": "string", "pattern": "^[A-Z][0-9]{1,2}(_G)?$" },
+        "name": { "type": "string" },
+        "system_id": { "type": "string" },
+        "value": { "type": ["number", "null"] },
+        "unit": { "type": "string" },
+        "status": { "type": "string", "enum": ["양호", "주의", "경보"] },
+        "severity_score": { "$ref": "#/$defs/SeverityScore" },
+        "prev_value": { "type": ["number", "null"] },
+        "delta_pct": { "type": ["number", "null"] },
+        "body_metaphor": { "type": "string" },
+        "satellite_tier": { "type": "string", "enum": ["T1", "T2", "T3", "none"] },
+        "tier_min": { "type": "string", "enum": ["FREE", "BASIC", "PRO", "ENTERPRISE"] },
+        "data_source": { "$ref": "#/$defs/DataSource" }
+      }
+    },
+
+    "SeverityScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "0=정상, 1=주의, 2=경보, 3=병목, 4=봉쇄의심, 5=단절"
+    },
+
+    "CrossSignal": {
+      "type": "object",
+      "required": ["pair", "severity"],
+      "properties": {
+        "pair": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 },
+        "severity": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "description": { "type": "string" }
+      }
+    },
+
+    "DualLock": {
+      "type": "object",
+      "required": ["active"],
+      "properties": {
+        "active": { "type": "boolean" },
+        "input_sealed": { "type": "boolean" },
+        "output_sealed": { "type": "boolean" },
+        "sealed_systems": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      }
+    },
+
+    "Delta": {
+      "type": "object",
+      "properties": {
+        "satellite_index": { "type": ["number", "null"] },
+        "market_index": { "type": ["number", "null"] },
+        "gap": { "type": ["number", "null"] },
+        "state": { "$ref": "#/$defs/DeltaState" },
+        "type": { "$ref": "#/$defs/DeltaType" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "DeltaState": {
+      "type": "string",
+      "enum": ["HOLD", "ALIGNED", "POS_GAP", "NEG_GAP", "CONFLICT"]
+    },
+
+    "DeltaType": {
+      "type": ["string", "null"],
+      "enum": [
+        "PHYSICAL_OK_MARKET_BAD", "PHYSICAL_BAD_DISCLOSURE_OK",
+        "CREDIT_BAD_PHYSICAL_OK", "MARKET_BUY_PHYSICAL_BAD",
+        "INSIDER_BAD_DISCLOSURE_OK", "CUSTOMS_BLOCK",
+        "COMPENSATION", "DEPLETION_CRITICAL", null
+      ]
+    },
+
+    "ActionSignal": {
+      "type": "object",
+      "required": ["action", "direction"],
+      "properties": {
+        "action": { "type": "string", "maxLength": 500 },
+        "direction": { "type": "string", "enum": ["BUY", "SELL", "AVOID", "HOLD", "WATCH"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "related_gauges": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "OverallScore": {
+      "type": "object",
+      "required": ["score", "level"],
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 5 },
+        "level": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "status": { "type": "string", "enum": ["정상", "관측", "트리거", "봉쇄", "위기"] },
+        "causal_stage": { "$ref": "#/$defs/CausalStage" }
+      }
+    },
+
+    "CausalStage": {
+      "type": "string",
+      "enum": ["normal", "factor", "onset", "cause", "manifest", "result"],
+      "description": "5-stage causal chain: normal→factor→onset→cause(이중봉쇄)→manifest→result(고착)"
+    },
+
+    "SatelliteEvidence": {
+      "type": "object",
+      "required": ["satellite", "indicator"],
+      "properties": {
+        "satellite": { "type": "string" },
+        "program": { "type": "string" },
+        "band": { "type": "string" },
+        "cycle": { "type": "string" },
+        "indicator": { "type": "string" },
+        "observation": { "type": "string" },
+        "divergence_score": { "type": "number", "minimum": -1, "maximum": 1 },
+        "cloud_mask": { "type": "boolean" },
+        "tier": { "type": "string", "enum": ["T1", "T2", "T3"] },
+        "related_gauges": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "DataSource": {
+      "type": "object",
+      "required": ["source_id", "source_name", "source_type"],
+      "properties": {
+        "source_id": { "type": "string" },
+        "source_name": { "type": "string" },
+        "source_type": {
+          "type": "string",
+          "enum": ["public_api", "satellite", "market_data", "derived", "manual", "market_flow", "credit", "insider", "sector_factor"]
+        },
+        "url": { "type": "string" },
+        "update_frequency": { "type": "string" }
+      }
+    },
+
+    "Metadata": {
+      "type": "object",
+      "required": ["generated_at", "engine_version", "schema_version"],
+      "properties": {
+        "generated_at": { "type": "string", "format": "date-time" },
+        "engine_version": { "type": "string" },
+        "schema_version": { "type": "string", "const": "1.1" },
+        "data_freshness": { "type": "string", "format": "date" },
+        "channel": { "type": "string", "enum": ["web", "pdf", "docx"] },
+        "language": { "type": "string" },
+        "compliance": {
+          "type": "object",
+          "properties": {
+            "prediction_prohibited": { "type": "boolean", "const": true },
+            "observation_only": { "type": "boolean", "const": true },
+            "disclaimer": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

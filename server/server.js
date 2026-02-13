@@ -235,6 +235,44 @@ app.post('/api/v1/diagnose', auth?.authMiddleware || ((req, res) => res.status(5
 });
 
 // -- 진단 이력 조회 --
+
+// ── Schema-compliant 보고서 생성 ──
+app.post('/api/v1/report', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
+  try {
+    if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine v1.1 required' });
+    const { gauges, thresholds, country_code, country_name, product_type, frequency, language } = req.body;
+    if (!gauges || typeof gauges !== 'object') return res.status(400).json({ error: 'Gauge data required' });
+
+    const report = engine.generateReport(gauges, {
+      thresholds: thresholds || {},
+      countryCode: country_code || 'KR',
+      countryName: country_name || '대한민국',
+      productType: product_type || 'national',
+      frequency: frequency || 'monthly',
+      tier: req.user?.plan || 'FREE',
+      language: language || 'ko',
+      channel: 'web',
+    });
+
+    // DB 저장
+    if (db) {
+      await db.run(
+        `INSERT INTO diagnoses (user_id, country, period, overall_level, overall_score, systems_json, cross_signals_json, dual_lock)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, report.context.country_code, report.context.period_label,
+         report.overall.level, report.overall.score,
+         JSON.stringify(report.systems), JSON.stringify(report.cross_signals),
+         report.dual_lock.active ? 1 : 0]
+      );
+    }
+
+    res.json(report);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// -- 진단 이력 조회 --
 app.get('/api/v1/diagnoses', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
   try {
     const rows = await db.all(

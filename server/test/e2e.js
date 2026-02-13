@@ -135,6 +135,23 @@ async function run() {
   const eng = await req('GET', '/api/v1/admin/engine', null, adminToken);
   assert('Engine status', eng.status === 200 && eng.body.engineLoaded === true);
 
+  // ── Schema-compliant Report Tests ──
+  // 17. Report generation
+  const rpt = await req('POST', '/api/v1/report', {
+    gauges: { I1: 2.5, E1: 658, C1: 1.2, S1: 98, F1: 0.5, P1: 2.0, O1: 3.1, M1: 74, D1: 0.72 },
+    country_code: 'KR', frequency: 'monthly'
+  }, token);
+  assert('Report 200', rpt.status === 200);
+  assert('Report has report_id', typeof rpt.body.report_id === 'string' && rpt.body.report_id.startsWith('RPT-'));
+  assert('Report has product_type', rpt.body.product_type === 'national');
+  assert('Report has 9 systems', Array.isArray(rpt.body.systems) && rpt.body.systems.length === 9);
+  assert('Report has overall', rpt.body.overall && typeof rpt.body.overall.score === 'number');
+  assert('Report has metadata', rpt.body.metadata && rpt.body.metadata.schema_version === '1.1');
+  assert('Report compliance', rpt.body.metadata.compliance && rpt.body.metadata.compliance.prediction_prohibited === true);
+  assert('Report context', rpt.body.context && rpt.body.context.country_code === 'KR');
+  assert('Report dual_lock', rpt.body.dual_lock && typeof rpt.body.dual_lock.active === 'boolean');
+  assert('Report causal_stage', ['normal','factor','onset','cause','manifest','result'].includes(rpt.body.overall.causal_stage));
+
   // Summary
   console.log(`\n${'═'.repeat(40)}`);
   console.log(`  ✅ ${passed} passed  ❌ ${failed} failed  (${passed + failed} total)`);

@@ -1,70 +1,116 @@
 /**
- * DIAH-7M Core Diagnosis Engine
- * ═══════════════════════════════════════════
- * 59게이지 × 9축 인체 시스템 진단
- * 교차신호 15쌍 + 이중봉쇄 판정
+ * DIAH-7M Core Diagnosis Engine v1.1
+ * ═══════════════════════════════════
+ * schema.json MASTER 계약 준수
+ * 59게이지 × 9축 → schema-compliant JSON 출력
  */
 
-// ── 9축 시스템 정의 ──
+// ── 9축 시스템 정의 (schema SystemDiagnosis 준수) ──
 const SYSTEMS = {
-  C: { name: '순환계(무역)', keys: ['C1','C2','C3','C4','C5'] },
-  R: { name: '호흡계(산업)', keys: ['R1','R2','R3','R4','R5','R6','R7'] },
-  D: { name: '소화계(소비)', keys: ['D1','D2','D3','D4','D5','D6'] },
-  N: { name: '신경계(금융시장)', keys: ['N1','N2','N3','N4','N5','N6'] },
-  E: { name: '내분비(재정)', keys: ['E1','E2','E3','E4','E5','E6'] },
-  I: { name: '면역계(금융안정)', keys: ['I1','I2','I3','I4','I5','I6','I7','I8','I9'] },
-  M: { name: '근골격(인프라)', keys: ['M1','M2','M3','M4','M5'] },
-  G: { name: '감각계(대외)', keys: ['G1','G2','G3','G4','G5','G6'] },
-  O: { name: '통합조절(정책)', keys: ['O1','O2','O3','O4','O5','O6'] },
+  C: { name:'통화·자금', body:'순환계', metaphor:'금리·환율·외환 = 혈액순환',
+       keys:['I1','I2','I3','I4','I5','I6'] },
+  R: { name:'무역·수출입', body:'호흡계', metaphor:'수출·수입·물동량 = 호흡',
+       keys:['E1','E2','E3','E4','E5','E6'] },
+  D: { name:'소비·내수', body:'소화계', metaphor:'소매·카드·서비스 = 영양분 흡수',
+       keys:['C1','C2','C3','C4','C5','C6'] },
+  N: { name:'정책·규제', body:'신경계', metaphor:'BSI·선행·정부지출 = 두뇌 명령',
+       keys:['S1','S2','S3','S4','S5','S6'] },
+  E: { name:'금융안정', body:'면역계', metaphor:'신용·스프레드·연체 = 면역 방어',
+       keys:['F1','F2','F3','F4','F5','F6','F7'] },
+  I: { name:'물가·재정', body:'내분비계', metaphor:'CPI·PPI·세수·채무 = 호르몬 균형',
+       keys:['P1','P2','P3','P4','P5','P6'] },
+  M: { name:'생산·산업', body:'근골격계', metaphor:'산업생산·PMI·건설 = 근력 활동',
+       keys:['O1','O2','O3','O4','O5','O6'] },
+  G: { name:'제조·재고', body:'대사계', metaphor:'가동률·재고율·수주 = 에너지 대사',
+       keys:['M1','M2_G','M3_G'] },
+  O: { name:'인구·가계', body:'생식·재생계', metaphor:'출산·고령화·부채 = 세대 재생',
+       keys:['D1','D2','D3','L1','L2','L3','L4','R1','R2','R5','R6','G1','G6'] },
 };
 
-// ── 교차신호 쌍 ──
+// ── 교차신호 15쌍 ──
 const CROSS_SIGNALS = [
-  ['C1','E1'], ['C2','I7'], ['R1','D1'], ['R3','M1'],
-  ['D2','N1'], ['D4','E3'], ['N2','I1'], ['N4','G1'],
-  ['E2','O1'], ['E5','G5'], ['I3','M3'], ['I8','N5'],
-  ['M2','G3'], ['G4','O4'], ['O2','R5'],
+  ['I1','E1'], ['I2','F7'], ['E1','C1'], ['E3','O1'],
+  ['C2','F1'], ['C4','P3'], ['F2','I1'], ['F4','G1'],
+  ['P2','S1'], ['P5','G6'], ['I3','M1'], ['F5','S5'],
+  ['O2','G1'], ['G1','S4'], ['S2','R5'],
 ];
 
-// ── 심각도 레벨 ──
+// ── 상태 매핑 ──
+const STATUS_MAP = { 1:'정상', 2:'관측', 3:'트리거', 4:'봉쇄', 5:'위기' };
+const GAUGE_STATUS = { 1:'양호', 2:'양호', 3:'주의', 4:'경보', 5:'경보' };
+
+// ── 심각도 계산 ──
 function severity(val, thresholds) {
-  if (!thresholds || val == null) return 2; // 기본 보통
+  if (!thresholds || val == null) return 2;
   const { good, warn, danger } = thresholds;
-  if (danger !== undefined && val >= danger) return 4;
+  if (danger !== undefined && val >= danger) return 5;
   if (warn !== undefined && val >= warn) return 3;
   if (good !== undefined && val <= good) return 1;
   return 2;
 }
 
-// ── 메인 진단 함수 ──
-function diagnose(gaugeData, thresholds = {}) {
-  const systemScores = {};
-  let totalScore = 0;
-  let totalCount = 0;
+// ── Schema-compliant 보고서 생성 ──
+function generateReport(gaugeData, options = {}) {
+  const {
+    thresholds = {},
+    countryCode = 'KR',
+    countryName = '대한민국',
+    productType = 'national',
+    frequency = 'monthly',
+    tier = 'PRO',
+    language = 'ko',
+    channel = 'web',
+  } = options;
 
-  // 9축별 심각도 계산
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+
+  // ── 9축 진단 ──
+  const systems = [];
+  let totalScore = 0, totalCount = 0;
+
   for (const [sysKey, sys] of Object.entries(SYSTEMS)) {
-    let sum = 0;
-    let cnt = 0;
+    let sum = 0, cnt = 0;
     for (const key of sys.keys) {
       if (gaugeData[key] !== undefined) {
-        const sev = severity(gaugeData[key], thresholds[key]);
-        sum += sev;
+        sum += severity(gaugeData[key], thresholds[key]);
         cnt++;
       }
     }
     const avg = cnt > 0 ? sum / cnt : 2;
-    systemScores[sysKey] = {
-      name: sys.name,
+    const level = avg <= 1.5 ? 1 : avg <= 2.0 ? 2 : avg <= 2.5 ? 3 : avg <= 3.0 ? 4 : 5;
+    systems.push({
+      system_id: sysKey,
+      system_name: sys.name,
+      body_name: sys.body,
+      body_metaphor: sys.metaphor,
       score: Math.round(avg * 100) / 100,
-      level: avg <= 1.5 ? 1 : avg <= 2.0 ? 2 : avg <= 2.5 ? 3 : avg <= 3.0 ? 4 : 5,
-      gaugeCount: cnt,
-    };
+      level,
+      status: STATUS_MAP[level],
+      gauge_count: cnt,
+      tier_min: 'FREE',
+    });
     totalScore += sum;
     totalCount += cnt;
   }
 
-  // 교차신호
+  // ── 게이지 배열 ──
+  const gauges = [];
+  for (const [key, val] of Object.entries(gaugeData)) {
+    const sev = severity(val, thresholds[key]);
+    gauges.push({
+      gauge_id: key,
+      name: key,
+      system_id: Object.entries(SYSTEMS).find(([,s]) => s.keys.includes(key))?.[0] || '?',
+      value: val,
+      unit: '',
+      status: GAUGE_STATUS[sev] || '양호',
+      severity_score: sev,
+      tier_min: sev <= 2 ? 'FREE' : 'BASIC',
+    });
+  }
+
+  // ── 교차신호 ──
   const crossSignals = [];
   for (const [a, b] of CROSS_SIGNALS) {
     if (gaugeData[a] !== undefined && gaugeData[b] !== undefined) {
@@ -76,21 +122,101 @@ function diagnose(gaugeData, thresholds = {}) {
     }
   }
 
-  // 이중봉쇄 판정
-  const borderSystems = Object.values(systemScores).filter(s => s.level >= 3).length;
-  const dualLock = borderSystems >= 3 && crossSignals.length >= 5;
+  // ── 이중봉쇄 ──
+  const sealedSystems = systems.filter(s => s.level >= 4).map(s => s.system_id);
+  const inputSealed = sealedSystems.some(s => ['R','D'].includes(s));
+  const outputSealed = sealedSystems.some(s => ['C','M'].includes(s));
+  const dualLockActive = inputSealed && outputSealed;
 
+  // ── 종합 ──
   const overallScore = totalCount > 0 ? Math.round(totalScore / totalCount * 100) / 100 : 2;
   const overallLevel = overallScore <= 1.5 ? 1 : overallScore <= 2.0 ? 2 : overallScore <= 2.5 ? 3 : overallScore <= 3.0 ? 4 : 5;
 
+  // ── 5단계 인과 판정 ──
+  let causalStage = 'normal';
+  if (dualLockActive) causalStage = 'cause';
+  else if (crossSignals.length >= 5) causalStage = 'onset';
+  else if (crossSignals.length >= 2) causalStage = 'factor';
+  if (overallLevel >= 5) causalStage = 'result';
+  else if (overallLevel >= 4 && dualLockActive) causalStage = 'manifest';
+
+  // ── Report ID ──
+  const reportId = `RPT-${countryCode}-${dateStr.replace(/-/g,'')}-${frequency.charAt(0).toUpperCase()}${Date.now().toString(36).slice(-4).toUpperCase()}`;
+
   return {
-    overall: { score: overallScore, level: overallLevel },
-    systems: systemScores,
-    crossSignals,
-    dualLock,
-    gaugeCount: totalCount,
-    timestamp: new Date().toISOString(),
+    report_id: reportId,
+    product_type: productType,
+    frequency,
+    frequency_window: {
+      frequency,
+      delta_only: frequency === 'daily',
+      trend_kernel_days: frequency === 'monthly' ? 30 : frequency === 'quarterly' ? 90 : null,
+      full_diagnosis: ['monthly','quarterly','annual'].includes(frequency),
+      include_history: ['quarterly','annual'].includes(frequency),
+      include_forecast: frequency === 'annual',
+    },
+    context: {
+      country_code: countryCode,
+      country_name: countryName,
+      date: dateStr,
+      period_label: `${now.getFullYear()}년 ${now.getMonth()+1}월`,
+      tier_min: tier,
+      cross_level: productType === 'national' ? 'L4' : 'L2',
+    },
+    systems,
+    gauges,
+    cross_signals: crossSignals,
+    dual_lock: {
+      active: dualLockActive,
+      input_sealed: inputSealed,
+      output_sealed: outputSealed,
+      sealed_systems: sealedSystems,
+    },
+    delta: {
+      satellite_index: null,
+      market_index: null,
+      gap: null,
+      state: 'HOLD',
+      type: null,
+    },
+    actions: [],
+    verdict: '',
+    overall: {
+      score: overallScore,
+      level: overallLevel,
+      status: STATUS_MAP[overallLevel],
+      causal_stage: causalStage,
+    },
+    satellite_evidence: [],
+    metadata: {
+      generated_at: now.toISOString(),
+      engine_version: '1.1.0',
+      schema_version: '1.1',
+      data_freshness: dateStr,
+      channel,
+      language,
+      compliance: {
+        prediction_prohibited: true,
+        observation_only: true,
+        disclaimer: 'DIAH-7M provides observation-based measurement, not prediction. Past satellite data verification and lead signal tracking only.',
+      },
+    },
   };
 }
 
-module.exports = { diagnose, SYSTEMS, CROSS_SIGNALS };
+// ── 하위 호환: 기존 diagnose() 유지 ──
+function diagnose(gaugeData, thresholds = {}) {
+  const report = generateReport(gaugeData, { thresholds });
+  return {
+    overall: report.overall,
+    systems: Object.fromEntries(report.systems.map(s => [s.system_id, {
+      name: s.system_name, score: s.score, level: s.level, gaugeCount: s.gauge_count,
+    }])),
+    crossSignals: report.cross_signals,
+    dualLock: report.dual_lock.active,
+    gaugeCount: report.gauges.length,
+    timestamp: report.metadata.generated_at,
+  };
+}
+
+module.exports = { diagnose, generateReport, SYSTEMS, CROSS_SIGNALS };
