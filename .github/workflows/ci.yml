@@ -1,0 +1,70 @@
+name: DIAH-7M CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # 1. 프론트엔드 빌드 점검
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npm run build
+      - name: Check dist exists
+        run: test -d dist && echo "✅ Build OK" || exit 1
+
+  # 2. 서버 테스트
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install server deps
+        working-directory: server
+        run: npm install
+      - name: Start server
+        working-directory: server
+        run: node server.js &
+      - name: Wait for server
+        run: sleep 3
+      - name: Health check
+        run: curl -f http://localhost:3700/api/health
+      - name: Run E2E tests
+        working-directory: server
+        run: node test/e2e.js
+
+  # 3. 보안 점검
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check no secrets in code
+        run: |
+          echo "Checking for exposed secrets..."
+          if grep -rn "sk_live\|sk_test\|ghp_\|AKIA\|password.*=.*['\"]" \
+            --include="*.js" --include="*.jsx" --include="*.json" \
+            --exclude-dir=node_modules \
+            --exclude=".env.template" \
+            --exclude="server/test/*" \
+            --exclude="server/server.js" . ; then
+            echo "⚠️ Possible secrets found!"
+            exit 1
+          fi
+          echo "✅ No secrets detected"
+      - name: Check .env not committed
+        run: |
+          if [ -f ".env" ] || [ -f "server/.env" ]; then
+            echo "❌ .env file committed!"
+            exit 1
+          fi
+          echo "✅ No .env files"
