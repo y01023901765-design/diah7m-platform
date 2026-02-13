@@ -1,4 +1,4 @@
-// DIAH-7M 한국어 로케일 — 원본 (Source of Truth, 260키)
+// DIAH-7M 한국어 로케일 — 원본 (Source of Truth, 329키)
 export default 
 {
   // ── NAV ──
@@ -59,12 +59,12 @@ export default
   email:'이메일',
   password:'비밀번호',
   forgotPw:'비밀번호 찾기',
-  noAccount:'{t("noAccount",L)}',
+  noAccount:'계정이 없으신가요?',
   freeSignup:'무료 가입',
-  hasAccount:'{t("hasAccount",L)}',
+  hasAccount:'이미 계정이 있으신가요?',
   or:'또는',
   resetTitle:'비밀번호 재설정',
-  resetDesc:'{t("resetDesc",L)}',
+  resetDesc:'재설정 링크를 받을 이메일을 입력하세요.',
   resetSent:'이메일 발송 완료',
   resetBtn:'재설정 링크 발송',
   backToLogin:'← 로그인으로 돌아가기',
@@ -80,7 +80,7 @@ export default
   termsService:'이용약관 동의',
   termsPrivacy:'개인정보 처리방침 동의',
   termsMarketing:'마케팅 수신 동의',
-  selectedPlan:'{t("selectedPlan",L)}',
+  selectedPlan:'선택한 플랜',
   mileageBonus:'가입 즉시 500P 마일리지 지급!',
   // ── DASHBOARD ──
   overview:'📊 종합 진단',
@@ -279,4 +279,3 @@ export default
   sysA9n:'인구·가계',sysA9b:'생식·재생계',sysA9m:'출산·고령화·부채 = 세대 재생',
   locked:'잠겨있습니다',upgradeHint:'{tier} 이상 구독으로 전체 데이터를 확인하세요',upgradeBtn:'구독하기',
 };
-;

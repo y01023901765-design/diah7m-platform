@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node src/locales/validate-i18n.cjs && vite build",
+    "build:only": "vite build",
+    "i18n:validate": "node src/locales/validate-i18n.cjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

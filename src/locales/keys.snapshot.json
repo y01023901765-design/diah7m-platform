@@ -1,0 +1,1659 @@
+{
+  "_meta": {
+    "source": "ko.js",
+    "count": 329,
+    "generated": "2026-02-13",
+    "locked": true
+  },
+  "keys": [
+    "accountDeleted",
+    "actions",
+    "active",
+    "admin",
+    "agreeAll",
+    "agreeTerms",
+    "alert",
+    "alertCenter",
+    "alertTab",
+    "backToLogin",
+    "balance",
+    "blindSpot",
+    "bodyMetaphor",
+    "bodySys",
+    "cancel",
+    "cancelFeatures",
+    "cancelInfo",
+    "cancelSub",
+    "caution",
+    "change",
+    "changePayment",
+    "changePlan",
+    "changePw",
+    "chatGreeting",
+    "chatPlaceholder",
+    "chatSend",
+    "confirmCancelBtn",
+    "confirmCancelSub",
+    "confirmDeleteDesc",
+    "confirmDeleteTitle",
+    "confirmPw",
+    "connecting",
+    "createAccount",
+    "creating",
+    "ctaBtn",
+    "ctaDesc",
+    "ctaTitle",
+    "curPlan",
+    "curPw",
+    "currentPlan",
+    "dashboard",
+    "dateLabel",
+    "deleteAccount",
+    "deltaDesc",
+    "deltaTitle",
+    "dualLock",
+    "dualLockActive",
+    "earned",
+    "email",
+    "emailInvalid",
+    "emailNotif",
+    "emailNotifDesc",
+    "exApi",
+    "exDiscount",
+    "exExport",
+    "exHistory",
+    "exReport",
+    "exchange",
+    "exchangeMenu",
+    "faq1a",
+    "faq1q",
+    "faq2a",
+    "faq2q",
+    "faq3a",
+    "faq3q",
+    "faq4a",
+    "faq4q",
+    "faq5a",
+    "faq5q",
+    "faq6a",
+    "faq6q",
+    "faqTitle",
+    "feat1",
+    "feat2",
+    "feat3",
+    "feat4",
+    "feat5",
+    "feat6",
+    "featDesc1",
+    "featDesc2",
+    "featDesc3",
+    "featDesc4",
+    "featDesc5",
+    "featDesc6",
+    "fillAllFields",
+    "forgotPw",
+    "free",
+    "freeCreate",
+    "freeSignup",
+    "freq12d",
+    "freq16d",
+    "freqDaily",
+    "gC1",
+    "gC2",
+    "gC3",
+    "gC4",
+    "gC5",
+    "gC6",
+    "gD1",
+    "gD2",
+    "gD3",
+    "gE1",
+    "gE2",
+    "gE3",
+    "gE4",
+    "gE5",
+    "gE6",
+    "gF1",
+    "gF2",
+    "gF3",
+    "gF4",
+    "gF5",
+    "gF6",
+    "gF7",
+    "gG1",
+    "gG6",
+    "gI1",
+    "gI2",
+    "gI3",
+    "gI4",
+    "gI5",
+    "gI6",
+    "gL1",
+    "gL2",
+    "gL3",
+    "gL4",
+    "gM1",
+    "gM2_G",
+    "gM3_G",
+    "gO1",
+    "gO2",
+    "gO3",
+    "gO4",
+    "gO5",
+    "gO6",
+    "gP1",
+    "gP2",
+    "gP3",
+    "gP4",
+    "gP5",
+    "gP6",
+    "gR1",
+    "gR2",
+    "gR5",
+    "gR6",
+    "gS1",
+    "gS2",
+    "gS3",
+    "gS4",
+    "gS5",
+    "gS6",
+    "gaugeDetail",
+    "gaugeDetailSub",
+    "gaugeTab",
+    "gauges",
+    "gaugesLabel",
+    "goBack",
+    "good",
+    "hasAccount",
+    "heroCta",
+    "heroDesc",
+    "heroDesc2",
+    "heroFast",
+    "heroMore",
+    "heroSub",
+    "heroTitle1",
+    "heroTitle2",
+    "howTitle",
+    "inputSeal",
+    "investSignal",
+    "kakaoNotif",
+    "kakaoNotifDesc",
+    "keyActions",
+    "langChanged",
+    "langSetting",
+    "languages",
+    "locked",
+    "loggingIn",
+    "login",
+    "loginTitle",
+    "logout",
+    "marketIndex",
+    "milBasic",
+    "milEnt",
+    "milExchanged",
+    "milInsufficient",
+    "milPro",
+    "mileage",
+    "mileageBonus",
+    "mktIndex",
+    "mypage",
+    "name",
+    "nameRequired",
+    "negGap",
+    "newPw",
+    "next",
+    "nextBill",
+    "nineSystems",
+    "noAccount",
+    "notifDisabled",
+    "notifEnabled",
+    "notifSettings",
+    "notifications",
+    "optional",
+    "or",
+    "outputSeal",
+    "overview",
+    "password",
+    "payMethod",
+    "paymentPending",
+    "perMonth",
+    "permDelete",
+    "phone",
+    "planBasicDesc",
+    "planBasicFeat",
+    "planEntDesc",
+    "planEntFeat",
+    "planFreeDesc",
+    "planFreeFeat",
+    "planProDesc",
+    "planProFeat",
+    "prediction",
+    "pricingSub",
+    "pricingTitle",
+    "profile",
+    "profileSaved",
+    "pushNotif",
+    "pushNotifDesc",
+    "pwChanged",
+    "pwCheck8",
+    "pwCheckAlpha",
+    "pwCheckNum",
+    "pwCheckSpecial",
+    "pwEnterRequired",
+    "pwMismatch",
+    "pwRequired",
+    "quickSignup",
+    "required",
+    "resetBtn",
+    "resetDesc",
+    "resetSent",
+    "resetTitle",
+    "satBand",
+    "satCol",
+    "satCost",
+    "satCycle",
+    "satEarlyDetect",
+    "satEvidence",
+    "satFutureHint",
+    "satIndex",
+    "satObsInfo",
+    "satPastVerify",
+    "satPlatform",
+    "satPredict",
+    "satPredict2",
+    "satProg",
+    "satStatBefore",
+    "satTab",
+    "satTimeline",
+    "satVerify",
+    "save",
+    "selectPlan",
+    "selectedPlan",
+    "sending",
+    "settings",
+    "sigAvoid",
+    "sigBuy",
+    "sigSell",
+    "signup",
+    "slackNotif",
+    "slackNotifDesc",
+    "smsNotif",
+    "smsNotifDesc",
+    "spent",
+    "stCrisis",
+    "stNormal",
+    "stSeal",
+    "stTrigger",
+    "stWatch",
+    "step1",
+    "step2",
+    "step3",
+    "step4",
+    "step5",
+    "streak",
+    "subCancelled",
+    "subscription",
+    "sysA1b",
+    "sysA1m",
+    "sysA1n",
+    "sysA2b",
+    "sysA2m",
+    "sysA2n",
+    "sysA3b",
+    "sysA3m",
+    "sysA3n",
+    "sysA4b",
+    "sysA4m",
+    "sysA4n",
+    "sysA5b",
+    "sysA5m",
+    "sysA5n",
+    "sysA6b",
+    "sysA6m",
+    "sysA6n",
+    "sysA7b",
+    "sysA7m",
+    "sysA7n",
+    "sysA8b",
+    "sysA8m",
+    "sysA8n",
+    "sysA9b",
+    "sysA9m",
+    "sysA9n",
+    "termsMarketing",
+    "termsPrivacy",
+    "termsRequired",
+    "termsService",
+    "totalScore",
+    "trial",
+    "trialNote",
+    "trialStart",
+    "upgradeBtn",
+    "upgradeHint",
+    "used",
+    "verdict",
+    "verdictText",
+    "verification",
+    "whyTitle"
+  ],
+  "schema": {
+    "accountDeleted": {
+      "type": "string",
+      "placeholders": []
+    },
+    "actions": {
+      "type": "array",
+      "length": 5
+    },
+    "active": {
+      "type": "string",
+      "placeholders": []
+    },
+    "admin": {
+      "type": "string",
+      "placeholders": []
+    },
+    "agreeAll": {
+      "type": "string",
+      "placeholders": []
+    },
+    "agreeTerms": {
+      "type": "string",
+      "placeholders": []
+    },
+    "alert": {
+      "type": "string",
+      "placeholders": []
+    },
+    "alertCenter": {
+      "type": "string",
+      "placeholders": []
+    },
+    "alertTab": {
+      "type": "string",
+      "placeholders": []
+    },
+    "backToLogin": {
+      "type": "string",
+      "placeholders": []
+    },
+    "balance": {
+      "type": "string",
+      "placeholders": []
+    },
+    "blindSpot": {
+      "type": "string",
+      "placeholders": []
+    },
+    "bodyMetaphor": {
+      "type": "string",
+      "placeholders": []
+    },
+    "bodySys": {
+      "type": "string",
+      "placeholders": []
+    },
+    "cancel": {
+      "type": "string",
+      "placeholders": []
+    },
+    "cancelFeatures": {
+      "type": "string",
+      "placeholders": []
+    },
+    "cancelInfo": {
+      "type": "string",
+      "placeholders": []
+    },
+    "cancelSub": {
+      "type": "string",
+      "placeholders": []
+    },
+    "caution": {
+      "type": "string",
+      "placeholders": []
+    },
+    "change": {
+      "type": "string",
+      "placeholders": []
+    },
+    "changePayment": {
+      "type": "string",
+      "placeholders": []
+    },
+    "changePlan": {
+      "type": "string",
+      "placeholders": []
+    },
+    "changePw": {
+      "type": "string",
+      "placeholders": []
+    },
+    "chatGreeting": {
+      "type": "string",
+      "placeholders": []
+    },
+    "chatPlaceholder": {
+      "type": "string",
+      "placeholders": []
+    },
+    "chatSend": {
+      "type": "string",
+      "placeholders": []
+    },
+    "confirmCancelBtn": {
+      "type": "string",
+      "placeholders": []
+    },
+    "confirmCancelSub": {
+      "type": "string",
+      "placeholders": []
+    },
+    "confirmDeleteDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "confirmDeleteTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "confirmPw": {
+      "type": "string",
+      "placeholders": []
+    },
+    "connecting": {
+      "type": "string",
+      "placeholders": []
+    },
+    "createAccount": {
+      "type": "string",
+      "placeholders": []
+    },
+    "creating": {
+      "type": "string",
+      "placeholders": []
+    },
+    "ctaBtn": {
+      "type": "string",
+      "placeholders": []
+    },
+    "ctaDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "ctaTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "curPlan": {
+      "type": "string",
+      "placeholders": []
+    },
+    "curPw": {
+      "type": "string",
+      "placeholders": []
+    },
+    "currentPlan": {
+      "type": "string",
+      "placeholders": []
+    },
+    "dashboard": {
+      "type": "string",
+      "placeholders": []
+    },
+    "dateLabel": {
+      "type": "string",
+      "placeholders": []
+    },
+    "deleteAccount": {
+      "type": "string",
+      "placeholders": []
+    },
+    "deltaDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "deltaTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "dualLock": {
+      "type": "string",
+      "placeholders": []
+    },
+    "dualLockActive": {
+      "type": "string",
+      "placeholders": []
+    },
+    "earned": {
+      "type": "string",
+      "placeholders": []
+    },
+    "email": {
+      "type": "string",
+      "placeholders": []
+    },
+    "emailInvalid": {
+      "type": "string",
+      "placeholders": []
+    },
+    "emailNotif": {
+      "type": "string",
+      "placeholders": []
+    },
+    "emailNotifDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exApi": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exDiscount": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exExport": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exHistory": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exReport": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exchange": {
+      "type": "string",
+      "placeholders": []
+    },
+    "exchangeMenu": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq1a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq1q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq2a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq2q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq3a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq3q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq4a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq4q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq5a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq5q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq6a": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faq6q": {
+      "type": "string",
+      "placeholders": []
+    },
+    "faqTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "feat6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "featDesc6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "fillAllFields": {
+      "type": "string",
+      "placeholders": []
+    },
+    "forgotPw": {
+      "type": "string",
+      "placeholders": []
+    },
+    "free": {
+      "type": "string",
+      "placeholders": []
+    },
+    "freeCreate": {
+      "type": "string",
+      "placeholders": []
+    },
+    "freeSignup": {
+      "type": "string",
+      "placeholders": []
+    },
+    "freq12d": {
+      "type": "string",
+      "placeholders": []
+    },
+    "freq16d": {
+      "type": "string",
+      "placeholders": []
+    },
+    "freqDaily": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gC6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gD1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gD2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gD3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gE6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gF7": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gG1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gG6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gI6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gL1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gL2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gL3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gL4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gM1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gM2_G": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gM3_G": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gO6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gP6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gR1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gR2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gR5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gR6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gS6": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gaugeDetail": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gaugeDetailSub": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gaugeTab": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gauges": {
+      "type": "string",
+      "placeholders": []
+    },
+    "gaugesLabel": {
+      "type": "string",
+      "placeholders": []
+    },
+    "goBack": {
+      "type": "string",
+      "placeholders": []
+    },
+    "good": {
+      "type": "string",
+      "placeholders": []
+    },
+    "hasAccount": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroCta": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroDesc2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroFast": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroMore": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroSub": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroTitle1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "heroTitle2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "howTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "inputSeal": {
+      "type": "string",
+      "placeholders": []
+    },
+    "investSignal": {
+      "type": "string",
+      "placeholders": []
+    },
+    "kakaoNotif": {
+      "type": "string",
+      "placeholders": []
+    },
+    "kakaoNotifDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "keyActions": {
+      "type": "string",
+      "placeholders": []
+    },
+    "langChanged": {
+      "type": "string",
+      "placeholders": []
+    },
+    "langSetting": {
+      "type": "string",
+      "placeholders": []
+    },
+    "languages": {
+      "type": "string",
+      "placeholders": []
+    },
+    "locked": {
+      "type": "string",
+      "placeholders": []
+    },
+    "loggingIn": {
+      "type": "string",
+      "placeholders": []
+    },
+    "login": {
+      "type": "string",
+      "placeholders": []
+    },
+    "loginTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "logout": {
+      "type": "string",
+      "placeholders": []
+    },
+    "marketIndex": {
+      "type": "string",
+      "placeholders": []
+    },
+    "milBasic": {
+      "type": "string",
+      "placeholders": []
+    },
+    "milEnt": {
+      "type": "string",
+      "placeholders": []
+    },
+    "milExchanged": {
+      "type": "string",
+      "placeholders": []
+    },
+    "milInsufficient": {
+      "type": "string",
+      "placeholders": []
+    },
+    "milPro": {
+      "type": "string",
+      "placeholders": []
+    },
+    "mileage": {
+      "type": "string",
+      "placeholders": []
+    },
+    "mileageBonus": {
+      "type": "string",
+      "placeholders": []
+    },
+    "mktIndex": {
+      "type": "string",
+      "placeholders": []
+    },
+    "mypage": {
+      "type": "string",
+      "placeholders": []
+    },
+    "name": {
+      "type": "string",
+      "placeholders": []
+    },
+    "nameRequired": {
+      "type": "string",
+      "placeholders": []
+    },
+    "negGap": {
+      "type": "string",
+      "placeholders": []
+    },
+    "newPw": {
+      "type": "string",
+      "placeholders": []
+    },
+    "next": {
+      "type": "string",
+      "placeholders": []
+    },
+    "nextBill": {
+      "type": "string",
+      "placeholders": []
+    },
+    "nineSystems": {
+      "type": "string",
+      "placeholders": []
+    },
+    "noAccount": {
+      "type": "string",
+      "placeholders": []
+    },
+    "notifDisabled": {
+      "type": "string",
+      "placeholders": []
+    },
+    "notifEnabled": {
+      "type": "string",
+      "placeholders": []
+    },
+    "notifSettings": {
+      "type": "string",
+      "placeholders": []
+    },
+    "notifications": {
+      "type": "string",
+      "placeholders": []
+    },
+    "optional": {
+      "type": "string",
+      "placeholders": []
+    },
+    "or": {
+      "type": "string",
+      "placeholders": []
+    },
+    "outputSeal": {
+      "type": "string",
+      "placeholders": []
+    },
+    "overview": {
+      "type": "string",
+      "placeholders": []
+    },
+    "password": {
+      "type": "string",
+      "placeholders": []
+    },
+    "payMethod": {
+      "type": "string",
+      "placeholders": []
+    },
+    "paymentPending": {
+      "type": "string",
+      "placeholders": []
+    },
+    "perMonth": {
+      "type": "string",
+      "placeholders": []
+    },
+    "permDelete": {
+      "type": "string",
+      "placeholders": []
+    },
+    "phone": {
+      "type": "string",
+      "placeholders": []
+    },
+    "planBasicDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "planBasicFeat": {
+      "type": "array",
+      "length": 5
+    },
+    "planEntDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "planEntFeat": {
+      "type": "array",
+      "length": 7
+    },
+    "planFreeDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "planFreeFeat": {
+      "type": "array",
+      "length": 4
+    },
+    "planProDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "planProFeat": {
+      "type": "array",
+      "length": 7
+    },
+    "prediction": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pricingSub": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pricingTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "profile": {
+      "type": "string",
+      "placeholders": []
+    },
+    "profileSaved": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pushNotif": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pushNotifDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwChanged": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwCheck8": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwCheckAlpha": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwCheckNum": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwCheckSpecial": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwEnterRequired": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwMismatch": {
+      "type": "string",
+      "placeholders": []
+    },
+    "pwRequired": {
+      "type": "string",
+      "placeholders": []
+    },
+    "quickSignup": {
+      "type": "string",
+      "placeholders": []
+    },
+    "required": {
+      "type": "string",
+      "placeholders": []
+    },
+    "resetBtn": {
+      "type": "string",
+      "placeholders": []
+    },
+    "resetDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "resetSent": {
+      "type": "string",
+      "placeholders": []
+    },
+    "resetTitle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satBand": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satCol": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satCost": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satCycle": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satEarlyDetect": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satEvidence": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satFutureHint": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satIndex": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satObsInfo": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satPastVerify": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satPlatform": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satPredict": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satPredict2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satProg": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satStatBefore": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satTab": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satTimeline": {
+      "type": "string",
+      "placeholders": []
+    },
+    "satVerify": {
+      "type": "string",
+      "placeholders": []
+    },
+    "save": {
+      "type": "string",
+      "placeholders": []
+    },
+    "selectPlan": {
+      "type": "string",
+      "placeholders": []
+    },
+    "selectedPlan": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sending": {
+      "type": "string",
+      "placeholders": []
+    },
+    "settings": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sigAvoid": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sigBuy": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sigSell": {
+      "type": "string",
+      "placeholders": []
+    },
+    "signup": {
+      "type": "string",
+      "placeholders": []
+    },
+    "slackNotif": {
+      "type": "string",
+      "placeholders": []
+    },
+    "slackNotifDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "smsNotif": {
+      "type": "string",
+      "placeholders": []
+    },
+    "smsNotifDesc": {
+      "type": "string",
+      "placeholders": []
+    },
+    "spent": {
+      "type": "string",
+      "placeholders": []
+    },
+    "stCrisis": {
+      "type": "string",
+      "placeholders": []
+    },
+    "stNormal": {
+      "type": "string",
+      "placeholders": []
+    },
+    "stSeal": {
+      "type": "string",
+      "placeholders": []
+    },
+    "stTrigger": {
+      "type": "string",
+      "placeholders": []
+    },
+    "stWatch": {
+      "type": "string",
+      "placeholders": []
+    },
+    "step1": {
+      "type": "string",
+      "placeholders": []
+    },
+    "step2": {
+      "type": "string",
+      "placeholders": []
+    },
+    "step3": {
+      "type": "string",
+      "placeholders": []
+    },
+    "step4": {
+      "type": "string",
+      "placeholders": []
+    },
+    "step5": {
+      "type": "string",
+      "placeholders": []
+    },
+    "streak": {
+      "type": "string",
+      "placeholders": []
+    },
+    "subCancelled": {
+      "type": "string",
+      "placeholders": []
+    },
+    "subscription": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA1b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA1m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA1n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA2b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA2m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA2n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA3b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA3m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA3n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA4b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA4m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA4n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA5b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA5m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA5n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA6b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA6m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA6n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA7b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA7m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA7n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA8b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA8m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA8n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA9b": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA9m": {
+      "type": "string",
+      "placeholders": []
+    },
+    "sysA9n": {
+      "type": "string",
+      "placeholders": []
+    },
+    "termsMarketing": {
+      "type": "string",
+      "placeholders": []
+    },
+    "termsPrivacy": {
+      "type": "string",
+      "placeholders": []
+    },
+    "termsRequired": {
+      "type": "string",
+      "placeholders": []
+    },
+    "termsService": {
+      "type": "string",
+      "placeholders": []
+    },
+    "totalScore": {
+      "type": "string",
+      "placeholders": []
+    },
+    "trial": {
+      "type": "string",
+      "placeholders": []
+    },
+    "trialNote": {
+      "type": "string",
+      "placeholders": []
+    },
+    "trialStart": {
+      "type": "string",
+      "placeholders": []
+    },
+    "upgradeBtn": {
+      "type": "string",
+      "placeholders": []
+    },
+    "upgradeHint": {
+      "type": "string",
+      "placeholders": [
+        "{tier}"
+      ]
+    },
+    "used": {
+      "type": "string",
+      "placeholders": []
+    },
+    "verdict": {
+      "type": "string",
+      "placeholders": []
+    },
+    "verdictText": {
+      "type": "string",
+      "placeholders": []
+    },
+    "verification": {
+      "type": "string",
+      "placeholders": []
+    },
+    "whyTitle": {
+      "type": "string",
+      "placeholders": []
+    }
+  }
+}
