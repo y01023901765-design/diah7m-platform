@@ -141,10 +141,16 @@ class DBAdapter {
     console.log('  ✅ Schema initialized');
   }
 
+  // ── pg helper: ? → $1, $2, ... ──
+  _pgSQL(sql) {
+    let n = 0;
+    return sql.replace(/\?/g, () => `$${++n}`);
+  }
+
   // ── Query Interface ──
   async run(sql, params = []) {
     if (this.type === 'pg') {
-      const result = await this.db.query(sql.replace(/\?/g, (_, i) => `$${i + 1}`), params);
+      const result = await this.db.query(this._pgSQL(sql), params);
       return { lastID: result.rows?.[0]?.id || 0, changes: result.rowCount };
     }
     this.db.run(sql, params);
@@ -155,7 +161,7 @@ class DBAdapter {
 
   async get(sql, params = []) {
     if (this.type === 'pg') {
-      const result = await this.db.query(sql.replace(/\?/g, (m, i) => `$${params.indexOf(params[sql.substring(0, sql.indexOf(m)).split('?').length - 1]) + 1}`), params);
+      const result = await this.db.query(this._pgSQL(sql), params);
       return result.rows[0] || null;
     }
     const stmt = this.db.prepare(sql);

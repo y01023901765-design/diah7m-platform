@@ -62,10 +62,10 @@ export async function updateMe(updates) {
   });
 }
 
-export async function changePassword(current_password, new_password) {
+export async function changePassword(currentPassword, newPassword) {
   return api('/api/v1/me/password', {
     method: 'POST',
-    body: JSON.stringify({ current_password, new_password })
+    body: JSON.stringify({ currentPassword, newPassword })
   });
 }
 
