@@ -64,11 +64,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS
 app.use((req, res, next) => {
-  const origin = req.headers.origin || '*';
-  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -354,12 +352,19 @@ app.post('/api/v1/data/refresh', auth?.authMiddleware || ((req, res, next) => ne
 
   dataStore.fetching = true;
   try {
+    console.log('[Pipeline] Refresh started...');
+    const t0 = Date.now();
     const { results, stats, errors } = await pipeline.fetchAll(ecosKey, kosisKey);
+    console.log(`[Pipeline] Fetch done: ${stats.ok}/${stats.total} OK (${Date.now()-t0}ms)`);
+    
     const stored = await dataStore.store(results);
+    console.log(`[Pipeline] Store done: ${stored.stored} stored, ${stored.preserved} preserved`);
+    
     dataStore.fetching = false;
     res.json({ ok: true, stats, stored, errors: errors.slice(0, 10) });
   } catch (e) {
     dataStore.fetching = false;
+    console.error('[Pipeline] Refresh error:', e.message);
     res.status(500).json({ error: e.message });
   }
 });

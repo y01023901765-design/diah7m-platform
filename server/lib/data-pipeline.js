@@ -104,29 +104,73 @@ const GAUGE_MAP = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// ECOS API 호출
+// HTTP 보호막 — timeout + status code 처리
 // ═══════════════════════════════════════════════════════════════
-async function fetchECOS(apiKey, statCode, itemCode, cycle, startDate, endDate) {
-  const url = `${ECOS_BASE}/${apiKey}/json/kr/1/100/${statCode}/${cycle}/${startDate}/${endDate}/${itemCode}`;
+const FETCH_TIMEOUT_MS = 10000; // 10초
+
+async function safeFetch(url, label) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const t0 = Date.now();
   try {
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.StatisticSearch?.row) {
-      return json.StatisticSearch.row.map(r => ({
-        date: r.TIME,
-        value: parseFloat(r.DATA_VALUE) || 0,
-        name: r.STAT_NAME,
-      }));
+    const res = await fetch(url, { signal: controller.signal });
+    const latency = Date.now() - t0;
+    clearTimeout(timer);
+
+    // HTTP 에러 처리
+    if (!res.ok) {
+      const code = res.status;
+      const msg = code === 401 ? 'INVALID_KEY' :
+                  code === 429 ? 'RATE_LIMITED' :
+                  code >= 500 ? 'SERVER_ERROR' : `HTTP_${code}`;
+      return { ok: false, error: msg, code, latency, label };
     }
-    return [];
+
+    const json = await res.json();
+    return { ok: true, json, latency, label };
   } catch (e) {
-    console.error(`ECOS fetch error [${statCode}]:`, e.message);
-    return [];
+    clearTimeout(timer);
+    const latency = Date.now() - t0;
+    const msg = e.name === 'AbortError' ? 'TIMEOUT' : e.message;
+    return { ok: false, error: msg, latency, label };
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// KOSIS API 호출
+// ECOS API 호출 (보호막 적용)
+// ═══════════════════════════════════════════════════════════════
+async function fetchECOS(apiKey, statCode, itemCode, cycle, startDate, endDate) {
+  const url = `${ECOS_BASE}/${apiKey}/json/kr/1/100/${statCode}/${cycle}/${startDate}/${endDate}/${itemCode}`;
+  const result = await safeFetch(url, `ECOS:${statCode}`);
+
+  if (!result.ok) {
+    console.warn(`  ⚠️  ${result.label}: ${result.error} (${result.latency}ms)`);
+    return { rows: [], error: result.error, latency: result.latency };
+  }
+
+  const json = result.json;
+  if (json.StatisticSearch?.row) {
+    return {
+      rows: json.StatisticSearch.row.map(r => ({
+        date: r.TIME,
+        value: parseFloat(r.DATA_VALUE) || 0,
+        name: r.STAT_NAME,
+      })),
+      latency: result.latency,
+    };
+  }
+
+  // ECOS 에러 응답 (키 오류 등)
+  if (json.RESULT) {
+    console.warn(`  ⚠️  ECOS:${statCode}: ${json.RESULT.MESSAGE} (${result.latency}ms)`);
+    return { rows: [], error: json.RESULT.MESSAGE, latency: result.latency };
+  }
+
+  return { rows: [], latency: result.latency };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KOSIS API 호출 (보호막 적용)
 // ═══════════════════════════════════════════════════════════════
 async function fetchKOSIS(apiKey, orgId, tblId, itemCode, cycle, startDate, endDate) {
   const params = new URLSearchParams({
@@ -142,21 +186,32 @@ async function fetchKOSIS(apiKey, orgId, tblId, itemCode, cycle, startDate, endD
     orgId,
     tblId,
   });
-  try {
-    const res = await fetch(`${KOSIS_BASE}?${params}`);
-    const json = await res.json();
-    if (Array.isArray(json)) {
-      return json.map(r => ({
+  const result = await safeFetch(`${KOSIS_BASE}?${params}`, `KOSIS:${tblId}`);
+
+  if (!result.ok) {
+    console.warn(`  ⚠️  ${result.label}: ${result.error} (${result.latency}ms)`);
+    return { rows: [], error: result.error, latency: result.latency };
+  }
+
+  const json = result.json;
+  if (Array.isArray(json)) {
+    return {
+      rows: json.map(r => ({
         date: r.PRD_DE,
         value: parseFloat(r.DT) || 0,
         name: r.TBL_NM,
-      }));
-    }
-    return [];
-  } catch (e) {
-    console.error(`KOSIS fetch error [${tblId}]:`, e.message);
-    return [];
+      })),
+      latency: result.latency,
+    };
   }
+
+  // KOSIS 에러 응답
+  if (json.err) {
+    console.warn(`  ⚠️  KOSIS:${tblId}: ${json.err} (${result.latency}ms)`);
+    return { rows: [], error: json.err, latency: result.latency };
+  }
+
+  return { rows: [], latency: result.latency };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -186,11 +241,13 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
 
   const { start, end } = getDateRange(spec.cycle || 'M');
 
-  let rows = [];
+  let rows = [], latency = 0, fetchError = null;
   if (spec.source === 'ECOS') {
-    rows = await fetchECOS(ecosKey, spec.stat, spec.item, spec.cycle, start, end);
+    const r = await fetchECOS(ecosKey, spec.stat, spec.item, spec.cycle, start, end);
+    rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;
   } else if (spec.source === 'KOSIS') {
-    rows = await fetchKOSIS(kosisKey, spec.orgId, spec.tblId, spec.item, spec.cycle, start, end);
+    const r = await fetchKOSIS(kosisKey, spec.orgId, spec.tblId, spec.item, spec.cycle, start, end);
+    rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;
   } else if (spec.source === 'SATELLITE') {
     return { gaugeId, source: 'SATELLITE', sat: spec.sat, note: spec.note, value: null, status: 'PENDING' };
   } else if (spec.source === 'EXTERNAL') {
@@ -199,7 +256,11 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
     return { gaugeId, source: 'DERIVED', deps: spec.deps, status: 'NEEDS_CALC' };
   }
 
-  if (rows.length === 0) return { gaugeId, source: spec.source, value: null, status: 'NO_DATA' };
+  if (fetchError) {
+    return { gaugeId, source: spec.source, value: null, status: 'API_ERROR', error: fetchError, latency };
+  }
+
+  if (rows.length === 0) return { gaugeId, source: spec.source, value: null, status: 'NO_DATA', latency };
 
   // 최신값
   const latest = rows[rows.length - 1];
@@ -216,6 +277,7 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
     prevValue: prev ? (spec.transform ? spec.transform(prev.value) : prev.value) : null,
     date: latest.date,
     rows: rows.length,
+    latency,
     status: 'OK',
   };
 }
@@ -272,13 +334,21 @@ async function fetchAll(ecosKey, kosisKey) {
   }
 
   // 통계
+  const allResults = Object.values(results);
+  const latencies = allResults.filter(r => r.latency).map(r => r.latency);
   const stats = {
     total: gaugeIds.length,
-    ok: Object.values(results).filter(r => r.status === 'OK').length,
-    pending: Object.values(results).filter(r => r.status === 'PENDING').length,
-    noData: Object.values(results).filter(r => r.status === 'NO_DATA').length,
+    ok: allResults.filter(r => r.status === 'OK').length,
+    pending: allResults.filter(r => r.status === 'PENDING').length,
+    noData: allResults.filter(r => r.status === 'NO_DATA').length,
+    apiError: allResults.filter(r => r.status === 'API_ERROR').length,
     errors: errors.length,
-    satellite: Object.values(results).filter(r => r.source === 'SATELLITE').length,
+    satellite: allResults.filter(r => r.source === 'SATELLITE').length,
+    latency: {
+      avg: latencies.length ? Math.round(latencies.reduce((a,b)=>a+b,0)/latencies.length) : 0,
+      max: latencies.length ? Math.max(...latencies) : 0,
+      min: latencies.length ? Math.min(...latencies) : 0,
+    },
     timestamp: new Date().toISOString(),
   };
 

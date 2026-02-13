@@ -66,13 +66,15 @@ class DataStore {
     }
   }
 
-  // 파이프라인 결과를 캐시에 저장
+  // 파이프라인 결과를 캐시에 저장 (이전 캐시 유지 보장)
   async store(pipelineResults) {
     const start = Date.now();
     let okCount = 0;
+    let preserved = 0;
 
     for (const [id, data] of Object.entries(pipelineResults)) {
       if (data.status === 'OK' && data.value !== null && data.value !== undefined) {
+        // 새 데이터 정상 → 캐시 갱신
         this.memCache[id] = {
           value: data.value,
           prevValue: data.prevValue || null,
@@ -80,6 +82,7 @@ class DataStore {
           source: data.source || 'unknown',
           date: data.date || new Date().toISOString().slice(0, 10),
           status: 'OK',
+          stale: false,
           updatedAt: new Date().toISOString(),
         };
         okCount++;
@@ -94,11 +97,16 @@ class DataStore {
             );
           } catch (e) { /* ignore individual save errors */ }
         }
+      } else if (this.memCache[id]?.status === 'OK') {
+        // 새 데이터 실패 + 이전 캐시 있음 → 이전 캐시 유지, stale 표시
+        this.memCache[id].stale = true;
+        preserved++;
       }
     }
 
     const duration = Date.now() - start;
     this.lastFetch = new Date().toISOString();
+    this.lastRefreshResult = { ok: okCount, preserved, failed: Object.keys(pipelineResults).length - okCount - preserved, duration };
 
     // 로그 기록
     if (this.db) {
@@ -110,7 +118,7 @@ class DataStore {
       } catch (e) { /* ignore */ }
     }
 
-    return { stored: okCount, duration };
+    return { stored: okCount, preserved, duration };
   }
 
   // 엔진 입력 형식으로 변환: { I1: 2.5, I2: 87.4, ... }
@@ -128,12 +136,15 @@ class DataStore {
   getStatus() {
     const entries = Object.entries(this.memCache);
     const ok = entries.filter(([, v]) => v.status === 'OK').length;
-    const stale = this.isStale();
+    const staleCount = entries.filter(([, v]) => v.stale).length;
+    const expired = this.isStale();
     return {
       total: entries.length,
       ok,
-      stale,
+      stale: staleCount,
+      expired,
       lastFetch: this.lastFetch,
+      lastRefreshResult: this.lastRefreshResult || null,
       ttlMs: DEFAULT_TTL_MS,
       ttlLabel: `${DEFAULT_TTL_MS / 3600000}h`,
     };
