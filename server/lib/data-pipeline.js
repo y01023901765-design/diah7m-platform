@@ -53,7 +53,7 @@ const GAUGE_MAP = {
 
   // ── A4: 정책·규제 (신경계) ──
   S1: { source:'MANUAL', name:'BSI(기업경기)', unit:'pt', note:'ECOS 512Y006 폐기, 수동입력 필요' },
-  S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
+  S2: { source:'GEE_SATELLITE', sat:'VIIRS_DNB', name:'야간광량(서울)', unit:'nW/cm²/sr', note:'Google Earth Engine 자동 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
   S5: { source:'FRED', series:'GEPUCURRENT', fallback:['KOREAEPUINDXM'], cycle:'M', name:'정책불확실성(EPU)', unit:'pt' },
@@ -399,6 +399,10 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
     rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;
   } else if (spec.source === 'SATELLITE') {
     return { gaugeId, source:'SATELLITE', sat:spec.sat, note:spec.note, value:null, status:'PENDING' };
+  } else if (spec.source === 'GEE_SATELLITE') {
+    // TODO: GEE 통합 - Python 스크립트 또는 Node.js earthengine 패키지 사용
+    // 현재는 PENDING, 향후 fetch-satellite.js 통합 예정
+    return { gaugeId, source:'GEE_SATELLITE', sat:spec.sat, note:spec.note + ' (GEE 연동 대기)', value:null, status:'PENDING' };
   } else if (spec.source === 'EXTERNAL') {
     return { gaugeId, source:'EXTERNAL', url:spec.url, note:spec.note, value:null, status:'PENDING' };
   } else if (spec.source === 'MANUAL') {
