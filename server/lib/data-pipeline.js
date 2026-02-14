@@ -362,11 +362,17 @@ function getDateRange(cycle, monthsBack) {
   if (monthsBack) {
     startDate.setMonth(startDate.getMonth() - monthsBack);
   } else {
-    startDate.setFullYear(startDate.getFullYear() - (cycle === 'Q' || cycle === 'A' ? 3 : 1));
+    // Daily: 최근 10일 조회 (주말 대비)
+    if (cycle === 'D') {
+      startDate.setDate(startDate.getDate() - 10);
+    } else {
+      startDate.setFullYear(startDate.getFullYear() - (cycle === 'Q' || cycle === 'A' ? 3 : 1));
+    }
   }
   const sy = startDate.getFullYear();
   const sm = String(startDate.getMonth() + 1).padStart(2, '0');
-  const start = cycle === 'D' ? `${sy}${sm}01` :
+  const sd = String(startDate.getDate()).padStart(2, '0');
+  const start = cycle === 'D' ? `${sy}${sm}${sd}` :
                 cycle === 'M' || cycle === 'H' ? `${sy}${sm}` :
                 cycle === 'Q' ? `${sy}Q1` : `${sy}`;
   return { start, end };
