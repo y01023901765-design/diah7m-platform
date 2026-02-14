@@ -318,7 +318,7 @@ export default function GlobeHero({lang='ko'}){
         <div style={{paddingTop:32}}>
           <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos} lang={L}/>
         </div>
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:120,background:`linear-gradient(transparent,${T.bg0})`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:220,background:`linear-gradient(transparent,${T.bg0} 60%)`,pointerEvents:"none"}}/>
 
         {hovered&&(
           <div style={{
