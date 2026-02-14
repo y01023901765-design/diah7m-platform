@@ -254,7 +254,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos}){
   return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",maxWidth:960,margin:"0 auto"}}/>;
 }
 
-export default function GlobeHero(){
+export default function GlobeHero({onNavigate,lang,setLang,LangSelector,t}){
   const [hovered,setHovered]=useState(null);
   const [clicked,setClicked]=useState(null);
   const [mousePos,setMousePos]=useState({x:0,total:960});
@@ -268,16 +268,16 @@ export default function GlobeHero(){
         @keyframes beamPulse{0%,100%{opacity:0.7}50%{opacity:1}}
       `}</style>
 
-      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px",borderBottom:`1px solid ${T.border}`,background:`${T.bg0}d0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50}}>
+      <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px",borderBottom:`1px solid ${T.border}`,background:`${T.bg0}d0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100}}>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <span style={{fontSize:16}}>🛰️</span>
           <span style={{fontSize:16,fontWeight:800,color:T.text}}>DIAH</span>
           <span style={{fontSize:16,fontWeight:800,color:T.accent}}>(-7M)</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:T.textDim,padding:"6px 10px",borderRadius:8,border:`1px solid ${T.border}`,background:T.surface}}>🇰🇷 KO</span>
-          <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text,fontSize:12,fontWeight:600,cursor:"pointer"}}>로그인</button>
-          <button style={{padding:"8px 16px",borderRadius:8,border:"none",background:T.accent,color:T.bg0,fontSize:12,fontWeight:700,cursor:"pointer"}}>무료 시작</button>
+          {LangSelector && <LangSelector lang={lang} setLang={setLang}/>}
+          <button onClick={()=>onNavigate&&onNavigate('login')} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t?t('login',lang):'로그인'}</button>
+          <button onClick={()=>onNavigate&&onNavigate('signup')} style={{padding:"8px 16px",borderRadius:8,border:"none",background:T.accent,color:T.bg0,fontSize:12,fontWeight:700,cursor:"pointer"}}>{t?t('signup',lang):'무료 시작'}</button>
         </div>
       </nav>
 
