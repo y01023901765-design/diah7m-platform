@@ -175,7 +175,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
       const ctx=canvas.getContext("2d"),{w,h}=sizeRef.current,dpr=window.devicePixelRatio||1;
       if(canvas.width!==w*dpr){canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+"px";canvas.style.height=h+"px"}
       ctx.setTransform(dpr,0,0,dpr,0,0);
-      const proj=d3.geoNaturalEarth1().scale(w/5.2).translate([w/2,h/2]);
+      const proj=d3.geoNaturalEarth1().rotate([-130,0]).scale(w/5.2).translate([w/2,h/2]);
       projRef.current=proj;const path=d3.geoPath(proj,ctx);
       const now=Date.now()/1000;const hov=hovRef.current;
 
