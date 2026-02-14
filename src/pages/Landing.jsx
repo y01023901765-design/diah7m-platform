@@ -49,20 +49,7 @@ function LandingPage({onNavigate,lang,setLang}){
         </div>
       </nav>
 
-      {/* ═══ HERO ═══ */}
-      <div style={{textAlign:"center",padding:"100px 24px 80px",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:600,height:600,borderRadius:"50%",background:`radial-gradient(circle,${T.accent}06,transparent 70%)`,pointerEvents:"none"}}/>
-        <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:16}}>{t('heroSub',L)}</div>
-        <h1 style={{fontSize:42,fontWeight:900,margin:"0 0 20px",lineHeight:1.15,letterSpacing:-2,maxWidth:600,marginLeft:"auto",marginRight:"auto"}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
-        <p style={{fontSize:15,color:T.textMid,maxWidth:520,lineHeight:1.8,margin:"0 auto 36px"}}>{t('heroDesc',L)} <strong style={{color:T.accent}}>{t('heroFast',L)}</strong> {t('heroDesc2',L)}<br/>59 {t('gauges',L)} · 9 {t('bodySys',L)} · {t('satTab',L)}</p>
-        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-          <button onClick={()=>onNavigate('signup')} style={{padding:"14px 36px",borderRadius:12,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 24px ${T.accent}40`}}>{t('heroCta',L)}</button>
-          <button onClick={()=>{const el=document.getElementById('features');el&&el.scrollIntoView({behavior:'smooth'});}} style={{padding:"14px 28px",borderRadius:12,border:`1px solid ${T.border}`,background:"transparent",color:T.text,fontSize:14,fontWeight:600,cursor:"pointer"}}>{t('heroMore',L)}</button>
-        </div>
-        <div style={{display:"flex",gap:32,justifyContent:"center",marginTop:56}}>
-          {[{n:t('gauges',L),v:"59"},{n:t('bodySys',L),v:"9"},{n:t('satCost',L),v:"$0"},{n:t('languages',L),v:"30"}].map(s=>(<div key={s.n}><div style={{fontSize:24,fontWeight:800,color:T.accent,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}</div><div style={{fontSize:11,color:T.textDim,marginTop:2}}>{s.n}</div></div>))}
-        </div>
-      </div>
+
 
       {/* ═══ FEATURES ═══ */}
       <div id="features" style={sectionStyle}>
