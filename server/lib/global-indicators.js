@@ -225,26 +225,33 @@ const GLOBAL_GAUGES = {
 // 세계 경제 공통지표 (Global Shared Indicators)
 // ═══════════════════════════════════════════
 const GLOBAL_COMMODITIES = {
-  // 에너지
-  OIL_WTI:    { name: 'WTI Crude Oil',    fredId: 'DCOILWTICO',     unit: '$/barrel' },
-  OIL_BRENT:  { name: 'Brent Crude Oil',  fredId: 'DCOILBRENTEU',   unit: '$/barrel' },
-  NATGAS:     { name: 'Natural Gas',       fredId: 'DHHNGSP',        unit: '$/MMBtu' },
+  // ── 에너지 ──────────────────────────────────
+  OIL_WTI:    { name: 'WTI Crude Oil',         fredId: 'DCOILWTICO',     unit: '$/barrel' },
+  OIL_BRENT:  { name: 'Brent Crude Oil',       fredId: 'DCOILBRENTEU',   unit: '$/barrel' },
+  NATGAS:     { name: 'Natural Gas',            fredId: 'DHHNGSP',        unit: '$/MMBtu' },
 
-  // 금속
-  GOLD:       { name: 'Gold',              source: 'datahub',          unit: '$/oz' },
-  COPPER:     { name: 'Copper',            fredId: 'PCOPPUSDM',      unit: '$/mt' },
+  // ── 금속 ────────────────────────────────────
+  GOLD:       { name: 'Gold',                   source: 'datahub',        unit: '$/oz' },
+  COPPER:     { name: 'Copper',                 fredId: 'PCOPPUSDM',      unit: '$/mt' },
+  IRON_ORE:   { name: 'Iron Ore',              fredId: 'PIORECRUSDM',    unit: '$/mt' },
 
-  // 곡물 (World Bank Commodity)
-  WHEAT:      { name: 'Wheat',             wbCommodity: 'wheat',     unit: '$/mt' },
-  CORN:       { name: 'Corn',              wbCommodity: 'maize',     unit: '$/mt' },
+  // ── 곡물 (IMF Global Price via FRED) ───────
+  WHEAT:      { name: 'Wheat',                  fredId: 'PWHEAMTUSDM',    unit: '$/mt' },
+  CORN:       { name: 'Corn',                   fredId: 'PMAIZMTUSDM',    unit: '$/mt' },
+  SOYBEANS:   { name: 'Soybeans',               fredId: 'PSOYBUSDM',      unit: '$/mt' },
 
-  // 글로벌 금융
-  VIX:        { name: 'VIX (Fear Index)',  fredId: 'VIXCLS',         unit: 'index' },
-  DXY:        { name: 'US Dollar Index',   fredId: 'DTWEXBGS',       unit: 'index' },
-  US10Y:      { name: 'US 10Y Treasury',   fredId: 'DGS10',          unit: '%' },
+  // ── 글로벌 금융 ────────────────────────────
+  VIX:        { name: 'VIX (Fear Index)',       fredId: 'VIXCLS',         unit: 'index' },
+  DXY:        { name: 'US Dollar Index',        fredId: 'DTWEXBGS',       unit: 'index' },
+  US10Y:      { name: 'US 10Y Treasury',        fredId: 'DGS10',          unit: '%' },
 
-  // 물류
-  BDI:        { name: 'Baltic Dry Index',  source: 'manual',         unit: 'index' },
+  // ── 경기 선행/스트레스 지표 ─────────────────
+  YIELD_CURVE:  { name: 'Yield Curve (10Y-2Y)', fredId: 'T10Y2Y',         unit: '%' },
+  CREDIT_SPREAD:{ name: 'HY Credit Spread',     fredId: 'BAMLH0A0HYM2',  unit: '%' },
+  SOFR:         { name: 'SOFR Rate',             fredId: 'SOFR',           unit: '%' },
+
+  // ── 물류 ────────────────────────────────────
+  BDI:        { name: 'Baltic Dry Index',       source: 'manual',         unit: 'index' },
 };
 
 
