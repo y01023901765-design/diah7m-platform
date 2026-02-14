@@ -102,7 +102,7 @@ const GAUGE_MAP = {
   R1: { source:'ECOS', stat:'901Y067', item:'I16C', cycle:'M', name:'후행종합지수', unit:'2020=100' },
   R2: { source:'ECOS', stat:'301Y017', item:'SA000', cycle:'M', name:'경상수지(계절조정)', unit:'백만$' },
   R5: { source:'SATELLITE', sat:'SENTINEL1_SAR', name:'해수면상승', unit:'mm/yr', note:'Copernicus SAR 직접 수집' },
-  R6: { source:'SATELLITE', sat:'LANDSAT9_TIR', name:'도시열섬', unit:'지수', note:'NASA Landsat-9 직접 수집' },
+  R6: { source:'GEE_SATELLITE', sat:'LANDSAT9_TIR', name:'도시열섬(서울)', unit:'°C', note:'Google Earth Engine 자동 수집' },
   G1: { source:'ECOS', stat:'301Y013', item:'2B0000', cycle:'M', name:'운송수지', unit:'백만$' },
   G6: { source:'WAQI', city:'seoul', cycle:'H', name:'PM2.5(대기질)', unit:'㎍/m³' },
 };
