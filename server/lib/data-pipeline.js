@@ -62,11 +62,11 @@ const GAUGE_MAP = {
   // ── A5: 금융안정 (면역계) ──
   F1: { source:'ECOS', stat:'817Y002', item:'010300000', cycle:'D', name:'회사채금리(AA-)', unit:'%' },
   F2: { source:'ECOS', stat:'817Y002', item:'010502000', cycle:'D', name:'CD금리(91일)', unit:'%' },
-  F3: { source:'ECOS', stat:'802Y001', item:'0001000', cycle:'D', name:'KOSPI', unit:'pt' },
+  F3: { source:'MANUAL', name:'KOSPI', unit:'pt', note:'ECOS 802Y001 폐기, Yahoo Finance 연동 예정' },
   F4: { source:'ECOS', stat:'817Y002', item:'010200000', cycle:'D', name:'국고채(3년)', unit:'%' },
   F5: { source:'ECOS', stat:'817Y002', item:'010210000', cycle:'D', name:'국고채(10년)', unit:'%' },
   F6: { source:'DERIVED', deps:['F1','F4'], calc:(corp,gov)=>+(corp-gov).toFixed(2), name:'신용스프레드', unit:'%p' },
-  F7: { source:'ECOS', stat:'802Y001', item:'0002000', cycle:'D', name:'KOSDAQ', unit:'pt' },
+  F7: { source:'MANUAL', name:'KOSDAQ', unit:'pt', note:'ECOS 802Y001 폐기, Yahoo Finance 연동 예정' },
 
   // ── A6: 물가·재정 (내분비계) ──
   P1: { source:'ECOS', stat:'901Y009', item:'0', cycle:'M', name:'CPI(소비자물가)', unit:'2020=100' },
