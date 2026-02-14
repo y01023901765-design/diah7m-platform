@@ -466,25 +466,29 @@ async function fetchAllCommodities(fredApiKey) {
     }
   }
 
-  // Gold: DataHub (GitHub-hosted World Bank commodity data)
+  // Gold: DataHub (GitHub-hosted World Bank commodity data, CSV)
   // FRED discontinued LBMA gold price series in Jan 2022
   try {
-    const goldUrl = 'https://raw.githubusercontent.com/datasets/gold-prices/main/data/monthly.json';
+    const goldUrl = 'https://raw.githubusercontent.com/datasets/gold-prices/main/data/monthly.csv';
     const goldResult = await safeFetch(goldUrl, 'GOLD_DATAHUB', 10000);
     if (goldResult.ok) {
-      const goldRaw = await goldResult.res.json();
-      // Format: [{"Date": "1950-01", "Price": 34.73}, ...]
-      // 최근 60건만 사용, 최신순 정렬
-      const goldData = goldRaw
-        .filter(r => r.Price && r.Date >= '2020')
-        .sort((a, b) => b.Date.localeCompare(a.Date))
+      const csvText = await goldResult.res.text();
+      // CSV format: Date,Price (e.g. "1950-01,34.73")
+      const lines = csvText.trim().split('\n').slice(1); // skip header
+      const goldData = lines
+        .map(line => {
+          const [date, price] = line.split(',');
+          return { date: date?.trim(), price: parseFloat(price) };
+        })
+        .filter(r => r.price && !isNaN(r.price) && r.date >= '2020')
+        .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 60)
         .map(r => ({
           provider: 'WorldBank',
           indicator: 'GOLD_MONTHLY',
           country: 'GLOBAL',
-          date: r.Date + '-01',
-          value: r.Price,
+          date: r.date + '-01',
+          value: r.price,
         }));
 
       if (goldData.length > 0) {
