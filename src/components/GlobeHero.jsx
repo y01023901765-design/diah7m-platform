@@ -147,7 +147,9 @@ function RealisticSatellite(){
 }
 
 function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
-  const cN=(c)=>lang==='ko'?c.n:(c.en||c.n);
+  const langRef=useRef(lang);
+  useEffect(()=>{langRef.current=lang},[lang]);
+  const cN=(c)=>langRef.current==='ko'?c.n:(c.en||c.n);
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
