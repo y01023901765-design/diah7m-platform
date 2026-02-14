@@ -38,7 +38,6 @@ function LandingPage({onNavigate,lang,setLang}){
   const sectionStyle={maxWidth:900,margin:"0 auto",padding:"80px 24px"};
   return(
     <div style={{minHeight:"100vh",background:`linear-gradient(180deg,${T.bg0},${T.bg1} 30%,${T.bg2} 70%,${T.bg0})`,color:T.text}}>
-      <GlobeHero onNavigate={onNavigate} lang={L}/>
       {/* ═══ NAV ═══ */}
       <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px",borderBottom:`1px solid ${T.border}`,background:`${T.bg0}d0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,direction:"ltr"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>🛰️</span><span style={{fontSize:16,fontWeight:800,letterSpacing:-.5}}>DIAH-7M</span></div>
@@ -49,7 +48,7 @@ function LandingPage({onNavigate,lang,setLang}){
         </div>
       </nav>
 
-
+      <GlobeHero />
 
       {/* ═══ FEATURES ═══ */}
       <div id="features" style={sectionStyle}>
