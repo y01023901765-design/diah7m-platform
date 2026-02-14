@@ -134,6 +134,28 @@ app.get('/api/test/:id', async (req, res) => {
   }
 });
 
+// -- ECOS 단건 항목 조회 (가벼움) --
+app.get('/api/ecos-items/:stat', async (req, res) => {
+  const ecosKey = process.env.ECOS_API_KEY;
+  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
+  const stat = req.params.stat;
+  const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/30/${stat}`;
+  try {
+    const r = await new Promise((resolve) => {
+      require('https').get(url, { timeout: 8000 }, (resp) => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+    const rows = r?.StatisticItemList?.row;
+    if (rows) {
+      res.json({ stat, count: rows.length, items: rows });
+    } else {
+      res.json({ stat, error: r?.RESULT?.MESSAGE || 'no data' });
+    }
+  } catch (e) { res.json({ stat, error: e.message }); }
+});
+
 // -- ECOS 항목 발견 (통계표 → 항목 코드 목록) --
 app.get('/api/ecos-items', async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
