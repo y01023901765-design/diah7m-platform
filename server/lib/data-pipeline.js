@@ -52,11 +52,11 @@ const GAUGE_MAP = {
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
-  S1: { source:'ECOS', stat:'512Y006', item:'FBB', cycle:'M', name:'BSI(기업경기)', unit:'pt', searchMonthsBack:3 },
+  S1: { source:'ECOS', stat:'512Y006', item:'FBB', cycle:'M', name:'BSI(기업경기)', unit:'pt' },
   S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
-  S5: { source:'FRED', series:'KOREAEPUINDXM', fallback:['KOREPUINDXM'], cycle:'M', name:'정책불확실성(EPU)', unit:'pt' },
+  S5: { source:'FRED', series:'GEPUCURRENT', fallback:['KOREAEPUINDXM'], cycle:'M', name:'정책불확실성(EPU)', unit:'pt' },
   S6: { source:'ECOS', stat:'901Y067', item:'I16B', cycle:'M', name:'경기동행지수', unit:'2020=100' },
 
   // ── A5: 금융안정 (면역계) ──
@@ -78,7 +78,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'ECOS', stat:'512Y006', item:'FBB01', cycle:'M', name:'제조업BSI(PMI대리)', unit:'pt', searchMonthsBack:3 },
+  O2: { source:'ECOS', stat:'512Y006', item:'FBE', cycle:'M', name:'제조업BSI전망(PMI대리)', unit:'pt' },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
