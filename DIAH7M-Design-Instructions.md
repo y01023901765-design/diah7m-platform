@@ -216,6 +216,7 @@ navigator.language로 브라우저/OS 언어를 감지한다. 일본에서 일�
 
 ## 9. 색상 토큰 (변경 금지)
 
+### 다크 모드 (Landing, Auth)
 ```
 accent:    #00d4ff (cyan)
 satellite: #8b5cf6 (purple)
@@ -229,6 +230,32 @@ good:      #00e5a0 (양호)
 warn:      #f0b429 (주의)
 danger:    #ff5c5c (경보)
 ```
+
+### 라이트 모드 (Dashboard, 보고서, MyPage, Admin)
+```
+accent:    #0891B2 (다크 cyan, 화이트 배경 대비용)
+bg:        #FFFFFF (화이트)
+surface:   #F8FAFB
+border:    #E2E8F0
+text:      #1A202C
+textMid:   #4A5568
+textDim:   #A0AEC0
+good:      #059669
+warn:      #D97706
+danger:    #DC2626
+```
+
+### 페이지별 테마 적용
+| 페이지 | 테마 | 이유 |
+|--------|------|------|
+| Landing (GlobeHero) | 다크 | 위성/우주 브랜드 임팩트 |
+| Auth (로그인/가입) | 다크 | Landing과 연결감 |
+| Dashboard | 라이트 | 59게이지 숫자 가독성 |
+| 보고서 뷰어 | 라이트 | 텍스트 중심, 인쇄 호환 |
+| MyPage | 라이트 | 정보 확인 |
+| Admin | 라이트 | 데이터 테이블 |
+
+theme.js에 dark/light 두 모드를 export하고, 각 페이지에서 적절한 테마를 import한다.
 
 로고: 🛰️ + "DIAH" 흰색 + "(-7M)" #00d4ff
 금지: 그라데이션 박스, JetBrains Mono 로고
