@@ -4,8 +4,10 @@ import { t } from "../i18n";
 
 const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e'};
 
+const LANG_HOME={ko:'KOR',ja:'JPN',zh:'CHN',en:'USA',es:'ESP',fr:'FRA',de:'DEU',pt:'PRT',it:'ITA',nl:'NLD',sv:'SWE',no:'NOR',da:'DNK',fi:'FIN',pl:'POL',cs:'CZE',hu:'HUN',ro:'ROU',tr:'TUR',ru:'RUS',uk:'UKR',he:'ISR',ar:'SAU',hi:'IND',vi:'VNM',th:'THA',id:'IDN'};
+
 const ACTIVE=[
-  {iso:"KOR",n:"대한민국",en:"South Korea",lat:37.5,lon:127,home:true,score:68},
+  {iso:"KOR",n:"대한민국",en:"South Korea",lat:37.5,lon:127,score:68},
   {iso:"USA",n:"미국",en:"United States",lat:38.9,lon:-97,score:72},{iso:"JPN",n:"일본",en:"Japan",lat:36.2,lon:138.3,score:65},
   {iso:"DEU",n:"독일",en:"Germany",lat:51.2,lon:10.4,score:61},{iso:"GBR",n:"영국",en:"United Kingdom",lat:54,lon:-2,score:63},
   {iso:"FRA",n:"프랑스",en:"France",lat:46.6,lon:2.3,score:60},{iso:"CAN",n:"캐나다",en:"Canada",lat:56,lon:-96,score:70},
@@ -203,7 +205,8 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
 
       ACTIVE.forEach((c,i)=>{
         const p=proj([c.lon,c.lat]);if(!p)return;
-        const isH=c.home,isV=hov?.iso===c.iso;
+        const homeIso=LANG_HOME[langRef.current]||'KOR';
+        const isH=c.iso===homeIso,isV=hov?.iso===c.iso;
         const phase=now*0.9+i*1.3;
         const pulse=0.6+Math.sin(phase*0.7)*0.12+Math.sin(phase*1.9)*0.06;
         const r1=isH?45:isV?30:18+Math.sin(phase*0.4)*2;
@@ -252,7 +255,8 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
     const mx=e.clientX-rect.left,my=e.clientY-rect.top;
     setMousePos({x:mx,total:rect.width});
     let found=null;
-    for(const c of ACTIVE){const p=projRef.current([c.lon,c.lat]);if(!p)continue;if(Math.sqrt((mx-p[0])**2+(my-p[1])**2)<(c.home?22:15)){found=c;break}}
+    const homeIso=LANG_HOME[langRef.current]||'KOR';
+    for(const c of ACTIVE){const p=projRef.current([c.lon,c.lat]);if(!p)continue;if(Math.sqrt((mx-p[0])**2+(my-p[1])**2)<(c.iso===homeIso?22:15)){found=c;break}}
     setHovered(found);canvasRef.current.style.cursor=found?"pointer":"default";
   };
 
@@ -328,7 +332,7 @@ export default function GlobeHero({lang='ko'}){
               <span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:`${scoreColor(hovered.score)}20`,color:scoreColor(hovered.score),fontWeight:700}}>
                 {hovered.score>=70?t('gStatGood',L):hovered.score>=55?t('gStatWarn',L):t('gStatAlert',L)}
               </span>
-              {hovered.home&&<span style={{fontSize:8,padding:"2px 5px",borderRadius:4,background:`${T.accent}20`,color:T.accent,fontWeight:700}}>HOME</span>}
+              {hovered.iso===(LANG_HOME[L]||'KOR')&&<span style={{fontSize:8,padding:"2px 5px",borderRadius:4,background:`${T.accent}20`,color:T.accent,fontWeight:700}}>HOME</span>}
             </div>
             <div style={{fontSize:15,fontWeight:800}}>{cName(hovered)}</div>
             <div style={{fontSize:10,color:T.textDim}}>{hovered.iso} · 59 Gauges · 9 Systems</div>
