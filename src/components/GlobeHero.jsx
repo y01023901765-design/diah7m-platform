@@ -153,7 +153,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
-  useEffect(()=>{const fn=()=>{const w=window.innerWidth;sizeRef.current={w,h:Math.round(w*0.46)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
+  useEffect(()=>{const fn=()=>{const w=window.innerWidth;sizeRef.current={w,h:Math.round(w*0.42)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
 
   const decode=useCallback(()=>{
     const geo=geoRef.current;if(!geo||decodedRef.current)return;
@@ -175,7 +175,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
       const ctx=canvas.getContext("2d"),{w,h}=sizeRef.current,dpr=window.devicePixelRatio||1;
       if(canvas.width!==w*dpr){canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+"px";canvas.style.height=h+"px"}
       ctx.setTransform(dpr,0,0,dpr,0,0);
-      const proj=d3.geoNaturalEarth1().rotate([-127,0]).scale(w/4.8).translate([w/2,h/2]);
+      const proj=d3.geoNaturalEarth1().rotate([-127,0]).scale(w/6).translate([w/2,h/2]);
       projRef.current=proj;const path=d3.geoPath(proj,ctx);
       const now=Date.now()/1000;const hov=hovRef.current;
 
