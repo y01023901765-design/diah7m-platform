@@ -442,8 +442,10 @@ async function fetchAllCommodities(fredApiKey) {
   const results = {};
   const errors = [];
 
+  // FRED 기반 원자재 수집
   for (const [id, commodity] of Object.entries(GLOBAL_COMMODITIES)) {
     if (commodity.source === 'manual') continue;
+    if (commodity.source === 'datahub') continue; // 별도 처리
     if (!commodity.fredId) continue;
 
     try {
@@ -462,6 +464,45 @@ async function fetchAllCommodities(fredApiKey) {
     } catch (e) {
       errors.push({ id, error: e.message });
     }
+  }
+
+  // Gold: DataHub (GitHub-hosted World Bank commodity data)
+  // FRED discontinued LBMA gold price series in Jan 2022
+  try {
+    const goldUrl = 'https://raw.githubusercontent.com/datasets/gold-prices/main/data/monthly.json';
+    const goldResult = await safeFetch(goldUrl, 'GOLD_DATAHUB', 10000);
+    if (goldResult.ok) {
+      const goldRaw = await goldResult.res.json();
+      // Format: [{"Date": "1950-01", "Price": 34.73}, ...]
+      // 최근 60건만 사용, 최신순 정렬
+      const goldData = goldRaw
+        .filter(r => r.Price && r.Date >= '2020')
+        .sort((a, b) => b.Date.localeCompare(a.Date))
+        .slice(0, 60)
+        .map(r => ({
+          provider: 'WorldBank',
+          indicator: 'GOLD_MONTHLY',
+          country: 'GLOBAL',
+          date: r.Date + '-01',
+          value: r.Price,
+        }));
+
+      if (goldData.length > 0) {
+        results.GOLD = {
+          id: 'GOLD',
+          name: 'Gold',
+          unit: '$/oz',
+          data: goldData,
+          fetchedAt: new Date().toISOString(),
+          count: goldData.length,
+        };
+        console.log(`[DataHub] GOLD: ${goldData.length} records (latest: $${goldData[0].value}/oz)`);
+      }
+    } else {
+      errors.push({ id: 'GOLD', error: `DataHub fetch failed: ${goldResult.error}` });
+    }
+  } catch (e) {
+    errors.push({ id: 'GOLD', error: `Gold fallback error: ${e.message}` });
   }
 
   return { results, errors };
