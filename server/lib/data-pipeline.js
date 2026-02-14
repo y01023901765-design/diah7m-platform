@@ -47,29 +47,28 @@ const GAUGE_MAP = {
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
-  S1: { source:'ECOS', stat:'512Y006', item:'FBB', cycle:'M', name:'BSI(기업경기)', unit:'pt' },
+  S1: { source:'DERIVED', manual:true, name:'BSI(기업경기)', unit:'pt', note:'한국은행 BSI 별도 수집 필요' },
   S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
-  S4: { source:'ECOS', stat:'301Y014', item:'A0100', cycle:'M', name:'정부지출', unit:'%' },
+  S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
   S5: { source:'DERIVED', manual:true, name:'정책불확실성', unit:'%', note:'Baker-Bloom-Davis EPU 지수 참조' },
   S6: { source:'ECOS', stat:'901Y067', item:'I16B', cycle:'M', name:'경기동행지수', unit:'2020=100' },
 
   // ── A5: 금융안정 (면역계) ──
-  F1: { source:'ECOS', stat:'817Y002', item:'010500102', cycle:'M', name:'신용스프레드', unit:'%',
-        deps:['817Y002/010500102','817Y002/010200000'], calc:(corp,gov)=>+(corp-gov).toFixed(2) },
-  F2: { source:'ECOS', stat:'817Y002', item:'010100000', cycle:'M', name:'CD-국고채 스프레드', unit:'%p' },
+  F1: { source:'ECOS', stat:'817Y002', item:'010300000', cycle:'D', name:'회사채금리(AA-)', unit:'%' },
+  F2: { source:'ECOS', stat:'817Y002', item:'010502000', cycle:'D', name:'CD금리(91일)', unit:'%' },
   F3: { source:'ECOS', stat:'802Y001', item:'0001000', cycle:'D', name:'KOSPI', unit:'pt' },
-  F4: { source:'ECOS', stat:'901Y062', item:'VKOSPI', cycle:'D', name:'V-KOSPI', unit:'pt' },
-  F5: { source:'ECOS', stat:'901Y014', item:'DRATE', cycle:'M', name:'연체율(금융)', unit:'%' },
-  F6: { source:'DERIVED', deps:['F1'], name:'회사채스프레드', unit:'%p', note:'F1과 연동' },
+  F4: { source:'ECOS', stat:'817Y002', item:'010200000', cycle:'D', name:'국고채(3년)', unit:'%' },
+  F5: { source:'ECOS', stat:'817Y002', item:'010210000', cycle:'D', name:'국고채(10년)', unit:'%' },
+  F6: { source:'DERIVED', deps:['F1','F4'], calc:(corp,gov)=>+(corp-gov).toFixed(2), name:'신용스프레드', unit:'%p' },
   F7: { source:'ECOS', stat:'802Y001', item:'0002000', cycle:'D', name:'KOSDAQ', unit:'pt' },
 
   // ── A6: 물가·재정 (내분비계) ──
   P1: { source:'ECOS', stat:'901Y009', item:'0', cycle:'M', name:'CPI(소비자물가)', unit:'2020=100' },
   P2: { source:'ECOS', stat:'404Y014', item:'*AA', cycle:'M', name:'PPI(생산자물가)', unit:'2020=100' },
-  P3: { source:'ECOS', stat:'301Y014', item:'R0100', cycle:'M', name:'국세수입', unit:'%' },
-  P4: { source:'ECOS', stat:'301Y013', item:'000000BPA', cycle:'A', name:'경상수지(연간)', unit:'백만$' },
-  P5: { source:'ECOS', stat:'301Y014', item:'BALANCE', cycle:'M', name:'재정수지', unit:'%GDP' },
+  P3: { source:'ECOS', stat:'301Y014', item:'SC0000', cycle:'M', name:'운송수지', unit:'백만$' },
+  P4: { source:'ECOS', stat:'301Y013', item:'100000', cycle:'M', name:'상품수지', unit:'백만$' },
+  P5: { source:'ECOS', stat:'301Y014', item:'SG0000', cycle:'M', name:'금융서비스수지', unit:'백만$' },
   P6: { source:'ECOS', stat:'901Y009', item:'A', cycle:'M', name:'식료품물가', unit:'2020=100' },
 
   // ── A7: 생산·산업 (근골격계) ──
@@ -91,8 +90,8 @@ const GAUGE_MAP = {
   D3: { source:'ECOS', stat:'901Y027', item:'I61B', cycle:'M', name:'경제활동인구', unit:'천명' },
   L1: { source:'ECOS', stat:'901Y027', item:'I61BA', cycle:'M', name:'취업자수', unit:'천명' },
   L2: { source:'DERIVED', deps:['D3','L1'], calc:(eap,emp)=>+(((eap-emp)/eap)*100).toFixed(1), name:'실업률(산출)', unit:'%' },
-  L3: { source:'ECOS', stat:'151Y002', item:'HH_DEBT', cycle:'Q', name:'가계부채', unit:'조원', transform: v => +(v/1e12).toFixed(0) },
-  L4: { source:'ECOS', stat:'901Y014', item:'HH_DRATE', cycle:'M', name:'가계연체율', unit:'%' },
+  L3: { source:'ECOS', stat:'151Y002', item:'1110000', cycle:'M', name:'가계부채', unit:'십억원' },
+  L4: { source:'ECOS', stat:'817Y002', item:'010320000', cycle:'D', name:'회사채금리(BBB-)', unit:'%' },
 
   // ── A9: 환경·부동산 (생태·재생계) ──
   R1: { source:'ECOS', stat:'901Y067', item:'I16C', cycle:'M', name:'후행종합지수', unit:'2020=100' },
@@ -224,11 +223,12 @@ function getDateRange(cycle) {
   const end = cycle === 'D' ? `${y}${m}${String(now.getDate()).padStart(2, '0')}` :
               cycle === 'M' ? `${y}${m}` :
               cycle === 'Q' ? `${y}Q${Math.ceil((now.getMonth()+1)/3)}` : `${y}`;
-  // 1년 전
+  // 1년 전 (D/M), 3년 전 (Q/A — 발표 지연 커버)
   const py = y - 1;
+  const py3 = y - 3;
   const start = cycle === 'D' ? `${py}${m}01` :
                 cycle === 'M' ? `${py}${m}` :
-                cycle === 'Q' ? `${py}Q1` : `${py}`;
+                cycle === 'Q' ? `${py3}Q1` : `${py3}`;
   return { start, end };
 }
 
