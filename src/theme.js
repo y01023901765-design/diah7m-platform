@@ -12,16 +12,27 @@ const T = {
 };
 
 // Light mode — Dashboard, 보고서, MyPage, Admin
+// 단색 원칙: 흑백+회색, 컬러는 이모티콘/상태만
 const L = {
-  bg0:'#FFFFFF', bg1:'#F8FAFB', bg2:'#F1F5F9', bg3:'#E2E8F0',
-  surface:'#FFFFFF', surfaceHover:'#F1F5F9',
-  border:'#E2E8F0', borderLight:'#CBD5E1',
-  text:'#1A202C', textMid:'#4A5568', textDim:'#94A3B8', white:'#ffffff',
-  accent:'#0891B2', accentDim:'#0891B215', accentMid:'#0891B240',
+  bg0:'#FFFFFF', bg1:'#F9FAFB', bg2:'#F3F4F6', bg3:'#E5E7EB',
+  surface:'#FFFFFF', surfaceHover:'#F9FAFB',
+  border:'#E5E7EB', borderLight:'#D1D5DB',
+  text:'#111827', textMid:'#4B5563', textDim:'#9CA3AF', white:'#ffffff',
+  accent:'#0891B2', accentDim:'#0891B210', accentMid:'#0891B230',
   good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#4F6AE8',
-  orange:'#EA580C', orangeDim:'#EA580C15', enterprise:'#D97706',
-  sat:'#7C3AED', satDim:'#7C3AED15', satBorder:'#6D28D9',
-  cardRadius:14, smRadius:8,
+  orange:'#EA580C', orangeDim:'#EA580C10', enterprise:'#D97706',
+  sat:'#7C3AED', satDim:'#7C3AED10', satBorder:'#6D28D9',
+  cardRadius:12, smRadius:8,
+  // 라이트 전용
+  cardShadow:'0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+  cardShadowHover:'0 4px 12px rgba(0,0,0,0.1)',
+  inputBg:'#FFFFFF',
+  inputBorder:'#D1D5DB',
+  divider:'#F3F4F6',
+  tableHeaderBg:'#F9FAFB',
+  tableStripeBg:'#FAFAFA',
+  activeBg:'#F0FDFA',
+  activeBorder:'#0891B230',
 };
 
 export default T;
