@@ -401,6 +401,8 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
     return { gaugeId, source:'SATELLITE', sat:spec.sat, note:spec.note, value:null, status:'PENDING' };
   } else if (spec.source === 'EXTERNAL') {
     return { gaugeId, source:'EXTERNAL', url:spec.url, note:spec.note, value:null, status:'PENDING' };
+  } else if (spec.source === 'MANUAL') {
+    return { gaugeId, source:'MANUAL', name:spec.name, note:spec.note, value:null, status:'PENDING' };
   } else if (spec.source === 'DERIVED') {
     return { gaugeId, source:'DERIVED', deps:spec.deps, status:'NEEDS_CALC' };
   }
