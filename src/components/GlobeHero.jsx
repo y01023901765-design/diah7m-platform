@@ -153,7 +153,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
-  useEffect(()=>{const fn=()=>{const w=Math.min(window.innerWidth,960);sizeRef.current={w,h:Math.round(w*0.46)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
+  useEffect(()=>{const fn=()=>{const w=window.innerWidth;sizeRef.current={w,h:Math.round(w*0.46)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
 
   const decode=useCallback(()=>{
     const geo=geoRef.current;if(!geo||decodedRef.current)return;
@@ -256,7 +256,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
     setHovered(found);canvasRef.current.style.cursor=found?"pointer":"default";
   };
 
-  return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",maxWidth:960,margin:"0 auto"}}/>;
+  return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",margin:"0 auto"}}/>;
 }
 
 export default function GlobeHero({lang='ko'}){
