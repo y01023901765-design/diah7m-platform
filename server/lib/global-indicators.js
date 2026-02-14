@@ -231,7 +231,7 @@ const GLOBAL_COMMODITIES = {
   NATGAS:     { name: 'Natural Gas',       fredId: 'DHHNGSP',        unit: '$/MMBtu' },
 
   // 금속
-  GOLD:       { name: 'Gold',              fredId: 'GOLDAMGBD228NLBM', unit: '$/oz' },
+  GOLD:       { name: 'Gold',              fredId: 'PGOLDUSDM', unit: '$/oz' },
   COPPER:     { name: 'Copper',            fredId: 'PCOPPUSDM',      unit: '$/mt' },
 
   // 곡물 (World Bank Commodity)
