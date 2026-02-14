@@ -56,7 +56,7 @@ const GAUGE_MAP = {
   S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
-  S5: { source:'FRED', series:'KOREPUINDXM', cycle:'M', name:'정책불확실성(EPU)', unit:'pt' },
+  S5: { source:'FRED', series:'KOREAEPUINDXM', fallback:['KOREPUINDXM'], cycle:'M', name:'정책불확실성(EPU)', unit:'pt' },
   S6: { source:'ECOS', stat:'901Y067', item:'I16B', cycle:'M', name:'경기동행지수', unit:'2020=100' },
 
   // ── A5: 금융안정 (면역계) ──
@@ -78,7 +78,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'FRED', series:'KORMANPMINDX', fallback:['MPMIKRM'], cycle:'M', name:'PMI(제조업)', unit:'pt' },
+  O2: { source:'ECOS', stat:'512Y006', item:'FBB01', cycle:'M', name:'제조업BSI(PMI대리)', unit:'pt', searchMonthsBack:3 },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
@@ -252,22 +252,35 @@ async function fetchAirKorea(region) {
 }
 
 async function fetchOpenAQ() {
-  const url = 'https://api.openaq.org/v2/latest?coordinates=37.5665,126.9780&radius=50000&parameter=pm25&limit=50';
+  // OpenAQ v3 — API키 필요 (explore.openaq.org에서 발급)
+  const apiKey = process.env.OPENAQ_API_KEY;
+  const headers = { 'Accept': 'application/json' };
+  if (apiKey) headers['X-API-Key'] = apiKey;
+
+  // v3: locations near Seoul with pm25 parameter
+  const url = 'https://api.openaq.org/v3/locations?coordinates=37.5665,126.9780&radius=50000&parameter_id=2&limit=50';
   const result = await safeFetch(url, 'OpenAQ:PM25');
-  if (!result.ok) return { rows: [], error: result.error };
+  if (!result.ok) {
+    console.warn(`  ⚠️  OpenAQ v3: ${result.error}`);
+    return { rows: [], error: result.error };
+  }
 
-  const vals = (result.json?.results || [])
-    .flatMap(r => r.measurements || [])
-    .filter(m => m.parameter === 'pm25' && m.value > 0)
-    .map(m => m.value);
-  if (vals.length === 0) return { rows: [], error: 'NO_DATA' };
+  // v3 response: results[].sensors[].summary.avg
+  const results = result.json?.results || [];
+  const values = results
+    .flatMap(loc => (loc.sensors || []))
+    .filter(s => s.parameter?.name === 'pm25' || s.parameter?.id === 2)
+    .map(s => s.summary?.avg || s.latest?.value)
+    .filter(v => v && v > 0);
 
-  const avg = Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
+  if (values.length === 0) return { rows: [], error: 'NO_DATA' };
+
+  const avg = Math.round(values.reduce((a,b) => a+b, 0) / values.length);
   const now = new Date();
   return {
     rows: [{ date: `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}`, value: avg, name: 'PM2.5' }],
     latency: result.latency,
-    meta: { source: 'OpenAQ', stations: vals.length },
+    meta: { source: 'OpenAQ_v3', stations: values.length },
   };
 }
 
