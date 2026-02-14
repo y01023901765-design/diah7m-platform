@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import T from '../theme';
+import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import { TIER_ACCESS, tierLevel } from '../data/gauges';
 // Re-export all data for backward compatibility
@@ -11,18 +11,18 @@ function TierLock({plan,req,children,lang,compact}){
   if(uLv>=rLv) return children;
   const pct=Math.round((1-(TIER_ACCESS[plan||'FREE']?.gauges||7)/59)*100);
   return(
-    <div style={{position:"relative",borderRadius:T.cardRadius,overflow:"hidden"}}>
+    <div style={{position:"relative",borderRadius:LT.cardRadius,overflow:"hidden"}}>
       <div style={{filter:"blur(6px)",opacity:.35,pointerEvents:"none",userSelect:"none"}}>{children}</div>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-        background:`${T.bg0}85`,backdropFilter:"blur(2px)",borderRadius:T.cardRadius,border:`1px dashed ${T.accent}40`,zIndex:10}}>
-        <div style={{width:48,height:48,borderRadius:24,background:`${T.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:22,marginBottom:12,border:`2px solid ${T.accent}30`}}>🔒</div>
-        {!compact&&<div style={{fontSize:13,fontWeight:800,color:T.text,marginBottom:4}}>{pct}% {t('locked',L)}</div>}
-        {!compact&&<div style={{fontSize:11,color:T.textMid,marginBottom:16,textAlign:"center",maxWidth:240,lineHeight:1.6}}>
+        background:`${LT.bg0}85`,backdropFilter:"blur(2px)",borderRadius:LT.cardRadius,border:`1px dashed ${LT.accent}40`,zIndex:10}}>
+        <div style={{width:48,height:48,borderRadius:24,background:`${LT.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:22,marginBottom:12,border:`2px solid ${LT.accent}30`}}>🔒</div>
+        {!compact&&<div style={{fontSize:16,fontWeight:800,color:LT.text,marginBottom:4}}>{pct}% {t('locked',L)}</div>}
+        {!compact&&<div style={{fontSize:16,color:LT.textMid,marginBottom:16,textAlign:"center",maxWidth:240,lineHeight:1.6}}>
           {t('upgradeHint',L).replace('{tier}',req)}</div>}
         <button style={{padding:compact?"8px 16px":"10px 24px",borderRadius:10,border:"none",
-          background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:compact?11:13,fontWeight:700,
-          cursor:"pointer",boxShadow:`0 4px 20px ${T.accent}40`,animation:"tierPulse 2s ease infinite"}}>
+          background:`linear-gradient(135deg,${LT.accent},#0099cc)`,color:"#fff",fontSize:compact?11:13,fontWeight:700,
+          cursor:"pointer",boxShadow:`0 4px 20px ${LT.accent}40`,animation:"tierPulse 2s ease infinite"}}>
           {t('upgradeBtn',L)}</button>
       </div>
     </div>
