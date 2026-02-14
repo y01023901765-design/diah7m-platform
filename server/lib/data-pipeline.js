@@ -52,7 +52,7 @@ const GAUGE_MAP = {
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
-  S1: { source:'ECOS', stat:'901Y037', item:'I41A', cycle:'M', name:'제조업재고순환(BSI대리)', unit:'2020=100', searchMonthsBack: 3 },
+  S1: { source:'MANUAL', name:'BSI(기업경기)', unit:'pt', note:'ECOS 512Y006 폐기, 수동입력 필요' },
   S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
@@ -78,7 +78,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'ECOS', stat:'901Y034', item:'I31A', cycle:'M', name:'제조업출하(PMI대리)', unit:'2020=100', searchMonthsBack: 3 },
+  O2: { source:'MANUAL', name:'제조업PMI', unit:'pt', note:'S&P Global PMI 수동입력 필요' },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
@@ -537,7 +537,7 @@ async function testGauge(gaugeId, ecosKey, kosisKey) {
       rows: result.ok && result.json?.StatisticSearch?.row ? result.json.StatisticSearch.row.length : 0,
       ecosError: result.ok ? (result.json?.RESULT?.MESSAGE || null) : null,
     };
-  } else if (spec.source === 'FRED' || spec.source === 'AIRKOREA') {
+  } else if (spec.source === 'FRED' || spec.source === 'AIRKOREA' || spec.source === 'WAQI') {
     return fetchGauge(gaugeId, ecosKey, kosisKey);
   } else if (spec.source === 'KOSIS') {
     const KOSIS_URL = 'https://kosis.kr/openapi/Param/statisticsParameterData.do';
