@@ -266,7 +266,7 @@ export default function GlobeHero({lang='ko'}){
   const popL=mousePos.x>mousePos.total*0.5;
 
   return(
-    <div style={{minHeight:"100vh",background:T.bg0,fontFamily:"'Pretendard',-apple-system,sans-serif",color:T.text,overflow:"hidden"}}>
+    <div style={{background:T.bg0,fontFamily:"'Pretendard',-apple-system,sans-serif",color:T.text,overflow:"hidden"}}>
       <style>{`
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
         @keyframes satFloat{0%,100%{transform:translateX(-50%) translateY(0) rotate(-0.5deg)}50%{transform:translateX(-50%) translateY(-5px) rotate(0.5deg)}}
@@ -339,14 +339,14 @@ export default function GlobeHero({lang='ko'}){
         )}
       </div>
 
-      <div style={{textAlign:"center",padding:"36px 24px 20px",maxWidth:600,margin:"0 auto"}}>
-        <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:10}}>SATELLITE ECONOMIC DIAGNOSTICS</div>
-        <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 14px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
-        <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 28px",maxWidth:460}}>
+      <div style={{textAlign:"center",padding:"12px 24px 16px",maxWidth:600,margin:"0 auto"}}>
+        <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:6}}>SATELLITE ECONOMIC DIAGNOSTICS</div>
+        <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
+        <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 14px",maxWidth:460}}>
           {t('heroDesc',L)} <strong style={{color:T.accent}}>{t('heroFast',L)}</strong> {t('heroDesc2',L)}<br/>
           {t('gHeroLine',L)}
         </p>
-        <div style={{display:"flex",gap:32,justifyContent:"center",marginBottom:16}}>
+        <div style={{display:"flex",gap:32,justifyContent:"center",marginBottom:8}}>
           {[{n:t('gGauges',L),v:"59"},{n:t('gSystems',L),v:"9"},{n:t('gCost',L),v:"$0"},{n:t('gLangs',L),v:"30"}].map(s=>(
             <div key={s.n}>
               <div style={{fontSize:22,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div>
