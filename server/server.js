@@ -624,6 +624,44 @@ app.get('/api/v1/data/mapping', (req, res) => {
   res.json(pipeline.diagnoseMapping());
 });
 
+// -- 일괄 진단: apiError 게이지 + ECOS 탐색 --
+app.get('/api/v1/data/debug-all', async (req, res) => {
+  const ecosKey = process.env.ECOS_API_KEY;
+  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
+
+  const results = {};
+
+  // 1) 현재 실패 중인 게이지 전부 테스트
+  const errorGauges = ['S1','S5','O2','G6'];
+  for (const id of errorGauges) {
+    results[id] = await pipeline.testGauge(id, ecosKey, '');
+  }
+
+  // 2) BSI 통계표 512Y006 — 실제 아이템 코드 탐색
+  const bsiItems = ['FBB','FBE','FBB01','FBE01','FBA','FAB','FA','FB','FC','FD','FMB','FME'];
+  const bsiProbe = {};
+  for (const item of bsiItems) {
+    const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/5/512Y006/M/202401/202602/${item}`;
+    try {
+      const r = await fetch(url);
+      const json = await r.json();
+      const rows = json?.StatisticSearch?.row;
+      bsiProbe[item] = rows ? { ok: true, count: rows.length, latest: rows[rows.length-1]?.TIME, name: rows[0]?.ITEM_NAME1, value: rows[rows.length-1]?.DATA_VALUE } : { ok: false, msg: json?.RESULT?.MESSAGE || 'no data' };
+    } catch(e) { bsiProbe[item] = { ok: false, msg: e.message }; }
+  }
+  results._bsiProbe = bsiProbe;
+
+  // 3) FRED 키 + 시리즈 체크
+  results._fredKey = process.env.FRED_API_KEY ? 'SET' : 'MISSING';
+  results._airkoreaKey = process.env.AIRKOREA_API_KEY ? 'SET' : 'MISSING';
+  results._openaqKey = process.env.OPENAQ_API_KEY ? 'SET' : 'MISSING';
+
+  // 4) 환경변수 목록 (키 값 숨김)
+  results._envKeys = Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY') || k.includes('ADMIN'));
+
+  res.json(results);
+});
+
 // -- 개별 게이지 API 테스트 (디버그용, 임시 공개) --
 app.get('/api/v1/data/test-gauge/:id', async (req, res) => {
   if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
