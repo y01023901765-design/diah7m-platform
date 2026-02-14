@@ -104,7 +104,7 @@ const GAUGE_MAP = {
   R5: { source:'SATELLITE', sat:'SENTINEL1_SAR', name:'해수면상승', unit:'mm/yr', note:'Copernicus SAR 직접 수집' },
   R6: { source:'SATELLITE', sat:'LANDSAT9_TIR', name:'도시열섬', unit:'지수', note:'NASA Landsat-9 직접 수집' },
   G1: { source:'ECOS', stat:'301Y013', item:'2B0000', cycle:'M', name:'운송수지', unit:'백만$' },
-  G6: { source:'AIRKOREA', region:'서울', cycle:'H', name:'PM2.5(대기질)', unit:'㎍/m³' },
+  G6: { source:'WAQI', city:'seoul', cycle:'H', name:'PM2.5(대기질)', unit:'㎍/m³' },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -284,6 +284,38 @@ async function fetchOpenAQ() {
   };
 }
 
+async function fetchWAQI(city = 'seoul') {
+  // WAQI (World Air Quality Index) — 무료 demo 토큰, 실시간 대기질
+  // https://aqicn.org/api/ — demo 토큰은 제한적이지만 무료
+  const token = process.env.WAQI_TOKEN || 'demo';
+  const url = `https://api.waqi.info/feed/${city}/?token=${token}`;
+  const result = await safeFetch(url, 'WAQI:PM25');
+  
+  if (!result.ok) {
+    console.warn(`  ⚠️  WAQI: ${result.error}`);
+    return { rows: [], error: result.error };
+  }
+
+  const data = result.json?.data;
+  if (!data || data.aqi === undefined) {
+    return { rows: [], error: 'NO_DATA' };
+  }
+
+  // PM2.5 우선, 없으면 전체 AQI 사용
+  const pm25 = data.iaqi?.pm25?.v || Math.round(data.aqi * 0.5); // AQI→PM2.5 대략 변환
+  const now = new Date();
+  
+  return {
+    rows: [{ 
+      date: `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}`, 
+      value: Math.round(pm25), 
+      name: 'PM2.5' 
+    }],
+    latency: result.latency,
+    meta: { source: 'WAQI', city, aqi: data.aqi, time: data.time?.s },
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // KOSIS API (호환성 유지)
 // ═══════════════════════════════════════════════════════════════
@@ -359,6 +391,9 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
   } else if (spec.source === 'AIRKOREA') {
     const r = await fetchAirKorea(spec.region);
     rows = r.rows || []; latency = r.latency || 0; fetchError = r.error; meta = r.meta;
+  } else if (spec.source === 'WAQI') {
+    const r = await fetchWAQI(spec.city || 'seoul');
+    rows = r.rows || []; latency = r.latency || 0; fetchError = r.error; meta = r.meta;
   } else if (spec.source === 'KOSIS') {
     const r = await fetchKOSIS(kosisKey, spec.orgId, spec.tblId, spec.item, spec.cycle, start, end);
     rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;
@@ -398,7 +433,7 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
 // ═══════════════════════════════════════════════════════════════
 async function fetchAll(ecosKey, kosisKey) {
   if (!process.env.FRED_API_KEY) console.warn('  ⚠️  FRED_API_KEY 미설정 — S5(EPU), O2(PMI) 수집 불가');
-  if (!process.env.AIRKOREA_API_KEY) console.warn('  ⚠️  AIRKOREA_API_KEY 미설정 — G6 OpenAQ fallback');
+  if (!process.env.WAQI_TOKEN) console.warn('  ⚠️  WAQI_TOKEN 미설정 — G6는 demo 토큰으로 동작 (제한적)');
 
   const gaugeIds = Object.keys(GAUGE_MAP);
   const results = {};
