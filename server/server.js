@@ -43,6 +43,7 @@ const auth = safeRequire('auth', './lib/auth');
 const engine = safeRequire('core-engine', './lib/core-engine');
 const pipeline = safeRequire('data-pipeline', './lib/data-pipeline');
 const DataStore = safeRequire('data-store', './lib/data-store');
+const globalPipeline = safeRequire('global-pipeline', './lib/global-pipeline');
 
 // ═══ 3.1 데이터 스토어 초기화 (서버 시작 시 호출) ═══
 let dataStore = null;
@@ -761,6 +762,11 @@ app.get('/api/v1/admin/engine', ...adminAuth, (req, res) => {
   });
 });
 
+// ═══ 7.5 글로벌 43개국 API ═══
+if (globalPipeline && globalPipeline.createGlobalRouter) {
+  app.use('/api/v1/global', globalPipeline.createGlobalRouter(express));
+  console.log('  ✅ Global router mounted (43 countries)');
+}
 // ═══ 8. SPA Fallback ═══
 if (fs.existsSync(distPath)) {
   app.get('*', (req, res) => {
