@@ -156,7 +156,7 @@ app.get('/api/ecos-items', async (req, res) => {
     const r = await efetch(url);
     const rows = r?.StatisticTableList?.row;
     if (rows) {
-      tables[kw] = rows.slice(0, 5).map(x => ({ stat: x.STAT_CODE, name: x.STAT_NAME, cycle: x.CYCLE }));
+      tables[kw] = rows.slice(0, 3).map(x => x);  // raw
     } else {
       tables[kw] = r?.RESULT?.MESSAGE || 'no result';
     }
@@ -171,7 +171,7 @@ app.get('/api/ecos-items', async (req, res) => {
     const r = await efetch(url);
     const rows = r?.StatisticItemList?.row;
     if (rows) {
-      items[sc] = rows.slice(0, 10).map(x => ({ item: x.ITEM_CODE1, name: x.ITEM_NAME1, cycle: x.CYCLE, unit: x.UNIT_NAME }));
+      items[sc] = rows.slice(0, 10).map(x => x);  // raw object, no filter
     } else {
       items[sc] = r?.RESULT?.MESSAGE || 'no result';
     }
@@ -184,79 +184,94 @@ app.get('/api/ecos-probe', async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
   
-  // 후보 stat/item 코드 목록
+  function efetch(url) {
+    return new Promise((resolve) => {
+      require('https').get(url, { timeout: 8000 }, (resp) => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+  }
+  
   const probes = [
-    // 수출입
-    { id:'수출-403Y001', stat:'403Y001', item:'000000001' },
-    { id:'수입-403Y001', stat:'403Y001', item:'000000002' },
-    { id:'수출-403Y014', stat:'403Y014', item:'0000001' },
-    { id:'수입-403Y014', stat:'403Y014', item:'0000002' },
-    // 물가
-    { id:'CPI-901Y009', stat:'901Y009', item:'0' },
-    { id:'CPI-021Y125', stat:'021Y125', item:'0' },
-    { id:'CPI-901Y010', stat:'901Y010', item:'0' },
-    { id:'PPI-404Y014', stat:'404Y014', item:'*AA' },
-    { id:'PPI-901Y044', stat:'901Y044', item:'0' },
+    // 수출입 (통관기준)
+    { id:'수출-301Y017-T', stat:'301Y017', item:'T' },
+    { id:'수출-301Y017-0', stat:'301Y017', item:'0' },
+    { id:'수출-301Y017-1', stat:'301Y017', item:'1' },
+    { id:'수입-301Y017-2', stat:'301Y017', item:'2' },
+    { id:'수출-403Y001-0', stat:'403Y001', item:'0' },
+    { id:'수출-403Y001-T', stat:'403Y001', item:'T' },
+    { id:'수출-403Y003-0', stat:'403Y003', item:'0' },
+    { id:'수출-403Y003-T', stat:'403Y003', item:'T' },
+    // CPI/PPI (이미 검증)
+    { id:'CPI', stat:'901Y009', item:'0' },
+    { id:'PPI', stat:'404Y014', item:'*AA' },
     // 산업생산
-    { id:'산업생산-901Y033', stat:'901Y033', item:'I10' },
-    { id:'광공업-901Y001', stat:'901Y001', item:'I10' },
-    { id:'제조업-901Y033', stat:'901Y033', item:'C' },
+    { id:'산업-901Y033-0', stat:'901Y033', item:'0' },
+    { id:'산업-901Y033-T', stat:'901Y033', item:'T' },
+    { id:'산업-901Y033-*AA', stat:'901Y033', item:'*AA' },
+    { id:'산업-901Y033-A', stat:'901Y033', item:'A' },
     // 소매판매
-    { id:'소매-901Y035', stat:'901Y035', item:'I10' },
-    { id:'소매-901Y002', stat:'901Y002', item:'I10' },
-    // 서비스업
-    { id:'서비스-901Y036', stat:'901Y036', item:'I10' },
+    { id:'소매-901Y035-0', stat:'901Y035', item:'0' },
+    { id:'소매-901Y035-T', stat:'901Y035', item:'T' },
+    { id:'소매-901Y035-*AA', stat:'901Y035', item:'*AA' },
     // 설비투자
-    { id:'설비투자-901Y034', stat:'901Y034', item:'I10' },
+    { id:'설비-901Y034-0', stat:'901Y034', item:'0' },
+    { id:'설비-901Y034-T', stat:'901Y034', item:'T' },
+    { id:'설비-901Y034-*AA', stat:'901Y034', item:'*AA' },
     // 건설기성
-    { id:'건설-901Y037', stat:'901Y037', item:'I10' },
-    // 고용
-    { id:'고용률-901Y027', stat:'901Y027', item:'EMP_RATE' },
-    { id:'실업률-901Y027', stat:'901Y027', item:'UNEMP_RATE' },
-    { id:'고용-902Y015', stat:'902Y015', item:'3133000' },
-    // 경기지수
-    { id:'선행-901Y067', stat:'901Y067', item:'I16' },
-    { id:'동행-901Y067', stat:'901Y067', item:'I15' },
-    { id:'선행-901Y068', stat:'901Y068', item:'I16' },
-    // 통화
-    { id:'M2-101Y018', stat:'101Y018', item:'BBHS00' },
-    { id:'M2-101Y003', stat:'101Y003', item:'BBHS00' },
-    // 가동률
-    { id:'가동률-901Y033', stat:'901Y033', item:'CAP_USE' },
-    { id:'가동률-901Y001', stat:'901Y001', item:'CAP_USE' },
-    // 주택가격
-    { id:'주택-901Y062', stat:'901Y062', item:'P' },
+    { id:'건설-901Y037-0', stat:'901Y037', item:'0' },
+    { id:'건설-901Y037-T', stat:'901Y037', item:'T' },
+    { id:'건설-901Y037-*AA', stat:'901Y037', item:'*AA' },
+    // 서비스업
+    { id:'서비스-901Y036-0', stat:'901Y036', item:'0' },
+    { id:'서비스-901Y036-T', stat:'901Y036', item:'T' },
+    { id:'서비스-901Y036-*AA', stat:'901Y036', item:'*AA' },
+    // 고용/실업
+    { id:'고용-901Y027-0', stat:'901Y027', item:'0' },
+    { id:'고용-901Y027-T', stat:'901Y027', item:'T' },
+    { id:'고용-901Y027-*AA', stat:'901Y027', item:'*AA' },
+    // 경기종합지수
+    { id:'경기-901Y067-0', stat:'901Y067', item:'0' },
+    { id:'경기-901Y067-T', stat:'901Y067', item:'T' },
+    { id:'경기-901Y067-*AA', stat:'901Y067', item:'*AA' },
+    // 통화 M2
+    { id:'M2-101Y018-0', stat:'101Y018', item:'0' },
+    { id:'M2-101Y003-0', stat:'101Y003', item:'0' },
+    { id:'M2-101Y003-BBHA00', stat:'101Y003', item:'BBHA00' },
+    { id:'M2-101Y003-BBKA00', stat:'101Y003', item:'BBKA00' },
     // 인구
-    { id:'인구-101Y019', stat:'101Y019', item:'POP' },
+    { id:'인구-101Y019-0', stat:'101Y019', item:'0' },
+    { id:'인구-101Y019-T', stat:'101Y019', item:'T' },
+    // 국가채무
+    { id:'채무-301Y015-0', stat:'301Y015', item:'0' },
+    // 기존 작동 확인
+    { id:'기준금리', stat:'722Y001', item:'0101000' },
+    { id:'경상수지', stat:'301Y013', item:'000000BPA' },
+    { id:'외환보유고', stat:'732Y001', item:'99' },
+    { id:'환율', stat:'731Y004', item:'0000001' },
   ];
 
   const results = [];
   for (const p of probes) {
     try {
       const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/3/${p.stat}/M/202401/202412/${p.item}`;
-      const r = await new Promise((resolve, reject) => {
-        require('https').get(url, { timeout: 6000 }, (resp) => {
-          let d = ''; resp.on('data', c => d += c);
-          resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
-        }).on('error', () => resolve(null));
-      });
+      const r = await efetch(url);
       const ss = r?.StatisticSearch;
       if (ss?.row) {
         const row = ss.row[0];
         results.push({ id: p.id, stat: p.stat, item: p.item, rows: ss.list_total_count, statName: row.STAT_NAME, itemName: row.ITEM_NAME1, unit: row.UNIT_NAME, sample: row.DATA_VALUE });
       } else {
-        const errMsg = r?.RESULT?.MESSAGE || 'no data';
-        results.push({ id: p.id, stat: p.stat, item: p.item, rows: 0, error: errMsg });
+        results.push({ id: p.id, stat: p.stat, item: p.item, rows: 0 });
       }
     } catch (e) {
       results.push({ id: p.id, error: e.message });
     }
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 100));
   }
   
   const ok = results.filter(r => r.rows > 0);
-  const fail = results.filter(r => !r.rows || r.rows === 0);
-  res.json({ total: probes.length, ok: ok.length, fail: fail.length, results });
+  res.json({ total: probes.length, ok: ok.length, successList: ok });
 });
 
 // -- 회원가입 --
