@@ -10,4 +10,19 @@ const T = {
   sat:'#8b5cf6', satDim:'#8b5cf620', satBorder:'#6d28d9',
   cardRadius:14, smRadius:8,
 };
+
+// Light mode — Dashboard, 보고서, MyPage, Admin
+const L = {
+  bg0:'#FFFFFF', bg1:'#F8FAFB', bg2:'#F1F5F9', bg3:'#E2E8F0',
+  surface:'#FFFFFF', surfaceHover:'#F1F5F9',
+  border:'#E2E8F0', borderLight:'#CBD5E1',
+  text:'#1A202C', textMid:'#4A5568', textDim:'#94A3B8', white:'#ffffff',
+  accent:'#0891B2', accentDim:'#0891B215', accentMid:'#0891B240',
+  good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#4F6AE8',
+  orange:'#EA580C', orangeDim:'#EA580C15', enterprise:'#D97706',
+  sat:'#7C3AED', satDim:'#7C3AED15', satBorder:'#6D28D9',
+  cardRadius:14, smRadius:8,
+};
+
 export default T;
+export { L };
