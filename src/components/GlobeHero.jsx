@@ -355,11 +355,11 @@ export default function GlobeHero({lang='ko'}){
           {[{n:t('gGauges',L),v:"59"},{n:t('gSystems',L),v:"9"},{n:t('gCost',L),v:"$0"},{n:t('gLangs',L),v:"30"}].map(s=>(
             <div key={s.n}>
               <div style={{fontSize:22,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div>
-              <div style={{fontSize:10,color:T.textDim,marginTop:2}}>{s.n}</div>
+              <div style={{fontSize:12,color:T.textDim,marginTop:2}}>{s.n}</div>
             </div>
           ))}
         </div>
-        <div style={{fontSize:10,color:T.textDim,animation:"float 3s ease-in-out infinite"}}>{t('gClickHint',L)}</div>
+        <div style={{fontSize:12,color:T.textDim,animation:"float 3s ease-in-out infinite"}}>{t('gClickHint',L)}</div>
       </div>
       </div>
 
