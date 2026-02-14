@@ -43,7 +43,7 @@ const GAUGE_MAP = {
   C2: { source:'ECOS', stat:'511Y002', item:'FME', cycle:'M', name:'소비자심리', unit:'pt' },
   C3: { source:'ECOS', stat:'901Y035', item:'I32A', cycle:'M', name:'제조업생산능력', unit:'2020=100' },
   C4: { source:'ECOS', stat:'901Y036', item:'10', cycle:'M', name:'설비투자(기계류)', unit:'지수' },
-  C5: { source:'ECOS', stat:'200Y001', item:'10212', cycle:'Q', name:'민간소비', unit:'%' },
+  C5: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'전산업생산(소비대리)', unit:'2020=100' },
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
