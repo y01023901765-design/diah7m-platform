@@ -153,7 +153,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
-  useEffect(()=>{const fn=()=>{const w=Math.min(window.innerWidth,960);sizeRef.current={w,h:Math.round(w*0.52)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
+  useEffect(()=>{const fn=()=>{const w=Math.min(window.innerWidth,960);sizeRef.current={w,h:Math.round(w*0.46)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
 
   const decode=useCallback(()=>{
     const geo=geoRef.current;if(!geo||decodedRef.current)return;
@@ -311,7 +311,7 @@ export default function GlobeHero({lang='ko'}){
           </svg>
         </div>
 
-        <div style={{paddingTop:48}}>
+        <div style={{paddingTop:32}}>
           <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos} lang={L}/>
         </div>
 
@@ -341,7 +341,7 @@ export default function GlobeHero({lang='ko'}){
         )}
       </div>
 
-      <div style={{textAlign:"center",padding:"12px 24px 16px",maxWidth:600,margin:"0 auto"}}>
+      <div style={{textAlign:"center",padding:"4px 24px 16px",maxWidth:600,margin:"0 auto"}}>
         <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:6}}>SATELLITE ECONOMIC DIAGNOSTICS</div>
         <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
         <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 14px",maxWidth:460}}>
