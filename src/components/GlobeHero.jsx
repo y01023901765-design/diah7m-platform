@@ -318,6 +318,7 @@ export default function GlobeHero({lang='ko'}){
         <div style={{paddingTop:32}}>
           <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos} lang={L}/>
         </div>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:120,background:`linear-gradient(transparent,${T.bg0})`,pointerEvents:"none"}}/>
 
         {hovered&&(
           <div style={{
@@ -344,7 +345,7 @@ export default function GlobeHero({lang='ko'}){
           </div>
         )}
       
-        <div style={{textAlign:"center",padding:"20px 24px 16px",maxWidth:600,margin:"0 auto"}}>
+        <div style={{textAlign:"center",padding:"20px 24px 16px",maxWidth:600,margin:"0 auto",position:"relative",zIndex:5}}>
         <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
         <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 14px",maxWidth:460}}>
           {t('heroDesc',L)} <strong style={{color:T.accent}}>{t('heroFast',L)}</strong> {t('heroDesc2',L)}<br/>
