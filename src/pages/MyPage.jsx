@@ -26,7 +26,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
     {/* Toast */}
     {msg&&<div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",padding:"10px 24px",borderRadius:10,background:LT.good,color:"#fff",fontSize:16,fontWeight:700,zIndex:300,boxShadow:"0 4px 20px rgba(0,0,0,.3)",animation:"fadeIn .3s ease"}}>{msg}</div>}
     <div style={{display:"flex",gap:4,marginBottom:20}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:tab===t.id?`${LT.accent}15`:"transparent",color:tab===t.id?LT.accent:LT.textDim,fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer"}}>{t.label}</button>))}
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer"}}>{t.label}</button>))}
     </div>
     {tab==='profile'&&<div>
       <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:20}}>{t('profile',L)}</h2>
@@ -34,7 +34,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("name",L)}</label><input value={profile.name} onChange={e=>setProfile(p=>({...p,name:e.target.value}))} style={inputStyle}/></div>
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("email",L)}</label><input defaultValue={user.email} style={{...inputStyle,opacity:.6}} disabled/></div>
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("phone",L)}</label><input value={profile.phone} onChange={e=>setProfile(p=>({...p,phone:e.target.value}))} placeholder="+82 10-0000-0000" style={inputStyle}/></div>
-        <button onClick={()=>flash(t('profileSaved',L))} style={{padding:"12px",borderRadius:10,border:"none",background:LT.accent,color:"#fff",fontWeight:700,cursor:"pointer",width:"fit-content"}}>{t("save",L)}</button>
+        <button onClick={()=>flash(t('profileSaved',L))} style={{padding:"12px",borderRadius:10,border:"none",background:'#111',color:'#fff',fontWeight:700,cursor:"pointer",width:"fit-content"}}>{t("save",L)}</button>
       </div>
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.border}`,marginTop:16}}>
         <h3 style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("changePw",L)}</h3>
@@ -65,7 +65,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
           {[[t("nextBill",L),"2026-03-01"],[t("payMethod",L),"Visa ****4242"],[t("streak",L),"3 months 🔥"]].map(([k,v])=>(<div key={k} style={{padding:12,background:LT.bg2,borderRadius:8}}><div style={{fontSize:16,color:LT.textDim}}>{k}</div><div style={{fontSize:16,fontWeight:700,color:LT.text,marginTop:4}}>{v}</div></div>))}
         </div>
         <div style={{display:"flex",gap:8,marginTop:16}}>
-          <button onClick={()=>flash(t('paymentPending',L))} style={{padding:"10px 16px",borderRadius:8,border:"none",background:LT.accent,color:"#fff",fontWeight:600,cursor:"pointer"}}>{t("changePlan",L)}</button>
+          <button onClick={()=>flash(t('paymentPending',L))} style={{padding:"10px 16px",borderRadius:8,border:"none",background:'#111',color:'#fff',fontWeight:600,cursor:"pointer"}}>{t("changePlan",L)}</button>
           <button onClick={()=>flash(t('paymentPending',L))} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textMid,fontWeight:600,cursor:"pointer"}}>{t("changePayment",L)}</button>
           <button onClick={()=>setConfirmCancel(true)} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.danger}30`,background:`${LT.danger}08`,color:LT.danger,fontWeight:600,cursor:"pointer"}}>{t("cancelSub",L)}</button>
         </div>
@@ -91,7 +91,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.border}`,marginTop:16}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t('langSetting',L)}</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {LANG_LIST.map((l,i)=>(<button key={i} onClick={()=>{setSelectedLang(i);if(setGlobalLang)setGlobalLang(l.code);flash(`✅ ${l.flag} ${l.name}`);}} style={{padding:"8px 14px",borderRadius:8,border:`1px solid ${i===selectedLang?LT.accent:LT.border}`,background:i===selectedLang?`${LT.accent}15`:"transparent",color:i===selectedLang?LT.accent:LT.textMid,fontSize:15,fontWeight:i===selectedLang?700:500,cursor:"pointer"}}>{l.flag} {l.name}</button>))}
+          {LANG_LIST.map((l,i)=>(<button key={i} onClick={()=>{setSelectedLang(i);if(setGlobalLang)setGlobalLang(l.code);flash(`✅ ${l.flag} ${l.name}`);}} style={{padding:"8px 14px",borderRadius:8,border:`1px solid ${i===selectedLang?'#111':LT.border}`,background:i===selectedLang?'#F5F5F5':'transparent',color:i===selectedLang?'#111':LT.textDim,fontSize:15,fontWeight:i===selectedLang?700:500,cursor:"pointer"}}>{l.flag} {l.name}</button>))}
         </div>
       </div>
       {confirmDelete?<div style={{background:`${LT.danger}06`,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.danger}30`,marginTop:16}}>

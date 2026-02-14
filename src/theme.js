@@ -12,27 +12,39 @@ const T = {
 };
 
 // Light mode — Dashboard, 보고서, MyPage, Admin
-// 단색 원칙: 흑백+회색, 컬러는 이모티콘/상태만
+// 고급 단색: 검정/회색 명암비 + 볼드 위계로 고급스럽게
 const L = {
-  bg0:'#FFFFFF', bg1:'#F9FAFB', bg2:'#F3F4F6', bg3:'#E5E7EB',
-  surface:'#FFFFFF', surfaceHover:'#F9FAFB',
-  border:'#E5E7EB', borderLight:'#D1D5DB',
-  text:'#111827', textMid:'#4B5563', textDim:'#9CA3AF', white:'#ffffff',
-  accent:'#0891B2', accentDim:'#0891B210', accentMid:'#0891B230',
-  good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#4F6AE8',
-  orange:'#EA580C', orangeDim:'#EA580C10', enterprise:'#D97706',
-  sat:'#7C3AED', satDim:'#7C3AED10', satBorder:'#6D28D9',
+  bg0:'#FFFFFF', bg1:'#FAFAFA', bg2:'#F5F5F5', bg3:'#EEEEEE',
+  surface:'#FFFFFF', surfaceHover:'#FAFAFA',
+  border:'#E0E0E0', borderLight:'#EEEEEE',
+  // 텍스트: 검정~회색 3단계 명암비
+  text:'#111111',       // 제목, 핵심 수치 — 거의 검정
+  textMid:'#555555',    // 본문, 설명 — 중간 회색
+  textDim:'#999999',    // 보조, 라벨 — 연한 회색
+  white:'#ffffff',
+  // 컬러는 상태 표시에만 최소 사용
+  accent:'#111111',     // 버튼, 링크 — 검정 (고급)
+  accentDim:'#11111108', accentMid:'#11111120',
+  good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#555555',
+  orange:'#EA580C', orangeDim:'#EA580C08', enterprise:'#D97706',
+  sat:'#555555', satDim:'#55555508', satBorder:'#333333',
   cardRadius:12, smRadius:8,
   // 라이트 전용
-  cardShadow:'0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
-  cardShadowHover:'0 4px 12px rgba(0,0,0,0.1)',
+  cardShadow:'0 1px 3px rgba(0,0,0,0.06)',
+  cardShadowHover:'0 4px 12px rgba(0,0,0,0.08)',
   inputBg:'#FFFFFF',
-  inputBorder:'#D1D5DB',
-  divider:'#F3F4F6',
-  tableHeaderBg:'#F9FAFB',
+  inputBorder:'#D0D0D0',
+  divider:'#F0F0F0',
+  tableHeaderBg:'#FAFAFA',
   tableStripeBg:'#FAFAFA',
-  activeBg:'#F0FDFA',
-  activeBorder:'#0891B230',
+  activeBg:'#F5F5F5',
+  activeBorder:'#11111120',
+  // 버튼 스타일
+  btnPrimary:'#111111',      // 검정 배경 + 흰 글씨
+  btnPrimaryText:'#FFFFFF',
+  btnSecondary:'#FFFFFF',     // 흰 배경 + 검정 테두리
+  btnSecondaryBorder:'#D0D0D0',
+  btnSecondaryText:'#333333',
 };
 
 export default T;

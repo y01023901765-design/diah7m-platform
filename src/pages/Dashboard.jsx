@@ -39,10 +39,10 @@ function DashboardPage({user,onNav,lang}){
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 10px",borderRadius:8,background:`${LT.accent}08`,border:`1px solid ${LT.accent}15`}}>
       <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}>DEMO</span>
       {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"4px 12px",borderRadius:6,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:16,fontWeight:demoPlan===p?700:600,
-        background:demoPlan===p?LT.accent:`${LT.surface}`,color:demoPlan===p?"#fff":LT.text,cursor:"pointer"}}>{p}</button>))}
+        background:demoPlan===p?'#111111':`${LT.surface}`,color:demoPlan===p?"#fff":LT.text,cursor:"pointer"}}>{p}</button>))}
     </div>
     <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:tab===t.id?`${LT.accent}15`:"transparent",color:tab===t.id?LT.accent:LT.textDim,fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
     </div>
     {tab==='overview'&&<>
       {/* Score + State + Radar */}

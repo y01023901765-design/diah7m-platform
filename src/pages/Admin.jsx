@@ -28,7 +28,7 @@ function AdminPage({lang}){
   return(<div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px"}}>
     <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:16}}>⚙️ 관리자 패널</h2>
     <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto"}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:tab===t.id?`${LT.accent}15`:"transparent",color:tab===t.id?LT.accent:LT.textDim,fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
     </div>
 
     {tab==='kpi'&&<>
@@ -116,7 +116,7 @@ function AdminPage({lang}){
       </div>
       {/* 재처리 */}
       <div style={{display:"flex",gap:8}}>
-        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.accent}30`,background:`${LT.accent}08`,color:LT.accent,fontSize:16,fontWeight:600,cursor:"pointer"}}>KOSIS 재수집</button>
+        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.accent}30`,background:'transparent',color:LT.accent,fontSize:16,fontWeight:600,cursor:"pointer"}}>KOSIS 재수집</button>
         <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.warn}30`,background:`${LT.warn}08`,color:LT.warn,fontSize:16,fontWeight:600,cursor:"pointer"}}>2월 재계산</button>
       </div>
     </>}
