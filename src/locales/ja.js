@@ -71,4 +71,9 @@ export default {
   sysA8n:'製造·在庫',sysA8b:'代謝系',sysA8m:'稼働率·在庫率·受注=エネルギー代謝',
   sysA9n:'人口·家計',sysA9b:'生殖·再生系',sysA9m:'出生·高齢化·負債=世代再生',
   locked:'ロックされています',upgradeHint:'{tier}以上のサブスクリプションで全データにアクセス',upgradeBtn:'サブスクリプション',
+  gStatGood:'良好',gStatWarn:'注意',gStatAlert:'警報',
+  gGauges:'経済ゲージ',gSystems:'人体システム',gCost:'衛星コスト',gLangs:'対応言語',
+  gClickHint:'🛰️ 国をクリックすると経済診断レポートを確認できます',
+  gTooltipClick:'クリック → 診断レポート',gOpenReport:'診断レポートを開く',
+  gHeroLine:'59 経済ゲージ · 9 人体システム · 🛰️ 衛星',
 };

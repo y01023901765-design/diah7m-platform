@@ -1,31 +1,32 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
+import { t } from "../i18n";
 
 const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e'};
 
 const ACTIVE=[
-  {iso:"KOR",n:"대한민국",lat:37.5,lon:127,home:true,score:68},
-  {iso:"USA",n:"미국",lat:38.9,lon:-97,score:72},{iso:"JPN",n:"일본",lat:36.2,lon:138.3,score:65},
-  {iso:"DEU",n:"독일",lat:51.2,lon:10.4,score:61},{iso:"GBR",n:"영국",lat:54,lon:-2,score:63},
-  {iso:"FRA",n:"프랑스",lat:46.6,lon:2.3,score:60},{iso:"CAN",n:"캐나다",lat:56,lon:-96,score:70},
-  {iso:"AUS",n:"호주",lat:-25.3,lon:134,score:69},{iso:"ITA",n:"이탈리아",lat:42.5,lon:12.5,score:55},
-  {iso:"ESP",n:"스페인",lat:40,lon:-4,score:58},{iso:"NLD",n:"네덜란드",lat:52.1,lon:5.3,score:71},
-  {iso:"CHE",n:"스위스",lat:46.8,lon:8.2,score:76},{iso:"SWE",n:"스웨덴",lat:62,lon:15,score:73},
-  {iso:"NOR",n:"노르웨이",lat:65,lon:13,score:75},{iso:"DNK",n:"덴마크",lat:56,lon:10,score:72},
-  {iso:"FIN",n:"핀란드",lat:64,lon:26,score:70},{iso:"AUT",n:"오스트리아",lat:47.5,lon:14.6,score:64},
-  {iso:"BEL",n:"벨기에",lat:50.5,lon:4.4,score:62},{iso:"IRL",n:"아일랜드",lat:53.4,lon:-8,score:68},
-  {iso:"PRT",n:"포르투갈",lat:39.4,lon:-8.2,score:57},{iso:"GRC",n:"그리스",lat:39.1,lon:21.8,score:50},
-  {iso:"CZE",n:"체코",lat:49.8,lon:15.5,score:63},{iso:"POL",n:"폴란드",lat:51.9,lon:19.1,score:62},
-  {iso:"HUN",n:"헝가리",lat:47.2,lon:19.5,score:56},{iso:"SVK",n:"슬로바키아",lat:48.7,lon:19.7,score:58},
-  {iso:"SVN",n:"슬로베니아",lat:46.2,lon:14.8,score:61},{iso:"EST",n:"에스토니아",lat:58.6,lon:25,score:66},
-  {iso:"LVA",n:"라트비아",lat:56.9,lon:24.1,score:59},{iso:"LTU",n:"리투아니아",lat:55.2,lon:24,score:60},
-  {iso:"ISL",n:"아이슬란드",lat:64.9,lon:-19,score:74},{iso:"LUX",n:"룩셈부르크",lat:49.8,lon:6.1,score:77},
-  {iso:"NZL",n:"뉴질랜드",lat:-41,lon:174,score:71},{iso:"ISR",n:"이스라엘",lat:31.5,lon:34.8,score:64},
-  {iso:"TUR",n:"튀르키예",lat:39,lon:35,score:52},{iso:"MEX",n:"멕시코",lat:23.6,lon:-102.5,score:54},
-  {iso:"CHL",n:"칠레",lat:-35.7,lon:-71.5,score:59},{iso:"COL",n:"콜롬비아",lat:4.6,lon:-74.1,score:53},
-  {iso:"CRI",n:"코스타리카",lat:10,lon:-84,score:57},{iso:"SGP",n:"싱가포르",lat:1.4,lon:103.8,score:78},
-  {iso:"HKG",n:"홍콩",lat:22.3,lon:114.2,score:67},{iso:"TWN",n:"대만",lat:23.7,lon:121,score:71},
-  {iso:"IND",n:"인도",lat:21,lon:78.9,score:58},{iso:"CHN",n:"중국",lat:35,lon:105,score:62},
+  {iso:"KOR",n:"대한민국",en:"South Korea",lat:37.5,lon:127,home:true,score:68},
+  {iso:"USA",n:"미국",en:"United States",lat:38.9,lon:-97,score:72},{iso:"JPN",n:"일본",en:"Japan",lat:36.2,lon:138.3,score:65},
+  {iso:"DEU",n:"독일",en:"Germany",lat:51.2,lon:10.4,score:61},{iso:"GBR",n:"영국",en:"United Kingdom",lat:54,lon:-2,score:63},
+  {iso:"FRA",n:"프랑스",en:"France",lat:46.6,lon:2.3,score:60},{iso:"CAN",n:"캐나다",en:"Canada",lat:56,lon:-96,score:70},
+  {iso:"AUS",n:"호주",en:"Australia",lat:-25.3,lon:134,score:69},{iso:"ITA",n:"이탈리아",en:"Italy",lat:42.5,lon:12.5,score:55},
+  {iso:"ESP",n:"스페인",en:"Spain",lat:40,lon:-4,score:58},{iso:"NLD",n:"네덜란드",en:"Netherlands",lat:52.1,lon:5.3,score:71},
+  {iso:"CHE",n:"스위스",en:"Switzerland",lat:46.8,lon:8.2,score:76},{iso:"SWE",n:"스웨덴",en:"Sweden",lat:62,lon:15,score:73},
+  {iso:"NOR",n:"노르웨이",en:"Norway",lat:65,lon:13,score:75},{iso:"DNK",n:"덴마크",en:"Denmark",lat:56,lon:10,score:72},
+  {iso:"FIN",n:"핀란드",en:"Finland",lat:64,lon:26,score:70},{iso:"AUT",n:"오스트리아",en:"Austria",lat:47.5,lon:14.6,score:64},
+  {iso:"BEL",n:"벨기에",en:"Belgium",lat:50.5,lon:4.4,score:62},{iso:"IRL",n:"아일랜드",en:"Ireland",lat:53.4,lon:-8,score:68},
+  {iso:"PRT",n:"포르투갈",en:"Portugal",lat:39.4,lon:-8.2,score:57},{iso:"GRC",n:"그리스",en:"Greece",lat:39.1,lon:21.8,score:50},
+  {iso:"CZE",n:"체코",en:"Czechia",lat:49.8,lon:15.5,score:63},{iso:"POL",n:"폴란드",en:"Poland",lat:51.9,lon:19.1,score:62},
+  {iso:"HUN",n:"헝가리",en:"Hungary",lat:47.2,lon:19.5,score:56},{iso:"SVK",n:"슬로바키아",en:"Slovakia",lat:48.7,lon:19.7,score:58},
+  {iso:"SVN",n:"슬로베니아",en:"Slovenia",lat:46.2,lon:14.8,score:61},{iso:"EST",n:"에스토니아",en:"Estonia",lat:58.6,lon:25,score:66},
+  {iso:"LVA",n:"라트비아",en:"Latvia",lat:56.9,lon:24.1,score:59},{iso:"LTU",n:"리투아니아",en:"Lithuania",lat:55.2,lon:24,score:60},
+  {iso:"ISL",n:"아이슬란드",en:"Iceland",lat:64.9,lon:-19,score:74},{iso:"LUX",n:"룩셈부르크",en:"Luxembourg",lat:49.8,lon:6.1,score:77},
+  {iso:"NZL",n:"뉴질랜드",en:"New Zealand",lat:-41,lon:174,score:71},{iso:"ISR",n:"이스라엘",en:"Israel",lat:31.5,lon:34.8,score:64},
+  {iso:"TUR",n:"튀르키예",en:"Türkiye",lat:39,lon:35,score:52},{iso:"MEX",n:"멕시코",en:"Mexico",lat:23.6,lon:-102.5,score:54},
+  {iso:"CHL",n:"칠레",en:"Chile",lat:-35.7,lon:-71.5,score:59},{iso:"COL",n:"콜롬비아",en:"Colombia",lat:4.6,lon:-74.1,score:53},
+  {iso:"CRI",n:"코스타리카",en:"Costa Rica",lat:10,lon:-84,score:57},{iso:"SGP",n:"싱가포르",en:"Singapore",lat:1.4,lon:103.8,score:78},
+  {iso:"HKG",n:"홍콩",en:"Hong Kong",lat:22.3,lon:114.2,score:67},{iso:"TWN",n:"대만",en:"Taiwan",lat:23.7,lon:121,score:71},
+  {iso:"IND",n:"인도",en:"India",lat:21,lon:78.9,score:58},{iso:"CHN",n:"중국",en:"China",lat:35,lon:105,score:62},
 ];
 
 const AMBIENT=[
@@ -47,20 +48,21 @@ const AMBIENT=[
 
 function scoreColor(s){return s>=70?T.good:s>=55?T.warn:T.danger}
 
-function ClickedPanel({country,onClose}){
-  if(!country)return null;const col=scoreColor(country.score);
+function ClickedPanel({country,onClose,lang='ko'}){
+  if(!country)return null;const col=scoreColor(country.score);const L=lang;
+  const nm=L==='ko'?country.n:(country.en||country.n);
   return(<div onClick={onClose} style={{position:"fixed",inset:0,background:`${T.bg0}c0`,backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
     <div onClick={e=>e.stopPropagation()} style={{background:T.surface,borderRadius:16,padding:32,border:`1px solid ${col}40`,minWidth:320,maxWidth:380,textAlign:"center"}}>
-      <div style={{fontSize:12,color:col,fontWeight:700,marginBottom:4}}>{country.score>=70?"양호":country.score>=55?"주의":"경보"}</div>
-      <div style={{fontSize:26,fontWeight:900,color:T.text,marginBottom:4}}>{country.n}</div>
+      <div style={{fontSize:12,color:col,fontWeight:700,marginBottom:4}}>{country.score>=70?t('gStatGood',L):country.score>=55?t('gStatWarn',L):t('gStatAlert',L)}</div>
+      <div style={{fontSize:26,fontWeight:900,color:T.text,marginBottom:4}}>{nm}</div>
       <div style={{fontSize:11,color:T.textDim,marginBottom:20}}>{country.iso}</div>
       <div style={{fontSize:48,fontWeight:900,color:col,fontFamily:"monospace"}}>{country.score}<span style={{fontSize:16,color:T.textDim}}> / 100</span></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,margin:"20px 0"}}>
-        {[{l:"Gauges",v:"59"},{l:"Systems",v:"9"},{l:"Satellites",v:"4"}].map(s=>(<div key={s.l} style={{background:`${T.bg0}80`,borderRadius:8,padding:"8px 4px"}}><div style={{fontSize:18,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div><div style={{fontSize:9,color:T.textDim}}>{s.l}</div></div>))}
+        {[{l:t('gGauges',L),v:"59"},{l:t('gSystems',L),v:"9"},{l:"Satellites",v:"4"}].map(s=>(<div key={s.l} style={{background:`${T.bg0}80`,borderRadius:8,padding:"8px 4px"}}><div style={{fontSize:18,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div><div style={{fontSize:9,color:T.textDim}}>{s.l}</div></div>))}
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.textDim,fontSize:12,cursor:"pointer"}}>닫기</button>
-        <button style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>진단 보고서 열기</button>
+        <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.textDim,fontSize:12,cursor:"pointer"}}>{t('close',L)||'Close'}</button>
+        <button style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('gOpenReport',L)}</button>
       </div>
     </div>
   </div>);
@@ -144,7 +146,8 @@ function RealisticSatellite(){
   );
 }
 
-function WorldMap({hovered,setHovered,setClicked,setMousePos}){
+function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
+  const cN=(c)=>lang==='ko'?c.n:(c.en||c.n);
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
@@ -233,7 +236,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos}){
       if(hov){const p=proj([hov.lon,hov.lat]);if(p){
         ctx.font="bold 13px 'Pretendard',sans-serif";ctx.fillStyle="#fff";ctx.textAlign="center";
         ctx.shadowColor="rgba(0,0,0,0.9)";ctx.shadowBlur=10;
-        ctx.fillText(hov.n,p[0],p[1]-28);ctx.shadowBlur=0;
+        ctx.fillText(cN(hov),p[0],p[1]-28);ctx.shadowBlur=0;
       }}
       frameRef.current=requestAnimationFrame(animate);
     };
@@ -254,7 +257,9 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos}){
   return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",maxWidth:960,margin:"0 auto"}}/>;
 }
 
-export default function GlobeHero(){
+export default function GlobeHero({lang='ko'}){
+  const L=lang;
+  const cName=(c)=>L==='ko'?c.n:(c.en||c.n);
   const [hovered,setHovered]=useState(null);
   const [clicked,setClicked]=useState(null);
   const [mousePos,setMousePos]=useState({x:0,total:960});
@@ -305,7 +310,7 @@ export default function GlobeHero(){
         </div>
 
         <div style={{paddingTop:48}}>
-          <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos}/>
+          <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos} lang={L}/>
         </div>
 
         {hovered&&(
@@ -319,40 +324,40 @@ export default function GlobeHero(){
           }}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
               <span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:`${scoreColor(hovered.score)}20`,color:scoreColor(hovered.score),fontWeight:700}}>
-                {hovered.score>=70?"양호":hovered.score>=55?"주의":"경보"}
+                {hovered.score>=70?t('gStatGood',L):hovered.score>=55?t('gStatWarn',L):t('gStatAlert',L)}
               </span>
               {hovered.home&&<span style={{fontSize:8,padding:"2px 5px",borderRadius:4,background:`${T.accent}20`,color:T.accent,fontWeight:700}}>HOME</span>}
             </div>
-            <div style={{fontSize:15,fontWeight:800}}>{hovered.n}</div>
+            <div style={{fontSize:15,fontWeight:800}}>{cName(hovered)}</div>
             <div style={{fontSize:10,color:T.textDim}}>{hovered.iso} · 59 Gauges · 9 Systems</div>
             <div style={{display:"flex",alignItems:"baseline",gap:3,marginTop:8}}>
               <span style={{fontSize:24,fontWeight:900,color:scoreColor(hovered.score),fontFamily:"monospace"}}>{hovered.score}</span>
               <span style={{fontSize:10,color:T.textDim}}>/ 100</span>
             </div>
-            <div style={{fontSize:9,color:T.accent,marginTop:6}}>클릭 → 진단 보고서</div>
+            <div style={{fontSize:9,color:T.accent,marginTop:6}}>{t('gTooltipClick',L)}</div>
           </div>
         )}
       </div>
 
       <div style={{textAlign:"center",padding:"36px 24px 20px",maxWidth:600,margin:"0 auto"}}>
         <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:10}}>SATELLITE ECONOMIC DIAGNOSTICS</div>
-        <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 14px",lineHeight:1.15,letterSpacing:-2}}>우주에서<br/>경제를 진단합니다</h1>
+        <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 14px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
         <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 28px",maxWidth:460}}>
-          NASA·ESA 위성 데이터로 정부 통계보다 <strong style={{color:T.accent}}>2개월 빠른</strong> 경제 진단.<br/>
-          59 경제 게이지 · 9 인체 시스템 · 🛰️ 위성
+          {t('heroDesc',L)} <strong style={{color:T.accent}}>{t('heroFast',L)}</strong> {t('heroDesc2',L)}<br/>
+          {t('gHeroLine',L)}
         </p>
         <div style={{display:"flex",gap:32,justifyContent:"center",marginBottom:16}}>
-          {[{n:"경제 게이지",v:"59"},{n:"인체 시스템",v:"9"},{n:"위성 비용",v:"$0"},{n:"지원 언어",v:"30"}].map(s=>(
+          {[{n:t('gGauges',L),v:"59"},{n:t('gSystems',L),v:"9"},{n:t('gCost',L),v:"$0"},{n:t('gLangs',L),v:"30"}].map(s=>(
             <div key={s.n}>
               <div style={{fontSize:22,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div>
               <div style={{fontSize:10,color:T.textDim,marginTop:2}}>{s.n}</div>
             </div>
           ))}
         </div>
-        <div style={{fontSize:10,color:T.textDim,animation:"float 3s ease-in-out infinite"}}>🛰️ 국가를 클릭하면 경제 진단 보고서를 확인할 수 있습니다</div>
+        <div style={{fontSize:10,color:T.textDim,animation:"float 3s ease-in-out infinite"}}>{t('gClickHint',L)}</div>
       </div>
 
-      <ClickedPanel country={clicked} onClose={()=>setClicked(null)}/>
+      <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L}/>
     </div>
   );
 }

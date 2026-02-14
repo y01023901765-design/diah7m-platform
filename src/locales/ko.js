@@ -278,4 +278,9 @@ export default
   sysA8n:'제조·재고',sysA8b:'대사계',sysA8m:'가동률·재고율·수주 = 에너지 대사',
   sysA9n:'인구·가계',sysA9b:'생식·재생계',sysA9m:'출산·고령화·부채 = 세대 재생',
   locked:'잠겨있습니다',upgradeHint:'{tier} 이상 구독으로 전체 데이터를 확인하세요',upgradeBtn:'구독하기',
+  gStatGood:'양호',gStatWarn:'주의',gStatAlert:'경보',
+  gGauges:'경제 게이지',gSystems:'인체 시스템',gCost:'위성 비용',gLangs:'지원 언어',
+  gClickHint:'🛰️ 국가를 클릭하면 경제 진단 보고서를 확인할 수 있습니다',
+  gTooltipClick:'클릭 → 진단 보고서',gOpenReport:'진단 보고서 열기',
+  gHeroLine:'59 경제 게이지 · 9 인체 시스템 · 🛰️ 위성',
 };

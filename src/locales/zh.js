@@ -71,4 +71,9 @@ export default {
   sysA8n:'制造·库存',sysA8b:'代谢系统',sysA8m:'产能·库存·订单=能量代谢',
   sysA9n:'人口·家庭',sysA9b:'生殖·再生系统',sysA9m:'生育·老龄化·负债=代际更新',
   locked:'已锁定',upgradeHint:'订阅{tier}以上计划查看完整数据',upgradeBtn:'订阅',
+  gStatGood:'良好',gStatWarn:'注意',gStatAlert:'警报',
+  gGauges:'经济仪表',gSystems:'人体系统',gCost:'卫星费用',gLangs:'支持语言',
+  gClickHint:'🛰️ 点击国家查看经济诊断报告',
+  gTooltipClick:'点击 → 诊断报告',gOpenReport:'打开诊断报告',
+  gHeroLine:'59 经济仪表 · 9 人体系统 · 🛰️ 卫星',
 };

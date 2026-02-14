@@ -280,4 +280,9 @@ export default {
   sysA9n:'Demographics & Household',sysA9b:'Reproductive',sysA9m:'Fertility·Aging·Debt = Generational renewal',
   // ── TIERLOCK ──
   locked:'Locked',upgradeHint:'Subscribe to {tier} or above to access full data',upgradeBtn:'Subscribe',
+  gStatGood:'Good',gStatWarn:'Caution',gStatAlert:'Alert',
+  gGauges:'Economic Gauges',gSystems:'Body Systems',gCost:'Satellite Cost',gLangs:'Languages',
+  gClickHint:'🛰️ Click a country to view its economic diagnostic report',
+  gTooltipClick:'Click → Diagnostic Report',gOpenReport:'Open Diagnostic Report',
+  gHeroLine:'59 Economic Gauges · 9 Body Systems · 🛰️ Satellite',
 };
