@@ -175,7 +175,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
       const ctx=canvas.getContext("2d"),{w,h}=sizeRef.current,dpr=window.devicePixelRatio||1;
       if(canvas.width!==w*dpr){canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+"px";canvas.style.height=h+"px"}
       ctx.setTransform(dpr,0,0,dpr,0,0);
-      const proj=d3.geoNaturalEarth1().rotate([-130,0]).scale(w/5.2).translate([w/2,h/2]);
+      const proj=d3.geoNaturalEarth1().rotate([-127,0]).scale(w/4.8).translate([w/2,h/2]);
       projRef.current=proj;const path=d3.geoPath(proj,ctx);
       const now=Date.now()/1000;const hov=hovRef.current;
 
@@ -339,9 +339,8 @@ export default function GlobeHero({lang='ko'}){
             <div style={{fontSize:9,color:T.accent,marginTop:6}}>{t('gTooltipClick',L)}</div>
           </div>
         )}
-      </div>
-
-      <div style={{textAlign:"center",padding:"4px 24px 16px",maxWidth:600,margin:"0 auto"}}>
+      
+        <div style={{textAlign:"center",padding:"4px 24px 16px",maxWidth:600,margin:"0 auto"}}>
         <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:3,marginBottom:6}}>SATELLITE ECONOMIC DIAGNOSTICS</div>
         <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
         <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 14px",maxWidth:460}}>
@@ -357,6 +356,7 @@ export default function GlobeHero({lang='ko'}){
           ))}
         </div>
         <div style={{fontSize:10,color:T.textDim,animation:"float 3s ease-in-out infinite"}}>{t('gClickHint',L)}</div>
+      </div>
       </div>
 
       <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L}/>
