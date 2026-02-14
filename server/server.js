@@ -134,7 +134,52 @@ app.get('/api/test/:id', async (req, res) => {
   }
 });
 
-// -- ECOS 통계코드 탐색 (한 번에 다수 후보 검증) --
+// -- ECOS 항목 발견 (통계표 → 항목 코드 목록) --
+app.get('/api/ecos-items', async (req, res) => {
+  const ecosKey = process.env.ECOS_API_KEY;
+  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
+  
+  function efetch(url) {
+    return new Promise((resolve) => {
+      require('https').get(url, { timeout: 8000 }, (resp) => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+  }
+  
+  // 1단계: 통계표 검색 (키워드)
+  const searches = ['수출','소비자물가','산업생산','소매판매','실업','고용','경기종합','설비투자','건설기성','통화','가동률','주택가격','인구','서비스업생산','수주'];
+  const tables = {};
+  for (const kw of searches) {
+    const url = `https://ecos.bok.or.kr/api/StatisticTableList/${ecosKey}/json/kr/1/10/${encodeURIComponent(kw)}`;
+    const r = await efetch(url);
+    const rows = r?.StatisticTableList?.row;
+    if (rows) {
+      tables[kw] = rows.slice(0, 5).map(x => ({ stat: x.STAT_CODE, name: x.STAT_NAME, cycle: x.CYCLE }));
+    } else {
+      tables[kw] = r?.RESULT?.MESSAGE || 'no result';
+    }
+    await new Promise(r => setTimeout(r, 150));
+  }
+  
+  // 2단계: 핵심 통계표의 항목 목록
+  const statCodes = ['403Y001','403Y014','901Y009','404Y014','901Y033','901Y034','901Y035','901Y036','901Y037','901Y027','901Y067','901Y068','101Y018','101Y003','901Y001','722Y001','301Y013','731Y004','102Y004','403Y003','301Y017'];
+  const items = {};
+  for (const sc of statCodes) {
+    const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/20/${sc}`;
+    const r = await efetch(url);
+    const rows = r?.StatisticItemList?.row;
+    if (rows) {
+      items[sc] = rows.slice(0, 10).map(x => ({ item: x.ITEM_CODE1, name: x.ITEM_NAME1, cycle: x.CYCLE, unit: x.UNIT_NAME }));
+    } else {
+      items[sc] = r?.RESULT?.MESSAGE || 'no result';
+    }
+    await new Promise(r => setTimeout(r, 150));
+  }
+  
+  res.json({ tables, items });
+});
 app.get('/api/ecos-probe', async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
