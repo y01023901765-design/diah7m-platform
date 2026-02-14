@@ -50,7 +50,7 @@ function scoreColor(s){return s>=70?T.good:s>=55?T.warn:T.danger}
 
 function ClickedPanel({country,onClose,lang='ko'}){
   if(!country)return null;const col=scoreColor(country.score);const L=lang;
-  const nm=L==='ko'?country.n:(country.en||country.n);
+  const nm=t('cnt_'+country.iso,L)||country.en||country.n;
   return(<div onClick={onClose} style={{position:"fixed",inset:0,background:`${T.bg0}c0`,backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
     <div onClick={e=>e.stopPropagation()} style={{background:T.surface,borderRadius:16,padding:32,border:`1px solid ${col}40`,minWidth:320,maxWidth:380,textAlign:"center"}}>
       <div style={{fontSize:12,color:col,fontWeight:700,marginBottom:4}}>{country.score>=70?t('gStatGood',L):country.score>=55?t('gStatWarn',L):t('gStatAlert',L)}</div>
@@ -149,7 +149,7 @@ function RealisticSatellite(){
 function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   const langRef=useRef(lang);
   useEffect(()=>{langRef.current=lang},[lang]);
-  const cN=(c)=>langRef.current==='ko'?c.n:(c.en||c.n);
+  const cN=(c)=>t('cnt_'+c.iso,langRef.current)||c.en||c.n;
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
@@ -261,7 +261,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
 
 export default function GlobeHero({lang='ko'}){
   const L=lang;
-  const cName=(c)=>L==='ko'?c.n:(c.en||c.n);
+  const cName=(c)=>t('cnt_'+c.iso,L)||c.en||c.n;
   const [hovered,setHovered]=useState(null);
   const [clicked,setClicked]=useState(null);
   const [mousePos,setMousePos]=useState({x:0,total:960});

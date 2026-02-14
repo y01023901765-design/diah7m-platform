@@ -76,4 +76,5 @@ export default {
   gClickHint:'🛰️ 国をクリックすると経済診断レポートを確認できます',
   gTooltipClick:'クリック → 診断レポート',gOpenReport:'診断レポートを開く',
   gHeroLine:'59 経済ゲージ · 9 人体システム · 🛰️ 衛星',
+  cnt_KOR:'韓国',cnt_USA:'アメリカ',cnt_JPN:'日本',cnt_DEU:'ドイツ',cnt_GBR:'イギリス',cnt_FRA:'フランス',cnt_CAN:'カナダ',cnt_AUS:'オーストラリア',cnt_ITA:'イタリア',cnt_ESP:'スペイン',cnt_NLD:'オランダ',cnt_CHE:'スイス',cnt_SWE:'スウェーデン',cnt_NOR:'ノルウェー',cnt_DNK:'デンマーク',cnt_FIN:'フィンランド',cnt_AUT:'オーストリア',cnt_BEL:'ベルギー',cnt_IRL:'アイルランド',cnt_PRT:'ポルトガル',cnt_GRC:'ギリシャ',cnt_CZE:'チェコ',cnt_POL:'ポーランド',cnt_HUN:'ハンガリー',cnt_SVK:'スロバキア',cnt_SVN:'スロベニア',cnt_EST:'エストニア',cnt_LVA:'ラトビア',cnt_LTU:'リトアニア',cnt_ISL:'アイスランド',cnt_LUX:'ルクセンブルク',cnt_NZL:'ニュージーランド',cnt_ISR:'イスラエル',cnt_TUR:'トルコ',cnt_MEX:'メキシコ',cnt_CHL:'チリ',cnt_COL:'コロンビア',cnt_CRI:'コスタリカ',cnt_SGP:'シンガポール',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'インド',cnt_CHN:'中国',
 };
