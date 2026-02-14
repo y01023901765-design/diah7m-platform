@@ -83,7 +83,7 @@ export default function App(){
     <div dir={isRTL?'rtl':'ltr'} style={{minHeight:"100vh",background:isDark?`linear-gradient(180deg,${T.bg0},${T.bg1})`:LT.bg0,fontFamily:lang==='ar'?"'Noto Sans Arabic','Pretendard',sans-serif":lang==='ja'?"'Noto Sans JP','Pretendard',sans-serif":lang==='zh'?"'Noto Sans SC','Pretendard',sans-serif":"'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif",color:TH.text}}>
       <style>{RESPONSIVE_CSS(isDark)}</style>
       {page==='landing'?<LandingPage onNavigate={nav} lang={lang} setLang={setLang}/>:<>
-        <GlobalNav page={page} user={user} onNav={nav} onLogout={handleLogout} lang={lang} setLang={setLang}/>
+        {page!=='login'&&page!=='signup'&&<GlobalNav page={page} user={user} onNav={nav} onLogout={handleLogout} lang={lang} setLang={setLang}/>}
         <div style={{animation:"fadeIn 0.3s ease"}}>
           {(page==='login'||page==='signup')&&<AuthPage mode={page} onNavigate={nav} onLogin={handleLogin} lang={lang}/>}
           {page==='dashboard'&&user&&<DashboardPage user={user} onNav={nav} lang={lang}/>}
@@ -91,7 +91,7 @@ export default function App(){
           {page==='mypage'&&user&&<MyPage user={user} onNav={nav} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
         </div>
-        <div style={{padding:"20px 16px",textAlign:"center",fontSize:13,color:TH.textDim,borderTop:`1px solid ${TH.border}`,marginTop:40}}>© Human Body National Economics · DIAH-7M · Jong-Won Yoon | NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>
+        {page!=='login'&&page!=='signup'&&<div style={{padding:"20px 16px",textAlign:"center",fontSize:13,color:TH.textDim,borderTop:`1px solid ${TH.border}`,marginTop:40}}>© Human Body National Economics · DIAH-7M · Jong-Won Yoon | NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>}
       </>}
       {user&&<ChatbotWidget lang={lang}/>}
     </div>
