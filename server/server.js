@@ -516,6 +516,38 @@ app.get('/api/v1/data/latest', auth?.authMiddleware || ((req, res) => res.status
 });
 
 // -- 데이터 수동 새로고침 (관리자 전용) --
+// GET 방식 refresh (브라우저에서 쉽게 실행)
+app.get('/api/trigger-refresh', async (req, res) => {
+  const adminPw = process.env.ADMIN_PASSWORD;
+  if (!adminPw || req.query.key !== adminPw) {
+    return res.json({ error: 'Add ?key=YOUR_ADMIN_PASSWORD to URL' });
+  }
+  if (!pipeline || !dataStore) return res.json({ error: 'Pipeline/Store unavailable' });
+  if (dataStore.fetching) return res.json({ error: 'Already running, wait...' });
+
+  const ecosKey = process.env.ECOS_API_KEY;
+  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
+
+  dataStore.fetching = true;
+  try {
+    const t0 = Date.now();
+    const { results, stats, errors } = await pipeline.fetchAll(ecosKey, '');
+    const stored = await dataStore.store(results);
+    dataStore.fetching = false;
+    res.json({
+      success: true,
+      time: `${((Date.now()-t0)/1000).toFixed(1)}s`,
+      fetched: `${stats.ok}/${stats.total}`,
+      stored,
+      errors: errors?.length || 0,
+      details: stats
+    });
+  } catch (e) {
+    dataStore.fetching = false;
+    res.json({ error: e.message });
+  }
+});
+
 app.post('/api/v1/data/refresh', async (req, res) => {
   // Admin bypass: ADMIN_PASSWORD in body or Authorization header
   const adminPw = process.env.ADMIN_PASSWORD;
