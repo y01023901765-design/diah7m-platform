@@ -2,7 +2,7 @@
 // KO = source of truth (locales/ko.js)
 // EN/JA/ZH = 완전 번역 (260 keys)
 // 22 languages = 핵심 UI + EN fallback
-import T from './theme';
+import T, { L as LT } from './theme';
 import LOCALES from './locales';
 
 const LANG_LIST=[
@@ -56,7 +56,7 @@ const t=(key,lang)=>{
 };
 
 // Gauge color/icon helpers
-const gc = g => g==="양호"?T.good:g==="주의"?T.warn:T.danger;
+const gc = g => g==="양호"?LT.good:g==="주의"?LT.warn:LT.danger;
 const gi = g => g==="양호"?"●":g==="주의"?"●":"●";
 
 export { LANG_LIST, detectLang, KO, EN, LOCALES, t, gc, gi };

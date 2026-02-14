@@ -52,7 +52,7 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ FEATURES ═══ */}
       <div id="features" style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:48}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>WHY DIAH-7M</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>WHY DIAH-7M</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('whyTitle',L)}</h2>
         </div>
         <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
@@ -67,14 +67,14 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ HOW IT WORKS ═══ */}
       <div style={{...sectionStyle,background:`linear-gradient(180deg,${T.bg2}80,transparent)`}}>
         <div style={{textAlign:"center",marginBottom:48}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:8}}>HOW IT WORKS</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:8}}>HOW IT WORKS</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('howTitle',L)}</h2>
         </div>
         <div style={{display:"flex",gap:0,justifyContent:"center",flexWrap:"wrap"}}>
           {stepList.map((s,i)=>(<div key={i} style={{display:"flex",alignItems:"center"}}>
             <div style={{width:140,textAlign:"center",padding:"0 8px"}}>
               <div style={{width:48,height:48,borderRadius:24,background:`${T.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,margin:"0 auto 10px"}}>{["🛰️","📡","🏥","✅","🎯"][i]}</div>
-              <div style={{fontSize:10,fontWeight:800,color:T.accent,marginBottom:4}}>0{i+1}</div>
+              <div style={{fontSize:12,fontWeight:800,color:T.accent,marginBottom:4}}>0{i+1}</div>
               <div style={{fontSize:13,fontWeight:700,color:T.text}}>{s}</div>
             </div>
             {i<4&&<div style={{width:30,height:2,background:T.border,flexShrink:0}}/>}
@@ -85,7 +85,7 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ SATELLITES ═══ */}
       <div style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>DATA SOURCES</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.sat,letterSpacing:2,marginBottom:8}}>DATA SOURCES</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>4 {t('satTab',L)} — {t('satCost',L)}</h2>
         </div>
         <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
@@ -97,11 +97,11 @@ function LandingPage({onNavigate,lang,setLang}){
           ].map(s=>(<div key={s.name} style={{background:`${T.sat}06`,borderRadius:T.cardRadius,padding:20,border:`1px solid ${T.sat}20`,textAlign:"center"}}>
             <div style={{fontSize:32,marginBottom:8}}>{s.icon}</div>
             <div style={{fontSize:14,fontWeight:700,color:T.text}}>{s.name}</div>
-            <div style={{fontSize:10,color:T.sat,marginTop:2}}>{s.sat}</div>
+            <div style={{fontSize:12,color:T.sat,marginTop:2}}>{s.sat}</div>
             <div style={{display:"flex",justifyContent:"center",gap:12,marginTop:12}}>
-              <span style={{fontSize:10,color:T.textDim}}>{s.freq}</span>
-              <span style={{fontSize:10,color:T.textDim}}>{s.res}</span>
-              <span style={{fontSize:10,color:T.good,fontWeight:700}}>$0</span>
+              <span style={{fontSize:12,color:T.textDim}}>{s.freq}</span>
+              <span style={{fontSize:12,color:T.textDim}}>{s.res}</span>
+              <span style={{fontSize:12,color:T.good,fontWeight:700}}>$0</span>
             </div>
           </div>))}
         </div>
@@ -110,17 +110,17 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ 9 SYSTEMS ═══ */}
       <div style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.warn,letterSpacing:2,marginBottom:8}}>9 BODY SYSTEMS</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.warn,letterSpacing:2,marginBottom:8}}>9 BODY SYSTEMS</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('nineSystems',L)}</h2>
         </div>
         <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
           {Object.entries(SYS).map(([k,s])=>(<div key={k} style={{background:`${s.color}06`,borderRadius:T.cardRadius,padding:"18px 16px",border:`1px solid ${s.color}15`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:20}}>{s.icon}</span>
-              <span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:`${s.color}15`,color:s.color,fontWeight:700}}>{s.keys.length}</span>
+              <span style={{fontSize:12,padding:"2px 8px",borderRadius:10,background:`${s.color}15`,color:s.color,fontWeight:700}}>{s.keys.length}</span>
             </div>
             <div style={{fontSize:14,fontWeight:700,color:T.text}}>{sysN(k,L)}</div>
-            <div style={{fontSize:10,color:s.color,marginTop:2}}>{sysB(k,L)}</div>
+            <div style={{fontSize:12,color:s.color,marginTop:2}}>{sysB(k,L)}</div>
           </div>))}
         </div>
       </div>
@@ -128,22 +128,22 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ PRICING ═══ */}
       <div id="pricing" style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.good,letterSpacing:2,marginBottom:8}}>PRICING</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.good,letterSpacing:2,marginBottom:8}}>PRICING</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('pricingTitle',L)}</h2>
           <p style={{fontSize:13,color:T.textMid,marginTop:10}}>{t('pricingSub',L)}</p>
         </div>
         <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
           {plans.map(p=>(<div key={p.id} style={{background:T.surface,borderRadius:T.cardRadius,padding:24,border:`2px solid ${p.pop?T.accent:T.border}`,position:"relative",display:"flex",flexDirection:"column"}}>
-            {p.pop&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:800,padding:"3px 14px",borderRadius:10,background:T.accent,color:T.bg0}}>POPULAR</div>}
+            {p.pop&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontSize:12,fontWeight:800,padding:"3px 14px",borderRadius:10,background:T.accent,color:T.bg0}}>POPULAR</div>}
             <div style={{fontSize:24,marginBottom:8}}>{p.icon}</div>
             <div style={{fontSize:18,fontWeight:800,color:p.color}}>{p.name}</div>
-            <div style={{fontSize:10,color:T.textDim,marginTop:2}}>{p.desc}</div>
+            <div style={{fontSize:12,color:T.textDim,marginTop:2}}>{p.desc}</div>
             <div style={{marginTop:16,marginBottom:16}}>
               <span style={{fontSize:28,fontWeight:900,color:T.text}}>{p.price}</span>
-              <span style={{fontSize:11,color:T.textDim}}>{p.period}</span>
+              <span style={{fontSize:13,color:T.textDim}}>{p.period}</span>
             </div>
             <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
-              {p.features.map((f,i)=>(<div key={i} style={{fontSize:11,color:T.textMid,display:"flex",gap:6}}><span style={{color:p.color}}>✓</span>{f}</div>))}
+              {p.features.map((f,i)=>(<div key={i} style={{fontSize:13,color:T.textMid,display:"flex",gap:6}}><span style={{color:p.color}}>✓</span>{f}</div>))}
             </div>
             <button onClick={()=>onNavigate('signup')} style={{width:"100%",padding:"12px",borderRadius:10,border:p.pop?"none":`1px solid ${T.border}`,background:p.pop?`linear-gradient(135deg,${T.accent},#0099cc)`:T.bg2,color:p.pop?"#fff":T.text,fontSize:13,fontWeight:700,cursor:"pointer",marginTop:20}}>{p.id==='FREE'?t('free',L):t('trial',L)}</button>
           </div>))}
@@ -153,7 +153,7 @@ function LandingPage({onNavigate,lang,setLang}){
       {/* ═══ FAQ ═══ */}
       <div style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.info,letterSpacing:2,marginBottom:8}}>FAQ</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.info,letterSpacing:2,marginBottom:8}}>FAQ</div>
           <h2 style={{fontSize:28,fontWeight:800,margin:0,letterSpacing:-1}}>{t('faqTitle',L)}</h2>
         </div>
         <div style={{maxWidth:680,margin:"0 auto"}}>
@@ -178,7 +178,7 @@ function LandingPage({onNavigate,lang,setLang}){
       <footer style={{borderTop:`1px solid ${T.border}`,padding:"40px 24px"}}>
         <div style={{maxWidth:900,margin:"0 auto",textAlign:"center"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:12}}><span>🛰️</span><span style={{fontWeight:800}}>DIAH-7M</span></div>
-          <div style={{fontSize:11,color:T.textDim}}>© 2026 DIAH-7M · Human Body National Economics · NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>
+          <div style={{fontSize:13,color:T.textDim}}>© 2026 DIAH-7M · Human Body National Economics · NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>
         </div>
       </footer>
     </div>

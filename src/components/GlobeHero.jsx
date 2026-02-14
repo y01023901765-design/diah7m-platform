@@ -57,10 +57,10 @@ function ClickedPanel({country,onClose,lang='ko'}){
     <div onClick={e=>e.stopPropagation()} style={{background:T.surface,borderRadius:16,padding:32,border:`1px solid ${col}40`,minWidth:320,maxWidth:380,textAlign:"center"}}>
       <div style={{fontSize:12,color:col,fontWeight:700,marginBottom:4}}>{country.score>=70?t('gStatGood',L):country.score>=55?t('gStatWarn',L):t('gStatAlert',L)}</div>
       <div style={{fontSize:26,fontWeight:900,color:T.text,marginBottom:4}}>{nm}</div>
-      <div style={{fontSize:11,color:T.textDim,marginBottom:20}}>{country.iso}</div>
+      <div style={{fontSize:13,color:T.textDim,marginBottom:20}}>{country.iso}</div>
       <div style={{fontSize:48,fontWeight:900,color:col,fontFamily:"monospace"}}>{country.score}<span style={{fontSize:16,color:T.textDim}}> / 100</span></div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,margin:"20px 0"}}>
-        {[{l:t('gGauges',L),v:"59"},{l:t('gSystems',L),v:"9"},{l:"Satellites",v:"4"}].map(s=>(<div key={s.l} style={{background:`${T.bg0}80`,borderRadius:8,padding:"8px 4px"}}><div style={{fontSize:18,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div><div style={{fontSize:9,color:T.textDim}}>{s.l}</div></div>))}
+        {[{l:t('gGauges',L),v:"59"},{l:t('gSystems',L),v:"9"},{l:"Satellites",v:"4"}].map(s=>(<div key={s.l} style={{background:`${T.bg0}80`,borderRadius:8,padding:"8px 4px"}}><div style={{fontSize:18,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div><div style={{fontSize:12,color:T.textDim}}>{s.l}</div></div>))}
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.textDim,fontSize:12,cursor:"pointer"}}>{t('close',L)||'Close'}</button>
@@ -330,18 +330,18 @@ export default function GlobeHero({lang='ko'}){
             minWidth:180,zIndex:20,
           }}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-              <span style={{fontSize:10,padding:"2px 7px",borderRadius:5,background:`${scoreColor(hovered.score)}20`,color:scoreColor(hovered.score),fontWeight:700}}>
+              <span style={{fontSize:12,padding:"2px 7px",borderRadius:5,background:`${scoreColor(hovered.score)}20`,color:scoreColor(hovered.score),fontWeight:700}}>
                 {hovered.score>=70?t('gStatGood',L):hovered.score>=55?t('gStatWarn',L):t('gStatAlert',L)}
               </span>
-              {hovered.iso===(LANG_HOME[L]||'KOR')&&<span style={{fontSize:8,padding:"2px 5px",borderRadius:4,background:`${T.accent}20`,color:T.accent,fontWeight:700}}>HOME</span>}
+              {hovered.iso===(LANG_HOME[L]||'KOR')&&<span style={{fontSize:12,padding:"2px 5px",borderRadius:4,background:`${T.accent}20`,color:T.accent,fontWeight:700}}>HOME</span>}
             </div>
             <div style={{fontSize:15,fontWeight:800}}>{cName(hovered)}</div>
-            <div style={{fontSize:10,color:T.textDim}}>{hovered.iso} · 59 Gauges · 9 Systems</div>
+            <div style={{fontSize:12,color:T.textDim}}>{hovered.iso} · 59 Gauges · 9 Systems</div>
             <div style={{display:"flex",alignItems:"baseline",gap:3,marginTop:8}}>
               <span style={{fontSize:24,fontWeight:900,color:scoreColor(hovered.score),fontFamily:"monospace"}}>{hovered.score}</span>
-              <span style={{fontSize:10,color:T.textDim}}>/ 100</span>
+              <span style={{fontSize:12,color:T.textDim}}>/ 100</span>
             </div>
-            <div style={{fontSize:9,color:T.accent,marginTop:6}}>{t('gTooltipClick',L)}</div>
+            <div style={{fontSize:12,color:T.accent,marginTop:6}}>{t('gTooltipClick',L)}</div>
           </div>
         )}
       
