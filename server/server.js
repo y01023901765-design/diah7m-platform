@@ -112,6 +112,30 @@ if (fs.existsSync(distPath)) {
 
 // ═══ 6. API 라우트 ═══
 
+// -- 루트 상태 페이지 --
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head><meta charset="UTF-8"><title>DIAH-7M API</title></head>
+    <body style="font-family:sans-serif;max-width:600px;margin:50px auto;padding:20px;">
+      <h1>🛰️ DIAH-7M API Server</h1>
+      <p>상태: <strong style="color:green">정상 작동 중</strong></p>
+      <p>가동시간: ${Math.round((Date.now() - state.startedAt) / 1000)}초</p>
+      <p>빌드: ${process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local'}</p>
+      <hr>
+      <h3>주요 엔드포인트:</h3>
+      <ul>
+        <li><a href="/api/health">/api/health</a> — 서버 상태</li>
+        <li><a href="/api/trigger-refresh?key=YOUR_PASSWORD">/api/trigger-refresh?key=...</a> — 데이터 갱신</li>
+        <li>/api/v1/data/test-gauge/:id — 게이지 테스트</li>
+      </ul>
+      <p style="color:#666;font-size:0.9em;">프론트엔드: <a href="https://diah7m-platform.vercel.app">Vercel</a></p>
+    </body>
+    </html>
+  `);
+});
+
 // -- 헬스체크 --
 app.get('/api/health', (req, res) => {
   res.json({
