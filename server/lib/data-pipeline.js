@@ -52,7 +52,7 @@ const GAUGE_MAP = {
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
-  S1: { source:'ECOS', stat:'901Y037', item:'I41A', cycle:'M', name:'제조업재고순환(BSI대리)', unit:'2020=100' },
+  S1: { source:'ECOS', stat:'901Y037', item:'I41A', cycle:'M', name:'제조업재고순환(BSI대리)', unit:'2020=100', searchMonthsBack: 3 },
   S2: { source:'SATELLITE', sat:'VIIRS_DNB', name:'야간광량', unit:'%', note:'NASA Suomi NPP 직접 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
@@ -78,7 +78,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'ECOS', stat:'901Y034', item:'I31A', cycle:'M', name:'제조업출하(PMI대리)', unit:'2020=100' },
+  O2: { source:'ECOS', stat:'901Y034', item:'I31A', cycle:'M', name:'제조업출하(PMI대리)', unit:'2020=100', searchMonthsBack: 3 },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
