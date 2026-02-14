@@ -516,7 +516,26 @@ app.get('/api/v1/data/latest', auth?.authMiddleware || ((req, res) => res.status
 });
 
 // -- 데이터 수동 새로고침 (관리자 전용) --
-app.post('/api/v1/data/refresh', auth?.authMiddleware || ((req, res, next) => next()), auth?.adminMiddleware || ((req, res, next) => next()), async (req, res) => {
+app.post('/api/v1/data/refresh', async (req, res) => {
+  // Admin bypass: ADMIN_PASSWORD in body or Authorization header
+  const adminPw = process.env.ADMIN_PASSWORD;
+  const bodyPw = req.body?.adminPassword;
+  const headerPw = (req.headers.authorization || '').replace('Bearer ', '');
+  
+  let authorized = false;
+  if (adminPw && (bodyPw === adminPw || headerPw === adminPw)) {
+    authorized = true;
+  } else if (auth?.authMiddleware) {
+    // Try JWT auth
+    try {
+      await new Promise((resolve, reject) => {
+        auth.authMiddleware(req, res, (err) => err ? reject(err) : resolve());
+      });
+      if (req.user?.role === 'admin') authorized = true;
+    } catch (e) { /* not authorized via JWT */ }
+  }
+  
+  if (!authorized) return res.status(403).json({ error: 'Admin access required. Send adminPassword in body.' });
   if (!pipeline || !dataStore) return res.status(503).json({ error: 'Pipeline/Store unavailable' });
   if (dataStore.fetching) return res.status(429).json({ error: 'Fetch already in progress' });
 
