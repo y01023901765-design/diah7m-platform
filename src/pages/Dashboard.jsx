@@ -7,22 +7,79 @@ import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components
 import { TIER_ACCESS, tierLevel } from '../data/gauges';
 import * as API from '../api';
 
+// ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
+function mergeGaugeData(demoD, liveResults) {
+  if (!liveResults || !Array.isArray(liveResults)) return demoD;
+  const merged = { ...demoD };
+  for (const r of liveResults) {
+    if (!r?.gaugeId || r.status === 'PENDING' || r.value == null) continue;
+    const key = r.gaugeId;
+    if (merged[key]) {
+      merged[key] = {
+        ...merged[key],
+        v: r.value,
+        p: merged[key].v, // 기존 데모값을 이전값으로
+        ch: r.change || merged[key].ch,
+        note: r.note || merged[key].note,
+        _live: true, // 실데이터 표시
+      };
+    }
+  }
+  return merged;
+}
+
 function DashboardPage({user,onNav,lang}){
   const L=lang||'ko';
   const [expanded,setExpanded]=useState({});
   const [tab,setTab]=useState('overview');
   const [demoPlan,setDemoPlan]=useState(user?.plan||'PRO');
   const [apiStatus,setApiStatus]=useState('checking'); // checking|live|demo
+  const [liveData,setLiveData]=useState(null); // API에서 가져온 실데이터
+  const [dataInfo,setDataInfo]=useState(null); // 수집 현황 정보
   const toggle=k=>setExpanded(p=>({...p,[k]:!p[k]}));
 
-  // API 연결 확인
+  // 1단계: API 연결 확인 → 2단계: 데이터 상태 확인 → 3단계: 실데이터 fetch
   useEffect(()=>{
-    API.healthCheck()
-      .then(()=>setApiStatus('live'))
-      .catch(()=>setApiStatus('demo'));
+    let cancelled = false;
+    (async()=>{
+      try {
+        // 1. 서버 살아있는지
+        await API.healthCheck();
+        if (cancelled) return;
+
+        // 2. 수집 상태 확인 (인증 불필요)
+        const status = await API.dataStatus();
+        if (cancelled) return;
+        setDataInfo(status);
+
+        if (status.available && status.lastUpdated) {
+          // 3. 실데이터 가져오기
+          try {
+            const latest = await API.dataLatest();
+            if (cancelled) return;
+            if (latest?.data) {
+              setLiveData(latest.data);
+              setApiStatus('live');
+              return;
+            }
+          } catch(e) {
+            // 인증 필요하거나 데이터 없음 → 데모 모드
+            console.log('Data fetch failed (auth required?):', e.message);
+          }
+        }
+        // 서버는 있지만 데이터 없음
+        setApiStatus('demo');
+      } catch {
+        // 서버 연결 실패
+        setApiStatus('demo');
+      }
+    })();
+    return () => { cancelled = true; };
   },[]);
 
-  const allG=Object.values(D);
+  // 실데이터 있으면 머지, 없으면 데모 그대로
+  const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
+  const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
   const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)}];
   const demoUser={...user,plan:demoPlan};
@@ -105,7 +162,7 @@ function DashboardPage({user,onNav,lang}){
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("satStatus",L)}</div></div>
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-        {Object.values(D).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
+        {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
     </>}

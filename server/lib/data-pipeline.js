@@ -23,6 +23,42 @@
 const ECOS_BASE = 'https://ecos.bok.or.kr/api/StatisticSearch';
 const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
+// ── Yahoo Finance (KOSPI/KOSDAQ 등) ──
+// GPT 조언: 캐시 + 폴백 + provider 교체 가능 구조
+let yahooFinance = null;
+try { yahooFinance = require('yahoo-finance2').default; } catch(e) { console.log('  ⚠️ yahoo-finance2 not installed — KOSPI/KOSDAQ will be PENDING'); }
+
+const _yahooCache = {}; // { symbol: { value, timestamp, date } }
+const YAHOO_CACHE_TTL = 60 * 60 * 1000; // 1시간
+
+async function fetchYahoo(symbol) {
+  const t0 = Date.now();
+  // 캐시 확인
+  const cached = _yahooCache[symbol];
+  if (cached && (Date.now() - cached.timestamp) < YAHOO_CACHE_TTL) {
+    return { rows: [{ date: cached.date, value: cached.value, name: symbol }], latency: 0, source: 'cache' };
+  }
+  if (!yahooFinance) {
+    return { rows: [], error: 'yahoo-finance2 not installed', latency: 0 };
+  }
+  try {
+    const quote = await yahooFinance.quote(symbol);
+    const price = quote?.regularMarketPrice;
+    if (price == null) return { rows: [], error: 'No price data', latency: Date.now() - t0 };
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    // 캐시 저장
+    _yahooCache[symbol] = { value: price, timestamp: Date.now(), date: dateStr };
+    return { rows: [{ date: dateStr, value: price, name: quote.shortName || symbol }], latency: Date.now() - t0 };
+  } catch(e) {
+    // 폴백: 캐시가 만료됐어도 있으면 반환 (stale > nothing)
+    if (cached) {
+      console.log(`  ⚠️ Yahoo ${symbol} fetch failed, using stale cache: ${e.message}`);
+      return { rows: [{ date: cached.date, value: cached.value, name: symbol }], latency: 0, source: 'stale-cache' };
+    }
+    return { rows: [], error: e.message, latency: Date.now() - t0 };
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 59 GAUGE → API MAPPING
 // ═══════════════════════════════════════════════════════════════
@@ -52,7 +88,7 @@ const GAUGE_MAP = {
   C6: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
 
   // ── A4: 정책·규제 (신경계) ──
-  S1: { source:'MANUAL', name:'BSI(기업경기)', unit:'pt', note:'ECOS 512Y006 폐기, 수동입력 필요' },
+  S1: { source:'ECOS', stat:'512Y014', item:'99988', cycle:'M', name:'BSI(기업경기)', unit:'pt', searchMonthsBack:6, note:'전산업 BSI 전망(ECOS)' },
   S2: { source:'GEE_SATELLITE', sat:'VIIRS_DNB', name:'야간광량(서울)', unit:'nW/cm²/sr', note:'Google Earth Engine 자동 수집' },
   S3: { source:'ECOS', stat:'901Y067', item:'I16A', cycle:'M', name:'경기선행지수', unit:'2020=100' },
   S4: { source:'ECOS', stat:'301Y014', item:'S00000', cycle:'M', name:'서비스수지', unit:'백만$' },
@@ -62,11 +98,11 @@ const GAUGE_MAP = {
   // ── A5: 금융안정 (면역계) ──
   F1: { source:'ECOS', stat:'817Y002', item:'010300000', cycle:'D', name:'회사채금리(AA-)', unit:'%' },
   F2: { source:'ECOS', stat:'817Y002', item:'010502000', cycle:'D', name:'CD금리(91일)', unit:'%' },
-  F3: { source:'MANUAL', name:'KOSPI', unit:'pt', note:'ECOS 802Y001 폐기, Yahoo Finance 연동 예정' },
+  F3: { source:'YAHOO', symbol:'^KS11', name:'KOSPI', unit:'pt', note:'Yahoo Finance 자동 수집' },
   F4: { source:'ECOS', stat:'817Y002', item:'010200000', cycle:'D', name:'국고채(3년)', unit:'%' },
   F5: { source:'ECOS', stat:'817Y002', item:'010210000', cycle:'D', name:'국고채(10년)', unit:'%' },
   F6: { source:'DERIVED', deps:['F1','F4'], calc:(corp,gov)=>+(corp-gov).toFixed(2), name:'신용스프레드', unit:'%p' },
-  F7: { source:'MANUAL', name:'KOSDAQ', unit:'pt', note:'ECOS 802Y001 폐기, Yahoo Finance 연동 예정' },
+  F7: { source:'YAHOO', symbol:'^KQ11', name:'KOSDAQ', unit:'pt', note:'Yahoo Finance 자동 수집' },
 
   // ── A6: 물가·재정 (내분비계) ──
   P1: { source:'ECOS', stat:'901Y009', item:'0', cycle:'M', name:'CPI(소비자물가)', unit:'2020=100' },
@@ -78,7 +114,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'MANUAL', name:'제조업PMI', unit:'pt', note:'S&P Global PMI 수동입력 필요' },
+  O2: { source:'ECOS', stat:'901Y033', item:'A01', cycle:'M', name:'제조업출하(PMI대체)', unit:'2020=100', note:'제조업 출하지수 — PMI 대체' },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
@@ -400,6 +436,9 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
   } else if (spec.source === 'WAQI') {
     const r = await fetchWAQI(spec.city || 'seoul');
     rows = r.rows || []; latency = r.latency || 0; fetchError = r.error; meta = r.meta;
+  } else if (spec.source === 'YAHOO') {
+    const r = await fetchYahoo(spec.symbol);
+    rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;
   } else if (spec.source === 'KOSIS') {
     const r = await fetchKOSIS(kosisKey, spec.orgId, spec.tblId, spec.item, spec.cycle, start, end);
     rows = r.rows || []; latency = r.latency || 0; fetchError = r.error;

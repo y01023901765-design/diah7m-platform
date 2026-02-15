@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "express": "^4.21.0",
-    "sql.js": "^1.11.0"
+    "node-cron": "^4.2.1",
+    "pdfkit": "^0.17.2",
+    "sql.js": "^1.11.0",
+    "yahoo-finance2": "^3.13.0"
   },
   "optionalDependencies": {
     "pg": "^8.13.0"

@@ -50,6 +50,88 @@ function severity(val, thresholds) {
 }
 
 // ── Schema-compliant 보고서 생성 ──
+// ── 금지어 가드: 예측/매수/매도 표현 차단 ──
+const PROHIBITION_WORDS = ['예측','전망','매수','매도','추천','확정','반드시','것이다','될 것','할 것','상승할','하락할','predict','forecast','buy','sell','recommend','will rise','will fall'];
+
+function filterProhibited(text) {
+  for (const w of PROHIBITION_WORDS) {
+    if (text.includes(w)) return text.replace(new RegExp(w, 'g'), '[관측 언어 위반 — 제거됨]');
+  }
+  return text;
+}
+
+// ── N09: 행동시그널 생성 ──
+// 3층 구조: observation(관찰) / watch(추적) / context(맥락)
+// 예측 금지 원칙: evidence 기반 기계적 생성만
+function generateActions(systems, crossSignals, dualLockActive, causalStage, overallLevel) {
+  const actions = [];
+
+  // 1. 교차신호 기반 observation
+  for (const cs of crossSignals) {
+    const [sysA, sysB] = cs.pair;
+    actions.push({
+      type: 'observation',
+      pattern: 'cross_signal',
+      evidence: { systems: [sysA, sysB], severity: cs.severity },
+      text: filterProhibited(`${SYSTEMS[sysA]?.name || sysA}과(와) ${SYSTEMS[sysB]?.name || sysB}에서 동시 악화 신호가 관측되었습니다.`),
+      confidence: Math.min(cs.severity / 5, 1),
+    });
+  }
+
+  // 2. 이중봉쇄 감지 시 observation
+  if (dualLockActive) {
+    actions.push({
+      type: 'observation',
+      pattern: 'dual_lock',
+      evidence: { dual_lock: true, causal_stage: causalStage },
+      text: filterProhibited('투입(통화·무역)과 산출(생산·고용) 양쪽에서 동시 위축 상태가 관측되었습니다. 5단계 분석 중 "원인" 단계에 해당합니다.'),
+      confidence: 0.9,
+    });
+  }
+
+  // 3. 시스템별 severity 기반 watch
+  for (const [key, sys] of Object.entries(systems)) {
+    if (sys.severity >= 4) {
+      actions.push({
+        type: 'watch',
+        pattern: 'high_severity',
+        evidence: { system: key, severity: sys.severity, gauge_count: sys.gauges?.length || 0 },
+        text: filterProhibited(`${SYSTEMS[key]?.name || key} 시스템이 심각(${sys.severity}/5) 수준입니다. 다음 업데이트에서 변화 추이 확인이 필요합니다.`),
+        confidence: sys.gauges ? (sys.gauges.filter(g => g.value != null).length / Math.max(sys.gauges.length, 1)) : 0.5,
+      });
+    } else if (sys.severity >= 3) {
+      actions.push({
+        type: 'watch',
+        pattern: 'elevated_severity',
+        evidence: { system: key, severity: sys.severity },
+        text: filterProhibited(`${SYSTEMS[key]?.name || key} 시스템이 주의(${sys.severity}/5) 수준입니다. 추세 방향 확인이 필요합니다.`),
+        confidence: 0.6,
+      });
+    }
+  }
+
+  // 4. 종합 수준 기반 context
+  if (overallLevel >= 4) {
+    actions.push({
+      type: 'context',
+      pattern: 'overall_alert',
+      evidence: { overall_level: overallLevel, causal_stage: causalStage },
+      text: filterProhibited('이 진단은 현재 관측된 지표 조합의 상태 표시이며, 원인 규명이나 향후 방향을 단정하지 않습니다.'),
+      confidence: 1,
+    });
+  } else {
+    actions.push({
+      type: 'context',
+      pattern: 'disclaimer',
+      evidence: { overall_level: overallLevel },
+      text: 'DIAH-7M은 관측 기반 측정을 제공하며, 투자 조언이나 예측이 아닙니다.',
+      confidence: 1,
+    });
+  }
+
+  return actions;
+}
+
 function generateReport(gaugeData, options = {}) {
   const {
     thresholds = {},
@@ -179,7 +261,7 @@ function generateReport(gaugeData, options = {}) {
       state: 'HOLD',
       type: null,
     },
-    actions: [],
+    actions: generateActions(systems, crossSignals, dualLockActive, causalStage, overallLevel),
     verdict: '',
     overall: {
       score: overallScore,

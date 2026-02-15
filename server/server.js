@@ -304,6 +304,32 @@ async function start() {
       console.log(`\n  🚀 http://localhost:${PORT}`);
       console.log(`  📡 API: http://localhost:${PORT}/api/health`);
       console.log(`  🔖 Commit: ${process.env.RENDER_GIT_COMMIT || 'local'}`);
+
+      // ── N06: Cron 스케줄러 — 매일 06:00 KST 자동 수집 ──
+      try {
+        const cron = require('node-cron');
+        const ecosKey = process.env.ECOS_API_KEY;
+        const kosisKey = process.env.KOSIS_API_KEY;
+        if (pipeline && dataStore && ecosKey) {
+          // 21:00 UTC = 06:00 KST
+          cron.schedule('0 21 * * *', async () => {
+            console.log(`[Cron] ${new Date().toISOString()} — Daily refresh started`);
+            try {
+              const { results, stats } = await pipeline.fetchAll(ecosKey, kosisKey || '');
+              await dataStore.store(results);
+              console.log(`[Cron] Done: ${stats.ok}/${stats.total} OK`);
+            } catch(e) {
+              console.error(`[Cron] Failed: ${e.message}`);
+            }
+          }, { timezone: 'UTC' });
+          console.log('  ⏰ Cron: daily 06:00 KST refresh scheduled');
+        } else {
+          console.log('  ⚠️ Cron: skipped (missing pipeline/dataStore/ECOS_API_KEY)');
+        }
+      } catch(e) {
+        console.log('  ⚠️ Cron: node-cron not available —', e.message);
+      }
+
       console.log('══════════════════════════════════════\n');
     });
 

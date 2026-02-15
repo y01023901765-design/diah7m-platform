@@ -44,6 +44,82 @@ function renderPDF(report, userTier) {
   };
 }
 
+/**
+ * 실제 PDF 파일 Buffer 생성 (pdfkit)
+ * renderPDF()의 JSON 구조를 받아 PDF로 변환
+ * @returns {Promise<Buffer>}
+ */
+async function renderPDFBuffer(report, userTier) {
+  let PDFDocument;
+  try { PDFDocument = require('pdfkit'); } catch(e) { throw new Error('pdfkit not installed'); }
+
+  const masked = applyTierMask(report, userTier);
+  const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
+  const chunks = [];
+
+  return new Promise((resolve, reject) => {
+    doc.on('data', c => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // ── Header ──
+    doc.fontSize(24).font('Helvetica-Bold').text('DIAH-7M', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').text('Economic Diagnosis Report', { align: 'center' });
+    doc.moveDown(0.5);
+    const ctx = report.context || {};
+    doc.fontSize(10).fillColor('#666')
+       .text(`${ctx.country_name || 'Korea'} · ${ctx.period_label || ctx.date || ''} · Tier: ${userTier}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // ── Overall Score ──
+    const ov = report.overall || {};
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('Overall Status');
+    doc.fontSize(11).font('Helvetica').fillColor('#333')
+       .text(`Score: ${ov.score || '-'}/5 · Level: ${ov.level || '-'} · Stage: ${ov.causal_stage || '-'}`)
+       .moveDown(1);
+
+    // ── Systems ──
+    if (masked.systems && !masked.systems.locked) {
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('9 Systems Diagnosis');
+      doc.moveDown(0.3);
+      const sys = report.systems || {};
+      for (const [key, s] of Object.entries(sys)) {
+        const sevColor = s.severity <= 2 ? '#059669' : s.severity <= 3 ? '#D97706' : '#DC2626';
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(sevColor)
+           .text(`${s.name || key}: severity ${s.severity}/5`, { continued: false });
+      }
+      doc.moveDown(1);
+    }
+
+    // ── Actions ──
+    if (masked.action_signals && !masked.action_signals.locked && report.actions?.length) {
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('Action Signals');
+      doc.moveDown(0.3);
+      for (const a of report.actions) {
+        const prefix = a.type === 'observation' ? '📍' : a.type === 'watch' ? '👁' : 'ℹ';
+        doc.fontSize(9).font('Helvetica').fillColor('#333')
+           .text(`${prefix} [${a.type}] ${a.text}`, { indent: 10 });
+      }
+      doc.moveDown(1);
+    }
+
+    // ── Locked sections ──
+    for (const [section, val] of Object.entries(masked)) {
+      if (val?.locked) {
+        doc.fontSize(9).fillColor('#999').text(`[${section}] — Requires ${val.required_tier} tier to unlock`);
+      }
+    }
+
+    // ── Footer ──
+    doc.moveDown(2);
+    doc.fontSize(8).fillColor('#aaa')
+       .text('DIAH-7M provides observation-based measurement, not prediction.', { align: 'center' })
+       .text(`Generated: ${new Date().toISOString()} · Engine v1.1`, { align: 'center' });
+
+    doc.end();
+  });
+}
+
 function renderWord(report, userTier) {
   const masked = applyTierMask(report, userTier);
   return {
@@ -69,4 +145,4 @@ function render(report, userTier, channel = 'web') {
   return (renderers[channel] || renderers.web)(report, userTier);
 }
 
-module.exports = { render, renderWeb, renderPDF, renderWord, applyTierMask, TIER_ORDER, SECTION_TIERS };
+module.exports = { render, renderWeb, renderPDF, renderPDFBuffer, renderWord, applyTierMask, TIER_ORDER, SECTION_TIERS };
