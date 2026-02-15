@@ -42,8 +42,10 @@ async function authenticateGEE() {
   if (!credentials && process.env.GEE_CREDENTIALS_B64) {
     const decoded = Buffer.from(process.env.GEE_CREDENTIALS_B64, 'base64').toString();
     credentials = JSON.parse(decoded);
-    const tmpPath = '/tmp/gee-sa.json';
-    fs.writeFileSync(tmpPath, decoded, { mode: 0o600 });
+    // private_key 줄바꿈 정규화 (환경별 이스케이프 차이 방지)
+    if (typeof credentials.private_key === 'string' && credentials.private_key.includes('\\n')) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
     console.log('  🔑 GEE: base64 auth (' + decoded.length + 'B)');
   }
 
@@ -67,7 +69,7 @@ const REGIONS = {
 
 async function fetchVIIRS(regionCode, lookbackDays) {
   regionCode = regionCode || 'KR';
-  lookbackDays = lookbackDays || 7;
+  lookbackDays = lookbackDays || 90; // VCMSLCFG는 월간 데이터 → 최소 90일 룩백
   const t0 = Date.now();
   await authenticateGEE();
 
@@ -232,6 +234,10 @@ async function fetchAllSatellite(regionCode, lastSuccessMap) {
     }
     try {
       results[gaugeId] = await config.fn(regionCode);
+      // NO_DATA도 실패로 기록 (0/0/0 사각지대 방지)
+      if (results[gaugeId].status === 'NO_DATA') {
+        failures.push({ gaugeId: gaugeId, error: results[gaugeId].error || 'NO_DATA' });
+      }
     } catch (err) {
       results[gaugeId] = { gaugeId: gaugeId, status: 'ERROR', error: err.message };
       failures.push({ gaugeId: gaugeId, error: err.message });
