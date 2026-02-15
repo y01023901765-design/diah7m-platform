@@ -228,3 +228,24 @@ const GAUGE_META = {
 };
 
 module.exports = { GAUGE_META, THRESHOLDS_VERSION };
+
+// ── Delta 설정 추가 (급변 민감 게이지) ──
+// enabled: false = 구조만 고정, 데이터 쌓이면 true로 전환
+const DELTA_CONFIG = {
+  I1: { enabled: false, metric: 'MoM', warn_abs: 15, danger_abs: 30 },  // 기준금리 급변
+  I4: { enabled: false, metric: 'WoW', warn_abs: 3, danger_abs: 5 },    // 환율 급변
+  F1: { enabled: false, metric: 'WoW', warn_abs: 5, danger_abs: 10 },   // KOSPI 급락
+  F4: { enabled: false, metric: 'WoW', warn_abs: 20, danger_abs: 40 },  // VIX 급등
+  F7: { enabled: false, metric: 'WoW', warn_abs: 5, danger_abs: 10 },   // KOSDAQ 급락
+  P1: { enabled: false, metric: 'MoM', warn_abs: 20, danger_abs: 40 },  // CPI 급등
+  E1: { enabled: false, metric: 'MoM', warn_abs: 10, danger_abs: 20 },  // 수출 급변
+  E6: { enabled: false, metric: 'MoM', warn_abs: 30, danger_abs: 50 },  // 수출증가율 급변
+  L2: { enabled: false, metric: 'MoM', warn_abs: 15, danger_abs: 30 },  // 실업률 급변
+  D1: { enabled: false, metric: 'MoM', warn_abs: 3, danger_abs: 5 },    // 주택가격 급변
+  S2: { enabled: false, metric: 'MoM', warn_abs: 10, danger_abs: 20 },  // 야간광 급변
+};
+
+// gauge-meta에 delta 병합
+for (const [id, delta] of Object.entries(DELTA_CONFIG)) {
+  if (GAUGE_META[id]) GAUGE_META[id].delta = delta;
+}

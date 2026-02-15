@@ -135,6 +135,17 @@ class DataStore {
     return data;
   }
 
+  // delta 판정용: 이전 값 맵 { I1: 2.3, I2: 85.1, ... }
+  toPrevData() {
+    const data = {};
+    for (const [id, cached] of Object.entries(this.memCache)) {
+      if (cached.prevValue !== null && cached.prevValue !== undefined) {
+        data[id] = cached.prevValue;
+      }
+    }
+    return data;
+  }
+
   // 관측성: 파이프라인 실행 상세 결과 저장
   setLastRun(stats) {
     this.lastRun = stats;

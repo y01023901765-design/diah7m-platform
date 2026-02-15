@@ -78,11 +78,13 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore })
     if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
 
     const gaugeData = dataStore.toGaugeData();
+    const prevData = dataStore.toPrevData();
     if (Object.keys(gaugeData).length === 0) {
       return res.status(404).json({ error: 'No cached data. Call POST /api/v1/data/refresh first', hint: 'Set ECOS_API_KEY and KOSIS_API_KEY then refresh' });
     }
 
     const report = engine.generateReport(gaugeData, {
+      prevData,
       countryCode: req.query.country || 'KR',
       countryName: req.query.country_name || '대한민국',
       productType: 'national',

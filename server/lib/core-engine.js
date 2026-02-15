@@ -50,6 +50,32 @@ function inRange(val, r) {
   return true;
 }
 
+// ── Delta(급변) 경보 — GPT 설계 반영 ──
+// 레벨이 정상이어도 급변하면 severity를 한 단계 승급
+function bumpLevel(level, steps) {
+  const order = [1, 2, 3, 5]; // GOOD, NORMAL, WARN, DANGER
+  const idx = order.indexOf(level);
+  if (idx < 0) return level;
+  return order[Math.min(order.length - 1, idx + steps)];
+}
+
+function applyDelta(baseSeverity, currentVal, prevVal, gaugeId) {
+  const meta = gaugeId ? GAUGE_META[gaugeId] : null;
+  if (!meta?.delta?.enabled) return baseSeverity;
+  if (currentVal == null || prevVal == null || prevVal === 0) return baseSeverity;
+
+  const changePercent = Math.abs(((currentVal - prevVal) / prevVal) * 100);
+  const d = meta.delta;
+
+  if (d.danger_abs != null && changePercent >= d.danger_abs) {
+    return bumpLevel(baseSeverity, 2);
+  }
+  if (d.warn_abs != null && changePercent >= d.warn_abs) {
+    return bumpLevel(baseSeverity, 1);
+  }
+  return baseSeverity;
+}
+
 function severity(val, legacyThresholds, gaugeId) {
   if (val == null || Number.isNaN(val)) return 2;
 
@@ -179,6 +205,7 @@ function generateActions(systems, crossSignals, dualLockActive, causalStage, ove
 function generateReport(gaugeData, options = {}) {
   const {
     thresholds = {},
+    prevData = {},
     countryCode = 'KR',
     countryName = '대한민국',
     productType = 'national',
@@ -199,7 +226,7 @@ function generateReport(gaugeData, options = {}) {
     let sum = 0, cnt = 0;
     for (const key of sys.keys) {
       if (gaugeData[key] !== undefined) {
-        sum += severity(gaugeData[key], thresholds[key], key);
+        let sv = severity(gaugeData[key], thresholds[key], key); sv = applyDelta(sv, gaugeData[key], prevData[key], key); sum += sv;
         cnt++;
       }
     }
@@ -223,7 +250,7 @@ function generateReport(gaugeData, options = {}) {
   // ── 게이지 배열 ──
   const gauges = [];
   for (const [key, val] of Object.entries(gaugeData)) {
-    const sev = severity(val, thresholds[key], key);
+    let sev = severity(val, thresholds[key], key); sev = applyDelta(sev, val, prevData[key], key);
     gauges.push({
       gauge_id: key,
       name: key,
@@ -240,8 +267,8 @@ function generateReport(gaugeData, options = {}) {
   const crossSignals = [];
   for (const [a, b] of CROSS_SIGNALS) {
     if (gaugeData[a] !== undefined && gaugeData[b] !== undefined) {
-      const sevA = severity(gaugeData[a], thresholds[a], a);
-      const sevB = severity(gaugeData[b], thresholds[b], b);
+      let sevA = severity(gaugeData[a], thresholds[a], a); sevA = applyDelta(sevA, gaugeData[a], prevData[a], a);
+      let sevB = severity(gaugeData[b], thresholds[b], b); sevB = applyDelta(sevB, gaugeData[b], prevData[b], b);
       if (sevA >= 3 && sevB >= 3) {
         crossSignals.push({ pair: [a, b], severity: Math.max(sevA, sevB) });
       }
