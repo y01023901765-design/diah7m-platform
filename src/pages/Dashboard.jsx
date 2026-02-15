@@ -144,11 +144,11 @@ function DashboardPage({user,onNav,lang,country,city}){
       </div>
     </div>}
     {/* Level 1: Content Tabs */}
-    <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{t.label}</button>))}
+    <div className="tab-scroll" style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 16px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1,flexShrink:0}}>{t.label}</button>))}
     </div>
     {/* Level 2: Utility — DEMO 스위처 (최소) */}
-    <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:16}}>
+    <div className="demo-switch" style={{display:"flex",alignItems:"center",gap:4,marginBottom:16,flexWrap:"wrap"}}>
       <span style={{fontSize:13,color:LT.textDim}}>DEMO</span>
       {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"2px 8px",borderRadius:4,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:13,fontWeight:demoPlan===p?700:400,
         background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
@@ -175,7 +175,7 @@ function DashboardPage({user,onNav,lang,country,city}){
         <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.08)',borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`}}>
           <div style={{fontSize:16,color:LT.textDim}}>{t('dateLabel',L)}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:8}}>
-            <span style={{fontSize:42,fontWeight:900,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
+            <span className="score-big" style={{fontSize:42,fontWeight:900,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
             <span style={{fontSize:16,color:LT.textDim}}>/ 100</span>
           </div>
           <div style={{display:"flex",gap:16,marginTop:12}}>

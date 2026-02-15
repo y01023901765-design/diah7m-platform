@@ -32,18 +32,35 @@ const RESPONSIVE_CSS = (isDark) => `
   button:hover { opacity: 0.9; }
   button:active { transform: scale(0.97); }
   button:focus-visible, a:focus-visible { outline: 2px solid ${isDark?T.accent:LT.accent}; outline-offset: 2px; border-radius: 4px; }
+
   @media (max-width: 768px) {
     .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
-    .grid-3 { grid-template-columns: 1fr !important; }
+    .grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
     .grid-2 { grid-template-columns: 1fr !important; }
     .hide-mobile { display: none !important; }
-    .nav-pages { display: none !important; }
+    .nav-pages { gap: 2px !important; }
+    .nav-pages button { padding: 6px 8px !important; font-size: 13px !important; }
     .hero-title { font-size: 28px !important; }
     .footer-grid { grid-template-columns: 1fr !important; }
+    .section-pad { padding: 40px 16px !important; }
+    .score-big { font-size: 32px !important; }
+    .tab-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .tab-scroll::-webkit-scrollbar { display: none; }
+    .card-pad { padding: 16px !important; }
+    .demo-switch { flex-wrap: wrap !important; }
+    .auth-card { padding: 20px !important; }
   }
+
   @media (max-width: 480px) {
     .grid-4 { grid-template-columns: 1fr !important; }
-    .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
+    .grid-3 { grid-template-columns: 1fr !important; }
+    .stat-row { flex-wrap: wrap !important; gap: 12px !important; }
+    .nav-pages button { padding: 5px 6px !important; font-size: 12px !important; }
+    .score-big { font-size: 28px !important; }
+    .hero-title { font-size: 22px !important; letter-spacing: -1px !important; }
+    .section-pad { padding: 24px 12px !important; }
+    .card-pad { padding: 12px !important; }
+    .auth-card { padding: 16px !important; }
   }
 `;
 

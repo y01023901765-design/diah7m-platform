@@ -35,7 +35,7 @@ function LandingPage({onNavigate,lang,setLang}){
     {icon:"🎯",title:t('feat6',L),desc:t('featDesc6',L),color:T.danger},
   ];
   const stepList=[t('step1',L),t('step2',L),t('step3',L),t('step4',L),t('step5',L)];
-  const sectionStyle={maxWidth:900,margin:"0 auto",padding:"80px 24px"};
+  const sectionStyle={maxWidth:900,margin:"0 auto",padding:"60px 20px"};
   return(
     <div style={{minHeight:"100vh",background:`linear-gradient(180deg,${T.bg0},${T.bg1} 30%,${T.bg2} 70%,${T.bg0})`,color:T.text}}>
       {/* ═══ NAV ═══ */}
@@ -60,8 +60,8 @@ function LandingPage({onNavigate,lang,setLang}){
             {v:'4',label:t('landStat2',L),color:T.sat},
             {v:'43',label:t('landStat3',L),color:T.good},
             {v:'2~4',label:t('landStat4',L),color:T.warn},
-          ].map((s,i)=>(<div key={i} style={{textAlign:"center",padding:20}}>
-            <div style={{fontSize:36,fontWeight:900,color:s.color,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}</div>
+          ].map((s,i)=>(<div key={i} style={{textAlign:"center",padding:"16px 12px",flex:"1 1 120px"}}>
+            <div style={{fontSize:32,fontWeight:900,color:s.color,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}</div>
             <div style={{fontSize:14,color:T.textMid,marginTop:4}}>{s.label}</div>
           </div>))}
         </div>

@@ -132,7 +132,7 @@ function AuthPage({mode,onNavigate,onLogin,lang}){
           <div style={{fontSize:12,color:T.textMid,marginTop:4}}>{t("satPlatform",L)}</div>
         </div>
 
-        <div style={{background:T.surface,borderRadius:T.cardRadius,padding:32,border:`1px solid ${T.border}`}}>
+        <div className="auth-card" style={{background:T.surface,borderRadius:T.cardRadius,padding:32,border:`1px solid ${T.border}`}}>
 
           {/* ════ 로그인 ════ */}
           {authMode==='login'&&(<>

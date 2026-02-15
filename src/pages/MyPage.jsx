@@ -61,7 +61,7 @@ function MyPage({user,lang,setGlobalLang}){
           <div><div style={{fontSize:16,color:LT.textDim}}>{t("curPlan",L)}</div><div style={{fontSize:24,fontWeight:900,color:LT.accent,marginTop:4}}>🛰️ Pro</div><div style={{fontSize:16,color:LT.text,marginTop:2}}>₩49,000{t('perMonth',L)}</div></div>
           <span style={{padding:"6px 14px",borderRadius:20,background:`${LT.good}15`,color:LT.good,fontSize:15,fontWeight:700}}>{t("active",L)}</span>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
           {[[t("nextBill",L),"2026-03-01"],[t("payMethod",L),"Visa ****4242"],[t("streak",L),"3 months 🔥"]].map(([k,v])=>(<div key={k} style={{padding:12,background:LT.bg2,borderRadius:8}}><div style={{fontSize:16,color:LT.textDim}}>{k}</div><div style={{fontSize:16,fontWeight:700,color:LT.text,marginTop:4}}>{v}</div></div>))}
         </div>
         <div style={{display:"flex",gap:8,marginTop:16}}>
@@ -73,7 +73,7 @@ function MyPage({user,lang,setGlobalLang}){
     </div>}
     {tab==='mileage'&&<div>
       <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:20}}>{t("mileage",L)}</h2>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+      <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,textAlign:"center"}}><div style={{fontSize:16,color:LT.textDim}}>{t("balance",L)}</div><div style={{fontSize:28,fontWeight:900,color:LT.warn,marginTop:4}}>{mileage.toLocaleString()}</div><div style={{fontSize:16,color:LT.textDim}}>P</div></div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,textAlign:"center"}}><div style={{fontSize:16,color:LT.textDim}}>{t("earned",L)}</div><div style={{fontSize:28,fontWeight:900,color:LT.good,marginTop:4}}>+420</div><div style={{fontSize:16,color:LT.textDim}}>P</div></div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,textAlign:"center"}}><div style={{fontSize:16,color:LT.textDim}}>{t("spent",L)}</div><div style={{fontSize:28,fontWeight:900,color:LT.info,marginTop:4}}>-200</div><div style={{fontSize:16,color:LT.textDim}}>P</div></div>
@@ -101,7 +101,7 @@ function MyPage({user,lang,setGlobalLang}){
       {/* Usage Stats */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginTop:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("usageStats",L)}</div>
-        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        <div className="grid-3" className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
           {[
             {v:'24',label:t('usReport',L),c:LT.accent},
             {v:'156',label:t('usGauge',L),c:LT.good},
