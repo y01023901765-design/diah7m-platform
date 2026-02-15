@@ -453,6 +453,27 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
     canvas.style.cursor=found?"pointer":"default";
   };
 
+  // ═══ Click — 도시/시설 클릭 시 Dashboard로 이동 ═══
+  const handleClick=()=>{
+    const item=hovRef.current;
+    if(!item||!onNav) return;
+    // 도시 클릭 → Dashboard(country + city)
+    if(item.light!==undefined){
+      onBack();
+      onNav('dashboard',{country:country.iso,city:item.en});
+      return;
+    }
+    // 주식 시설 클릭 → Stock 페이지 (향후 ticker 파라미터)
+    if(item.t){
+      onBack();
+      onNav('stock',{ticker:item.t});
+      return;
+    }
+    // 항만/산업단지 → Dashboard(country)
+    onBack();
+    onNav('dashboard',{country:country.iso});
+  };
+
   const nm=t('cnt_'+country.iso,L)||country.en||country.n;
 
   // Layer config
@@ -533,7 +554,7 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
             </polygon>
           </svg>
         </div>
-        <canvas ref={canvasRef} onMouseMove={handleMouse} onTouchStart={e=>{const touch=e.touches[0];if(touch)handleMouse({clientX:touch.clientX,clientY:touch.clientY})}} onMouseLeave={()=>setHovItem(null)} style={{display:"block",width:"100%"}}/>
+        <canvas ref={canvasRef} onClick={handleClick} onMouseMove={handleMouse} onTouchStart={e=>{const touch=e.touches[0];if(touch)handleMouse({clientX:touch.clientX,clientY:touch.clientY})}} onMouseLeave={()=>setHovItem(null)} style={{display:"block",width:"100%"}}/>
       </div>
 
       {/* Active layers summary */}

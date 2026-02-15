@@ -28,7 +28,7 @@ function mergeGaugeData(demoD, liveResults) {
   return merged;
 }
 
-function DashboardPage({user,onNav,lang,country}){
+function DashboardPage({user,onNav,lang,country,city}){
   const L=lang||'ko';
   const [expanded,setExpanded]=useState({});
   const [tab,setTab]=useState('overview');
@@ -162,6 +162,13 @@ function DashboardPage({user,onNav,lang,country}){
           <div style={{fontSize:13,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||20} {t('gaugesLabel',L)} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
         </div>
         <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:12,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
+      </div>}
+      {/* 도시 컨텍스트 — CountryMap에서 도시 클릭 시 */}
+      {city&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,padding:"10px 16px",background:`${LT.accent}08`,borderRadius:LT.cardRadius,border:`1px solid ${LT.accent}20`}}>
+        <span style={{fontSize:16}}>📍</span>
+        <span style={{fontSize:15,fontWeight:700,color:LT.text}}>{city}</span>
+        <span style={{fontSize:12,color:LT.textDim}}>· {t('cnt_'+iso3,L)||iso3}</span>
+        <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:`${LT.warn}15`,color:LT.warn,fontWeight:600,marginLeft:"auto"}}>{t('cmCityComingSoon',L)||'Coming Soon'}</span>
       </div>}
       {/* Score + State + Radar */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>

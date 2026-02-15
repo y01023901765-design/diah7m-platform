@@ -71,11 +71,14 @@ export default function App(){
   };
   const handleLogout=()=>{API.logout();setUser(null);setPage('landing');};
   const [selectedCountry,setSelectedCountry]=useState(null);
+  const [selectedCity,setSelectedCity]=useState(null);
   const nav=(p,params)=>{
     if(['dashboard','stock','mypage','admin'].includes(p)&&!user){setPage('login');return;}
     if(p==='admin'&&user&&user.email!=='admin@diah7m.com'){setPage('dashboard');return;}
     if(params?.country) setSelectedCountry(params.country);
     else if(p!=='dashboard') setSelectedCountry(null);
+    if(params?.city) setSelectedCity(params.city);
+    else setSelectedCity(null);
     setPage(p);
     window.scrollTo(0,0);
   };
@@ -91,7 +94,7 @@ export default function App(){
         {page!=='login'&&page!=='signup'&&<GlobalNav page={page} user={user} onNav={nav} onLogout={handleLogout} lang={lang} setLang={setLang}/>}
         <main id="main-content" role="main" style={{animation:"fadeIn 0.3s ease"}}>
           {(page==='login'||page==='signup')&&<AuthPage mode={page} onNavigate={nav} onLogin={handleLogin} lang={lang}/>}
-          {page==='dashboard'&&user&&<DashboardPage user={user} onNav={nav} lang={lang} country={selectedCountry}/>}
+          {page==='dashboard'&&user&&<DashboardPage user={user} onNav={nav} lang={lang} country={selectedCountry} city={selectedCity}/>}
           {page==='stock'&&user&&<StockPage user={user} lang={lang}/>}
           {page==='mypage'&&user&&<MyPage user={user} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
