@@ -84,7 +84,7 @@ export default
   // ── DASHBOARD ──
   overview:'📊 종합 진단',
   gaugeTab:'📋 59게이지',
-  satTab:'🛰️ 위성',
+  satS2Name:'야간광량',satR6Name:'도시열섬',satTab:'🛰️ 위성',
   alertTab:'🔔 경보',
   good:'양호',
   caution:'주의',

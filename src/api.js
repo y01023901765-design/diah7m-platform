@@ -225,6 +225,17 @@ export async function deleteNotification(id) {
   return api(`/api/v1/notifications/${id}`, { method: 'DELETE' });
 }
 
+// ── Satellite (위성 데이터) ──
+export async function satelliteLatest() {
+  return api('/api/v1/satellite/latest');
+}
+export async function satelliteStatus() {
+  return api('/api/v1/satellite/status');
+}
+export async function satelliteCollect() {
+  return api('/api/admin/satellite/collect', { method: 'POST' });
+}
+
 export function getStoredUser() {
   try {
     const u = localStorage.getItem('diah7m-user');

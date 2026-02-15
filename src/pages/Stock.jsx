@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import TierLock from '../components/TierLock';
 import { STOCKS, ARCHETYPE_LABELS, TIER_LABELS } from '../data/stocks';
+import * as API from '../api';
 
 // ═══ Dummy Data (→ API 교체) ═══
 const DUMMY_PRICE={
@@ -70,12 +71,32 @@ function chgCell(v){
 function StockView({stock:s,lang,onBack}){
   const L=lang||'ko';
   const [tab,setTab]=useState('diag');
+  const [liveFacs,setLiveFacs]=useState(null);
+  const [liveDelta,setLiveDelta]=useState(null);
   const {price,change,isUp}=fmtPrice(s.sid);
   const getName=x=>L==='ko'?x.n:(x.ne||x.n);
-  const facs=DUMMY_FAC[s.sid]||[];
+
+  // API에서 시설/델타 데이터 로드 (실패 시 DUMMY fallback)
+  useEffect(()=>{
+    let c=false;
+    (async()=>{
+      try{
+        const [facRes,deltaRes]=await Promise.allSettled([
+          API.stockFacilities(s.sid),
+          API.stockDelta(s.sid),
+        ]);
+        if(c)return;
+        if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
+        if(deltaRes.status==='fulfilled'&&deltaRes.value?.delta) setLiveDelta(deltaRes.value.delta);
+      }catch{/* fallback to DUMMY */}
+    })();
+    return()=>{c=true};
+  },[s.sid]);
+
+  const facs=liveFacs||DUMMY_FAC[s.sid]||[];
   const normalCnt=facs.filter(f=>f.status==='normal').length;
   const warnCnt=facs.filter(f=>f.status==='warning').length;
-  const delta=DUMMY_DELTA[s.sid]||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
+  const delta=liveDelta||DUMMY_DELTA[s.sid]||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
   const archKey=s.a==='MFG'?'MFG':s.a==='EXT'?'EXT':s.a==='LOG'?'LOG':s.a==='PRC'?'PRC':s.a==='DST'?'DST':'SIT';
   const flowSteps=FLOW_TEMPLATES[archKey]||FLOW_TEMPLATES['MFG'];
   const bottleneck=warnCnt>0?Math.floor(flowSteps.length*0.6):null; // dummy bottleneck

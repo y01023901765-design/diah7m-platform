@@ -13,7 +13,7 @@ export default {
   resetTitle:'重置密码',resetDesc:'输入邮箱接收重置链接。',resetSent:'邮件已发送',resetBtn:'发送重置链接',backToLogin:'← 返回登录',
   createAccount:'创建账户',selectPlan:'选择计划',agreeTerms:'同意条款',name:'姓名',quickSignup:'快速注册',next:'下一步',agreeAll:'全部同意',required:'必填',optional:'选填',
   termsService:'同意服务条款',termsPrivacy:'同意隐私政策',termsMarketing:'同意营销通讯',selectedPlan:'已选计划',mileageBonus:'注册即获500P里程！',
-  overview:'📊 综合诊断',gaugeTab:'📋 59项指标',satTab:'🛰️ 卫星',alertTab:'🔔 警报',good:'良好',caution:'注意',alert:'警报',
+  overview:'📊 综合诊断',gaugeTab:'📋 59项指标',satS2Name:'夜间光量',satR6Name:'城市热岛',satTab:'🛰️ 卫星',alertTab:'🔔 警报',good:'良好',caution:'注意',alert:'警报',
   keyActions:'🎯 五大关键行动',verdict:'📋 综合意见',satTimeline:'🛰️ 卫星时间轴',verification:'⏪ 验证',prediction:'⏩ 预测',
   nineSystems:'9个经济系统',alertCenter:'🔔 警报中心',dualLock:'双重封锁启动中',deltaTitle:'📐 Delta偏离分析',satIndex:'卫星指数',marketIndex:'市场指数',
   profile:'个人资料',subscription:'订阅管理',mileage:'里程',settings:'设置',save:'保存更改',changePw:'更改密码',currentPlan:'当前计划',changePlan:'更改计划',cancelSub:'取消',

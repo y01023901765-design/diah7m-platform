@@ -83,7 +83,7 @@ export default {
   // ── DASHBOARD ──
   overview:'📊 Overall Diagnosis',
   gaugeTab:'📋 59 Gauges',
-  satTab:'🛰️ Satellite',
+  satS2Name:'Nighttime Light',satR6Name:'Urban Heat Island',satTab:'🛰️ Satellite',
   alertTab:'🔔 Alerts',
   good:'Good',
   caution:'Caution',

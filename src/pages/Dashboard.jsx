@@ -37,6 +37,8 @@ function DashboardPage({user,onNav,lang,country,city}){
   const [liveData,setLiveData]=useState(null); // API에서 가져온 실데이터
   const [dataInfo,setDataInfo]=useState(null); // 수집 현황 정보
   const [countryInfo,setCountryInfo]=useState(null); // 글로벌 국가 데이터
+  const [satData,setSatData]=useState(null); // 위성 실데이터 (S2/R6)
+  const [satMeta,setSatMeta]=useState(null); // 위성 수집 메타
   const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
   const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{/* localStorage unavailable */}};
 
@@ -78,6 +80,14 @@ function DashboardPage({user,onNav,lang,country,city}){
       } catch {
         setApiStatus('demo');
       }
+      // 위성 데이터 독립 로드 (S2 야간광 + R6 도시열섬)
+      try {
+        const sat = await API.satelliteLatest();
+        if (!cancelled && sat?.available) {
+          setSatData(sat.gauges);
+          setSatMeta(sat.meta);
+        }
+      } catch { /* 위성 데이터 없어도 정상 동작 */ }
     })();
     return () => { cancelled = true; };
   },[iso3, isKorea]);
@@ -235,7 +245,38 @@ function DashboardPage({user,onNav,lang,country,city}){
       })}
     </>}
     {tab==='satellite'&&<>
-      <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("satStatus",L)}</div></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("satStatus",L)}</div>
+        {satMeta&&<span style={{fontSize:12,padding:"3px 10px",borderRadius:10,background:satMeta.status==='COLLECTED'?`${LT.good}15`:satMeta.status==='PARTIAL'?`${LT.warn}15`:LT.bg3,color:satMeta.status==='COLLECTED'?LT.good:satMeta.status==='PARTIAL'?LT.warn:LT.textDim,fontWeight:600}}>{satMeta.status==='COLLECTED'?'🟢 LIVE':satMeta.status==='PARTIAL'?'🟡 PARTIAL':'⚪ DEMO'}{satMeta.last_success_asof?' · '+satMeta.last_success_asof.slice(5,16):''}</span>}
+        {!satMeta&&<span style={{fontSize:12,padding:"3px 10px",borderRadius:10,background:LT.bg3,color:LT.textDim,fontWeight:600}}>⚪ DEMO</span>}
+      </div>
+      {/* 위성 실데이터 카드 (S2 + R6) */}
+      {satData&&(satData.S2||satData.R6)&&<div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {satData.S2&&satData.S2.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.good}30`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:15,fontWeight:700,color:LT.text}}>🌙 {t('satS2Name',L)||'야간광량'}</span>
+            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:`${LT.good}15`,color:LT.good,fontWeight:600}}>VIIRS DNB</span>
+          </div>
+          <div style={{fontSize:26,fontWeight:900,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:14,color:LT.textDim,marginLeft:4}}>{satData.S2.unit}</span></div>
+          <div style={{display:"flex",gap:12,marginTop:8,fontSize:13,color:LT.textMid}}>
+            {satData.S2.mean_7d!=null&&<span>7d: {satData.S2.mean_7d}</span>}
+            {satData.S2.mean_60d!=null&&<span>60d: {satData.S2.mean_60d}</span>}
+            {satData.S2.baseline_365d!=null&&<span>365d: {satData.S2.baseline_365d}</span>}
+          </div>
+          {satData.S2.anomaly!=null&&<div style={{marginTop:6,fontSize:13,fontWeight:700,color:satData.S2.anomaly>=0?LT.good:LT.danger}}>
+            {satData.S2.anomaly>=0?'▲':'▼'} {(satData.S2.anomaly*100).toFixed(2)}% vs 365d baseline
+          </div>}
+        </div>}
+        {satData.R6&&satData.R6.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.warn}30`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontSize:15,fontWeight:700,color:LT.text}}>🌡️ {t('satR6Name',L)||'도시열섬'}</span>
+            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:`${LT.warn}15`,color:LT.warn,fontWeight:600}}>Landsat-9</span>
+          </div>
+          <div style={{fontSize:26,fontWeight:900,color:LT.text,fontFamily:"monospace"}}>{satData.R6.value}<span style={{fontSize:14,color:LT.textDim,marginLeft:4}}>{satData.R6.unit}</span></div>
+          <div style={{fontSize:13,color:LT.textMid,marginTop:8}}>{satData.R6.date} · {satData.R6.region}</div>
+        </div>}
+      </div>}
+      {/* 기존 게이지 기반 위성 데이터 */}
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
         {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
