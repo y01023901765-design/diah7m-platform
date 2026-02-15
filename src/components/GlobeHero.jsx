@@ -288,39 +288,43 @@ export default function GlobeHero({lang='ko',onNav}){
       `}</style>
 
       <div style={{position:"relative",overflow:"hidden"}}>
-        {/* Satellite + Beam — 하나의 컨테이너에서 함께 움직임 */}
+        {/* Satellite + Beam — 하나의 컨테이너 */}
         <div style={{
-          position:"absolute",top:4,left:"50%",zIndex:10,
+          position:"absolute",top:4,left:"50%",transform:"translateX(-50%)",zIndex:10,
           animation:"satFloat 7s ease-in-out infinite",
           pointerEvents:"none",
+          width:0,display:"flex",flexDirection:"column",alignItems:"center",
         }}>
-          {/* Satellite */}
+          {/* Satellite — 정중앙 고정 */}
           <div style={{
-            transform:`translateX(-50%) scale(${window.innerWidth<600?0.6:1})`,
-            transformOrigin:"center top",
+            transform:`scale(${window.innerWidth<600?0.6:1})`,
+            transformOrigin:"center center",
             filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 15px ${T.accent}50)`,
           }}>
             <RealisticSatellite/>
           </div>
-          {/* Beam — 위성 바로 아래, 함께 부유 */}
-          <svg width="2400" height="560" viewBox="-1200 0 2400 560" style={{display:"block",position:"absolute",top:36,left:"50%",transform:"translateX(-50%)"}}>
+          {/* Beam — 위성 바로 아래에서 시작, 150°+ 광각 */}
+          {/* tan(75°)≈3.73, h=560 → half-width=2089 */}
+          <svg width="4200" height="560" viewBox="-2100 0 4200 560" style={{display:"block",marginTop:-2}}>
             <defs>
               <linearGradient id="bW" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={T.accent} stopOpacity="0.35"/>
-                <stop offset="3%" stopColor={T.accent} stopOpacity="0.12"/>
-                <stop offset="10%" stopColor={T.accent} stopOpacity="0.04"/>
-                <stop offset="30%" stopColor={T.accent} stopOpacity="0.012"/>
+                <stop offset="0%" stopColor={T.accent} stopOpacity="0.30"/>
+                <stop offset="2%" stopColor={T.accent} stopOpacity="0.10"/>
+                <stop offset="8%" stopColor={T.accent} stopOpacity="0.03"/>
+                <stop offset="25%" stopColor={T.accent} stopOpacity="0.008"/>
                 <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
               </linearGradient>
               <linearGradient id="bC" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={T.accent} stopOpacity="0.6"/>
-                <stop offset="5%" stopColor={T.accent} stopOpacity="0.12"/>
-                <stop offset="20%" stopColor={T.accent} stopOpacity="0.025"/>
+                <stop offset="0%" stopColor={T.accent} stopOpacity="0.5"/>
+                <stop offset="4%" stopColor={T.accent} stopOpacity="0.10"/>
+                <stop offset="15%" stopColor={T.accent} stopOpacity="0.02"/>
                 <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
               </linearGradient>
             </defs>
-            <polygon points="0,0 -1155,540 1155,540" fill="url(#bW)" style={{animation:"beamPulse 6s ease-in-out infinite"}}/>
-            <polygon points="0,0 -310,540 310,540" fill="url(#bC)" style={{animation:"beamPulse 6s ease-in-out infinite 1s"}}/>
+            {/* 150° wide beam: tan(75°)≈3.73 → half-width at 560 = 2089 */}
+            <polygon points="0,0 -2089,560 2089,560" fill="url(#bW)" style={{animation:"beamPulse 6s ease-in-out infinite"}}/>
+            {/* Inner ~80° */}
+            <polygon points="0,0 -500,560 500,560" fill="url(#bC)" style={{animation:"beamPulse 6s ease-in-out infinite 1s"}}/>
           </svg>
         </div>
 
