@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { t } from "../i18n";
+import CountryMap from "./CountryMap";
 
 const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e'};
 
@@ -50,7 +51,7 @@ const AMBIENT=[
 
 function scoreColor(s){return s>=70?T.good:s>=55?T.warn:T.danger}
 
-function ClickedPanel({country,onClose,lang='ko',onNav}){
+function ClickedPanel({country,onClose,lang='ko',onNav,onOpenMap}){
   if(!country)return null;const col=scoreColor(country.score);const L=lang;
   const nm=t('cnt_'+country.iso,L)||country.en||country.n;
   return(<div onClick={onClose} style={{position:"fixed",inset:0,background:`${T.bg0}c0`,backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
@@ -64,7 +65,8 @@ function ClickedPanel({country,onClose,lang='ko',onNav}){
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.textDim,fontSize:12,cursor:"pointer"}}>{t('close',L)||'Close'}</button>
-        <button onClick={()=>{onClose();if(onNav)onNav('dashboard',{country:country.iso});}} style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('gOpenReport',L)}</button>
+        <button onClick={()=>{onClose();if(onOpenMap)onOpenMap(country);}} style={{flex:1.5,padding:"10px",borderRadius:8,border:`1px solid ${T.accent}40`,background:`${T.accent}10`,color:T.accent,fontSize:12,fontWeight:700,cursor:"pointer"}}>🗺️ {t('gCityMap',L)||'City Lights'}</button>
+        <button onClick={()=>{onClose();if(onNav)onNav('dashboard',{country:country.iso});}} style={{flex:1.5,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('gOpenReport',L)}</button>
       </div>
     </div>
   </div>);
@@ -268,11 +270,17 @@ export default function GlobeHero({lang='ko',onNav}){
   const cName=(c)=>t('cnt_'+c.iso,L)||c.en||c.n;
   const [hovered,setHovered]=useState(null);
   const [clicked,setClicked]=useState(null);
+  const [countryMap,setCountryMap]=useState(null);
   const [mousePos,setMousePos]=useState({x:0,total:960});
   const popL=mousePos.x>mousePos.total*0.5;
 
   return(
     <div style={{background:T.bg0,fontFamily:"'Pretendard',-apple-system,sans-serif",color:T.text,overflow:"hidden"}}>
+      {countryMap?
+        <div style={{padding:"16px 24px"}}>
+          <CountryMap country={countryMap} onBack={()=>setCountryMap(null)} lang={L} onNav={onNav}/>
+        </div>
+      :<>
       <style>{`
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
         @keyframes satFloat{0%,100%{transform:translateX(-50%) translateY(0) rotate(-0.5deg)}50%{transform:translateX(-50%) translateY(-5px) rotate(0.5deg)}}
@@ -363,7 +371,8 @@ export default function GlobeHero({lang='ko',onNav}){
       </div>
       </div>
 
-      <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L} onNav={onNav}/>
+      <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L} onNav={onNav} onOpenMap={(c)=>setCountryMap(c)}/>
+      </>}
     </div>
   );
 }

@@ -122,6 +122,6 @@ export default {
   landOld:'传统方式',landOldDesc:'财报后报告。依赖新闻。主观分析。滞后。',
   alertsDetected:'个异常检测',
   milHistory:'积分记录',milHLogin:'每日登录',milHReport:'报告兑换',milHRefer:'邀请好友奖励',milHExport:'数据导出',milHMonthly:'月度奖励',
-  err404Title:'卫星信号未找到',err404Desc:'您请求的页面不存在。请检查地址或点击下方按钮。',err404Home:'首页',err404Dash:'仪表盘',markAllRead:'全部已读',filterAll:'全部',usageStats:'本月使用情况',usReport:'报告查看',usGauge:'仪表确认',usSatView:'卫星数据查看',landNewDesc:'财报前直接观测工厂运营。物理数据驱动。领先指标。客观。是测量，不是意见。',
+  gCityMap:'城市夜光',gBackWorld:'世界地图',err404Title:'卫星信号未找到',err404Desc:'您请求的页面不存在。请检查地址或点击下方按钮。',err404Home:'首页',err404Dash:'仪表盘',markAllRead:'全部已读',filterAll:'全部',usageStats:'本月使用情况',usReport:'报告查看',usGauge:'仪表确认',usSatView:'卫星数据查看',landNewDesc:'财报前直接观测工厂运营。物理数据驱动。领先指标。客观。是测量，不是意见。',
   cnt_KOR:'韩国',cnt_USA:'美国',cnt_JPN:'日本',cnt_DEU:'德国',cnt_GBR:'英国',cnt_FRA:'法国',cnt_CAN:'加拿大',cnt_AUS:'澳大利亚',cnt_ITA:'意大利',cnt_ESP:'西班牙',cnt_NLD:'荷兰',cnt_CHE:'瑞士',cnt_SWE:'瑞典',cnt_NOR:'挪威',cnt_DNK:'丹麦',cnt_FIN:'芬兰',cnt_AUT:'奥地利',cnt_BEL:'比利时',cnt_IRL:'爱尔兰',cnt_PRT:'葡萄牙',cnt_GRC:'希腊',cnt_CZE:'捷克',cnt_POL:'波兰',cnt_HUN:'匈牙利',cnt_SVK:'斯洛伐克',cnt_SVN:'斯洛文尼亚',cnt_EST:'爱沙尼亚',cnt_LVA:'拉脱维亚',cnt_LTU:'立陶宛',cnt_ISL:'冰岛',cnt_LUX:'卢森堡',cnt_NZL:'新西兰',cnt_ISR:'以色列',cnt_TUR:'土耳其',cnt_MEX:'墨西哥',cnt_CHL:'智利',cnt_COL:'哥伦比亚',cnt_CRI:'哥斯达黎加',cnt_SGP:'新加坡',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'印度',cnt_CHN:'中国',
 };
