@@ -76,5 +76,10 @@ export default {
   gClickHint:'🛰️ 国をクリックすると経済診断レポートを確認できます',
   gTooltipClick:'クリック → 診断レポート',gOpenReport:'診断レポートを開く',
   gHeroLine:'59 経済ゲージ · 9 人体システム · 🛰️ 衛星',
+  stockNav:'株式監視',stockTitle:'株式銘柄 衛星監視',stockPhase:'Phase 2',
+  stockStocks:'銘柄',stockFac:'施設',stockCountries:'カ国',stockDelayed:'15分遅延',
+  stockSearch:'🔍 銘柄名·ティッカー·セクター検索',stockCol:'銘柄',stockColSat:'衛星',stockColPrice:'価格',stockColChg:'騰落',
+  stockFacLabel:'施設',stockMore:'銘柄をもっと見る',stockMoreDesc:'プランで全銘柄監視',
+  stockYT:'連動コンテンツ',stockYTDesc:'初回動画: Tesla → TSMC → Samsung 順に公開。衛星が見た工場稼働率の変化を無料で公開、詳細シグナルは購読者限定。',
   cnt_KOR:'韓国',cnt_USA:'アメリカ',cnt_JPN:'日本',cnt_DEU:'ドイツ',cnt_GBR:'イギリス',cnt_FRA:'フランス',cnt_CAN:'カナダ',cnt_AUS:'オーストラリア',cnt_ITA:'イタリア',cnt_ESP:'スペイン',cnt_NLD:'オランダ',cnt_CHE:'スイス',cnt_SWE:'スウェーデン',cnt_NOR:'ノルウェー',cnt_DNK:'デンマーク',cnt_FIN:'フィンランド',cnt_AUT:'オーストリア',cnt_BEL:'ベルギー',cnt_IRL:'アイルランド',cnt_PRT:'ポルトガル',cnt_GRC:'ギリシャ',cnt_CZE:'チェコ',cnt_POL:'ポーランド',cnt_HUN:'ハンガリー',cnt_SVK:'スロバキア',cnt_SVN:'スロベニア',cnt_EST:'エストニア',cnt_LVA:'ラトビア',cnt_LTU:'リトアニア',cnt_ISL:'アイスランド',cnt_LUX:'ルクセンブルク',cnt_NZL:'ニュージーランド',cnt_ISR:'イスラエル',cnt_TUR:'トルコ',cnt_MEX:'メキシコ',cnt_CHL:'チリ',cnt_COL:'コロンビア',cnt_CRI:'コスタリカ',cnt_SGP:'シンガポール',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'インド',cnt_CHN:'中国',
 };

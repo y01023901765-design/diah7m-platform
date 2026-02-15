@@ -56,11 +56,11 @@ function StockPage({user,lang}){
     <div style={{marginBottom:16}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
         <span style={{fontSize:20}}>📈</span>
-        <span style={{fontSize:18,fontWeight:800,color:LT.text}}>{L==='ko'?'주식종목 위성감시':'Stock Satellite Monitor'}</span>
+        <span style={{fontSize:18,fontWeight:800,color:LT.text}}>{t('stockTitle',L)}</span>
         <span style={{fontSize:14,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textDim,fontWeight:600}}>Phase 2</span>
       </div>
       <div style={{fontSize:15,color:LT.textMid}}>
-        {STOCKS.length}{L==='ko'?'종목':'stocks'} · {totalFac}{L==='ko'?'시설':'fac'} · {countries}{L==='ko'?'개국':'countries'}
+        {STOCKS.length}{t('stockStocks',L)} · {totalFac}{t('stockFac',L)} · {countries}{t('stockCountries',L)}
         <span style={{color:LT.textDim,marginLeft:8,fontSize:14}}>15min delayed</span>
       </div>
     </div>
@@ -75,7 +75,7 @@ function StockPage({user,lang}){
           style={{background:active?LT.bg3:LT.surface,borderRadius:LT.cardRadius,padding:14,
           border:`1px solid ${active?LT.text:LT.border}`,cursor:"pointer",transition:"all .2s"}}>
           <div style={{fontSize:22,fontWeight:900,color:LT.text,fontFamily:"monospace"}}>{cnt}</div>
-          <div style={{fontSize:15,fontWeight:600,color:LT.textMid,marginTop:2}}>{L==='ko'?lb.ko:lb.en}</div>
+          <div style={{fontSize:15,fontWeight:600,color:LT.textMid,marginTop:2}}>{L==='ko'?lb.ko:(lb.en||lb.ko)}</div>
         </div>);
       })}
     </div>
@@ -83,7 +83,7 @@ function StockPage({user,lang}){
     {/* Search + Archetype Filter */}
     <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
       <input value={search} onChange={e=>setSearch(e.target.value)}
-        placeholder={L==='ko'?'🔍 종목명·티커·섹터 검색':'🔍 Search'}
+        placeholder={t('stockSearch',L)}
         style={{flex:1,minWidth:200,padding:"8px 12px",borderRadius:8,border:`1px solid ${LT.border}`,
         background:LT.surface,color:LT.text,fontSize:15,outline:"none"}}/>
       <div style={{display:"flex",gap:4}}>
@@ -92,7 +92,7 @@ function StockPage({user,lang}){
           return(<button key={k} onClick={()=>setFilterArch(active?'':k)}
             style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${active?LT.text:LT.border}`,
             background:active?LT.bg3:LT.surface,color:active?LT.text:LT.textDim,
-            fontSize:15,fontWeight:active?700:500,cursor:"pointer"}}>{L==='ko'?v.ko:v.en}</button>);
+            fontSize:15,fontWeight:active?700:500,cursor:"pointer"}}>{L==='ko'?v.ko:(v.en||v.ko)}</button>);
         })}
       </div>
     </div>
@@ -100,10 +100,10 @@ function StockPage({user,lang}){
     {/* Column Header */}
     <div style={{display:"flex",alignItems:"center",padding:"8px 14px",fontSize:14,color:LT.textDim,fontWeight:600,borderBottom:`1px solid ${LT.border}`,marginBottom:2}}>
       <span style={{width:36}}></span>
-      <span style={{flex:1}}>{L==='ko'?'종목':'Stock'}</span>
-      <span style={{width:80,textAlign:"right"}}>{L==='ko'?'위성':'Sat'}</span>
-      <span style={{width:100,textAlign:"right"}}>{L==='ko'?'가격':'Price'}</span>
-      <span style={{width:70,textAlign:"right"}}>{L==='ko'?'등락':'Chg'}</span>
+      <span style={{flex:1}}>{t('stockCol',L)}</span>
+      <span style={{width:80,textAlign:"right"}}>{t('stockColSat',L)}</span>
+      <span style={{width:100,textAlign:"right"}}>{t('stockColPrice',L)}</span>
+      <span style={{width:70,textAlign:"right"}}>{t('stockColChg',L)}</span>
     </div>
 
     {/* Stock List — table-style rows */}
@@ -123,7 +123,7 @@ function StockPage({user,lang}){
             <span style={{fontSize:14,color:LT.textDim,fontFamily:"monospace"}}>{s.sid}</span>
             <span style={{fontSize:13,padding:"1px 4px",borderRadius:3,background:LT.bg3,color:LT.textDim,fontWeight:600}}>T{s.tier}</span>
           </div>
-          <div style={{fontSize:14,color:LT.textDim,marginTop:1}}>{s.sec} · {s.fac}{L==='ko'?'시설':'fac'}</div>
+          <div style={{fontSize:14,color:LT.textDim,marginTop:1}}>{s.sec} · {s.fac}{t('stockFacLabel',L)}</div>
         </div>
         {/* Satellite badges — compact */}
         <div style={{width:80,display:"flex",gap:2,justifyContent:"flex-end",flexWrap:"wrap",flexShrink:0}}>
@@ -147,19 +147,17 @@ function StockPage({user,lang}){
       <TierLock plan={user?.plan||'FREE'} req="PRO" lang={L}>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:30,textAlign:"center"}}>
           <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:6}}>
-            +{filtered.length-10} {L==='ko'?'종목 더보기':'more stocks'}
+            +{filtered.length-10} {t('stockMore',L)}
           </div>
-          <div style={{fontSize:15,color:LT.textMid}}>PRO {L==='ko'?'플랜에서 전체 종목 감시':'plan for full stock monitoring'}</div>
+          <div style={{fontSize:15,color:LT.textMid}}>PRO {t('stockMoreDesc',L)}</div>
         </div>
       </TierLock>
     )}
 
     {/* Video Funnel */}
     <div style={{background:LT.bg2,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginTop:14}}>
-      <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:6}}>📺 YouTube {L==='ko'?'연동 콘텐츠':'Content'}</div>
-      <div style={{fontSize:15,color:LT.textMid,lineHeight:1.6}}>{L==='ko'?
-        '첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 시그널은 구독자 전용.':
-        'First videos: Tesla → TSMC → Samsung. Free factory satellite views, detailed signals for subscribers only.'}</div>
+      <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:6}}>📺 YouTube {t('stockYT',L)}</div>
+      <div style={{fontSize:15,color:LT.textMid,lineHeight:1.6}}>{t('stockYTDesc',L)}</div>
     </div>
   </div>);
 }

@@ -285,5 +285,10 @@ export default {
   gClickHint:'🛰️ Click a country to view its economic diagnostic report',
   gTooltipClick:'Click → Diagnostic Report',gOpenReport:'Open Diagnostic Report',
   gHeroLine:'59 Economic Gauges · 9 Body Systems · 🛰️ Satellite',
+  stockNav:'Stock',stockTitle:'Stock Satellite Monitor',stockPhase:'Phase 2',
+  stockStocks:'stocks',stockFac:'facilities',stockCountries:'countries',stockDelayed:'15min delayed',
+  stockSearch:'🔍 Search name, ticker, sector',stockCol:'Stock',stockColSat:'Sat',stockColPrice:'Price',stockColChg:'Chg',
+  stockFacLabel:'fac',stockMore:'more stocks',stockMoreDesc:'plan for full stock monitoring',
+  stockYT:'Content',stockYTDesc:'First videos: Tesla → TSMC → Samsung. Free factory satellite views, detailed signals for subscribers only.',
   cnt_KOR:'South Korea',cnt_USA:'United States',cnt_JPN:'Japan',cnt_DEU:'Germany',cnt_GBR:'United Kingdom',cnt_FRA:'France',cnt_CAN:'Canada',cnt_AUS:'Australia',cnt_ITA:'Italy',cnt_ESP:'Spain',cnt_NLD:'Netherlands',cnt_CHE:'Switzerland',cnt_SWE:'Sweden',cnt_NOR:'Norway',cnt_DNK:'Denmark',cnt_FIN:'Finland',cnt_AUT:'Austria',cnt_BEL:'Belgium',cnt_IRL:'Ireland',cnt_PRT:'Portugal',cnt_GRC:'Greece',cnt_CZE:'Czechia',cnt_POL:'Poland',cnt_HUN:'Hungary',cnt_SVK:'Slovakia',cnt_SVN:'Slovenia',cnt_EST:'Estonia',cnt_LVA:'Latvia',cnt_LTU:'Lithuania',cnt_ISL:'Iceland',cnt_LUX:'Luxembourg',cnt_NZL:'New Zealand',cnt_ISR:'Israel',cnt_TUR:'Türkiye',cnt_MEX:'Mexico',cnt_CHL:'Chile',cnt_COL:'Colombia',cnt_CRI:'Costa Rica',cnt_SGP:'Singapore',cnt_HKG:'Hong Kong',cnt_TWN:'Taiwan',cnt_IND:'India',cnt_CHN:'China',
 };

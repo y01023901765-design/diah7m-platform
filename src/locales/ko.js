@@ -283,5 +283,11 @@ export default
   gClickHint:'🛰️ 국가를 클릭하면 경제 진단 보고서를 확인할 수 있습니다',
   gTooltipClick:'클릭 → 진단 보고서',gOpenReport:'진단 보고서 열기',
   gHeroLine:'59 경제 게이지 · 9 인체 시스템 · 🛰️ 위성',
+  stockNav:'주식감시',stockTitle:'주식종목 위성감시',stockPhase:'Phase 2',
+  stockStocks:'종목',stockFac:'시설',stockCountries:'개국',stockDelayed:'15분 지연',
+  stockSearch:'🔍 종목명·티커·섹터 검색',stockCol:'종목',stockColSat:'위성',stockColPrice:'가격',stockColChg:'등락',
+  stockFacLabel:'시설',stockMore:'종목 더보기',stockMoreDesc:'플랜에서 전체 종목 감시',
+  stockYT:'연동 콘텐츠',stockYTDesc:'첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 시그널은 구독자 전용.',
   cnt_KOR:'대한민국',cnt_USA:'미국',cnt_JPN:'일본',cnt_DEU:'독일',cnt_GBR:'영국',cnt_FRA:'프랑스',cnt_CAN:'캐나다',cnt_AUS:'호주',cnt_ITA:'이탈리아',cnt_ESP:'스페인',cnt_NLD:'네덜란드',cnt_CHE:'스위스',cnt_SWE:'스웨덴',cnt_NOR:'노르웨이',cnt_DNK:'덴마크',cnt_FIN:'핀란드',cnt_AUT:'오스트리아',cnt_BEL:'벨기에',cnt_IRL:'아일랜드',cnt_PRT:'포르투갈',cnt_GRC:'그리스',cnt_CZE:'체코',cnt_POL:'폴란드',cnt_HUN:'헝가리',cnt_SVK:'슬로바키아',cnt_SVN:'슬로베니아',cnt_EST:'에스토니아',cnt_LVA:'라트비아',cnt_LTU:'리투아니아',cnt_ISL:'아이슬란드',cnt_LUX:'룩셈부르크',cnt_NZL:'뉴질랜드',cnt_ISR:'이스라엘',cnt_TUR:'튀르키예',cnt_MEX:'멕시코',cnt_CHL:'칠레',cnt_COL:'콜롬비아',cnt_CRI:'코스타리카',cnt_SGP:'싱가포르',cnt_HKG:'홍콩',cnt_TWN:'대만',cnt_IND:'인도',cnt_CHN:'중국',
 };
+// 위 닫는 }; 앞에 추가해야 하므로 sed 사용

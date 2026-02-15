@@ -76,5 +76,10 @@ export default {
   gClickHint:'🛰️ 点击国家查看经济诊断报告',
   gTooltipClick:'点击 → 诊断报告',gOpenReport:'打开诊断报告',
   gHeroLine:'59 经济仪表 · 9 人体系统 · 🛰️ 卫星',
+  stockNav:'股票监控',stockTitle:'股票卫星监控',stockPhase:'Phase 2',
+  stockStocks:'股票',stockFac:'设施',stockCountries:'国家',stockDelayed:'15分钟延迟',
+  stockSearch:'🔍 搜索股票名·代码·行业',stockCol:'股票',stockColSat:'卫星',stockColPrice:'价格',stockColChg:'涨跌',
+  stockFacLabel:'设施',stockMore:'查看更多股票',stockMoreDesc:'订阅后监控全部股票',
+  stockYT:'关联内容',stockYTDesc:'首批视频: Tesla → TSMC → Samsung。免费展示卫星拍摄的工厂运营变化，详细信号仅限订阅用户。',
   cnt_KOR:'韩国',cnt_USA:'美国',cnt_JPN:'日本',cnt_DEU:'德国',cnt_GBR:'英国',cnt_FRA:'法国',cnt_CAN:'加拿大',cnt_AUS:'澳大利亚',cnt_ITA:'意大利',cnt_ESP:'西班牙',cnt_NLD:'荷兰',cnt_CHE:'瑞士',cnt_SWE:'瑞典',cnt_NOR:'挪威',cnt_DNK:'丹麦',cnt_FIN:'芬兰',cnt_AUT:'奥地利',cnt_BEL:'比利时',cnt_IRL:'爱尔兰',cnt_PRT:'葡萄牙',cnt_GRC:'希腊',cnt_CZE:'捷克',cnt_POL:'波兰',cnt_HUN:'匈牙利',cnt_SVK:'斯洛伐克',cnt_SVN:'斯洛文尼亚',cnt_EST:'爱沙尼亚',cnt_LVA:'拉脱维亚',cnt_LTU:'立陶宛',cnt_ISL:'冰岛',cnt_LUX:'卢森堡',cnt_NZL:'新西兰',cnt_ISR:'以色列',cnt_TUR:'土耳其',cnt_MEX:'墨西哥',cnt_CHL:'智利',cnt_COL:'哥伦比亚',cnt_CRI:'哥斯达黎加',cnt_SGP:'新加坡',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'印度',cnt_CHN:'中国',
 };
