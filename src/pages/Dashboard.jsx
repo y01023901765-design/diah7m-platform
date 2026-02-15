@@ -86,6 +86,10 @@ function DashboardPage({user,onNav,lang,country}){
   const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
+  // 종합 점수: 양호=100, 주의=50, 경보=0 → 가중 평균
+  const totalG=allG.length||1;
+  const compositeScore=((good*100+caution*50+alertCnt*0)/totalG).toFixed(1);
+  const scoreColor=compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger;
   const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)+(alertCnt>0?` (${alertCnt})`:'')  }];
   const demoUser={...user,plan:demoPlan};
   // 43국 리스트
@@ -164,7 +168,7 @@ function DashboardPage({user,onNav,lang,country}){
         <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.08)',borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`}}>
           <div style={{fontSize:16,color:LT.textDim}}>{t('dateLabel',L)}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:8}}>
-            <span style={{fontSize:42,fontWeight:900,color:LT.good,fontFamily:"monospace"}}>68.5</span>
+            <span style={{fontSize:42,fontWeight:900,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
             <span style={{fontSize:16,color:LT.textDim}}>/ 100</span>
           </div>
           <div style={{display:"flex",gap:16,marginTop:12}}>

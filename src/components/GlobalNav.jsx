@@ -1,10 +1,16 @@
+import { useState, useEffect } from 'react';
 import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import LangSelector from './LangSelector';
+import * as API from '../api';
 
 function GlobalNav({page,user,onNav,onLogout,lang,setLang}){
   const L=lang||'ko';
-  const alertCount=3;
+  const [alertCount,setAlertCount]=useState(0);
+  useEffect(()=>{
+    if(!user) return;
+    API.getUnreadCount().then(d=>setAlertCount(d.unreadCount||0)).catch(()=>setAlertCount(3));
+  },[user,page]);
   const pages=user?[
     {id:'dashboard',label:`📊 ${t('dashboard',L)}`,badge:0},
     {id:'stock',label:`📈 ${t('stockNav',L)}`,badge:alertCount},
