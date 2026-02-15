@@ -31,8 +31,26 @@ let satSnapshot = {
 
 // ── 수집 트리거 (관리자 전용) ──
 // POST /api/admin/satellite/collect
+// ── 중복 실행 방지 (GPT 요구: 같은 job 겹침 방지) ──
+let _collectRunning = false;
+let _collectJobId = null;
+
+// ── baseline365 캐시 (주 1회 재생성) ──
+let _baselineCache = { asof: null, maxAgeDays: 7 };
+
 router.post('/collect', async (req, res) => {
+  // 중복 실행 방지
+  if (_collectRunning) {
+    return res.status(409).json({ 
+      error: 'Collection already running', 
+      running: true, 
+      job_id: _collectJobId 
+    });
+  }
+
   const jobId = `sat_${Date.now()}`;
+  _collectRunning = true;
+  _collectJobId = jobId;
   
   // 즉시 job_id 반환 (동기 응답 금지 — Render 타임아웃 방지)
   res.json({ 
@@ -72,6 +90,9 @@ router.post('/collect', async (req, res) => {
     satSnapshot.meta.status = 'FAILED';
     satSnapshot.meta.last_collect_asof = new Date().toISOString();
     console.error(`[Satellite] ${jobId} failed:`, e.message);
+  } finally {
+    _collectRunning = false;
+    _collectJobId = null;
   }
 });
 

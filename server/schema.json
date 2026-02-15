@@ -122,8 +122,38 @@
         "body_metaphor": { "type": "string" },
         "satellite_tier": { "type": "string", "enum": ["T1", "T2", "T3", "none"] },
         "tier_min": { "type": "string", "enum": ["FREE", "BASIC", "PRO", "ENTERPRISE"] },
-        "data_source": { "$ref": "#/$defs/DataSource" }
+        "data_source": { "$ref": "#/$defs/DataSource" },
+        "relative": { "$ref": "#/$defs/RelativeEval" }
       }
+    },
+
+    "RelativeState": {
+      "type": "string",
+      "enum": ["WARMUP", "PARTIAL", "READY"]
+    },
+
+    "RelativeMethod": {
+      "type": "string",
+      "enum": ["PERCENT_CHANGE", "Z_SCORE"]
+    },
+
+    "RelativeEval": {
+      "type": "object",
+      "required": ["enabled", "method", "seasonal", "target_window_days", "baseline_days_used", "state", "ready", "relative_reason"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "method": { "$ref": "#/$defs/RelativeMethod" },
+        "seasonal": { "type": "boolean" },
+        "target_window_days": { "type": "integer", "minimum": 1 },
+        "baseline_days_used": { "type": "integer", "minimum": 0 },
+        "state": { "$ref": "#/$defs/RelativeState" },
+        "ready": { "type": "boolean" },
+        "percent_change": { "type": ["number", "null"] },
+        "relative_level": { "type": ["string", "null"] },
+        "relative_score": { "type": ["integer", "null"] },
+        "relative_reason": { "type": "string" }
+      },
+      "additionalProperties": false
     },
 
     "SeverityScore": {
