@@ -106,9 +106,10 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
       projRef.current=proj;const path=d3.geoPath(proj,ctx);
       const now=Date.now()/1000;const hov=hovRef.current;
 
-      ctx.fillStyle="#050b14";ctx.fillRect(0,0,w,h);
-      ctx.strokeStyle="#0a1422";ctx.lineWidth=0.2;ctx.beginPath();path(d3.geoGraticule10());ctx.stroke();
-      fc.features.forEach(f=>{ctx.beginPath();path(f);ctx.fillStyle="#0c1828";ctx.fill();ctx.strokeStyle="#1a2d48";ctx.lineWidth=0.5;ctx.stroke()});
+      const isMob=w<600;
+      ctx.fillStyle=isMob?"#080e1c":"#050b14";ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle=isMob?"#152540":"#0a1422";ctx.lineWidth=isMob?0.4:0.2;ctx.beginPath();path(d3.geoGraticule10());ctx.stroke();
+      fc.features.forEach(f=>{ctx.beginPath();path(f);ctx.fillStyle=isMob?"#121e35":"#0c1828";ctx.fill();ctx.strokeStyle=isMob?"#2a4a70":"#1a2d48";ctx.lineWidth=isMob?0.8:0.5;ctx.stroke()});
 
       ctx.globalCompositeOperation="screen";
 
@@ -116,16 +117,17 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
         const p=proj([lon,lat]);if(!p)return;
         const phase=now*0.6+i*2.1;
         const pulse=0.5+Math.sin(phase)*0.15+Math.sin(phase*2.7)*0.08;
-        const g1=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],14);
-        g1.addColorStop(0,`rgba(180,220,255,${pulse*0.15})`);
-        g1.addColorStop(0.3,`rgba(140,200,255,${pulse*0.06})`);
+        const mb=isMob?1.5:1;
+        const g1=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],14*mb);
+        g1.addColorStop(0,`rgba(180,220,255,${pulse*0.15*mb})`);
+        g1.addColorStop(0.3,`rgba(140,200,255,${pulse*0.06*mb})`);
         g1.addColorStop(1,"rgba(100,160,255,0)");
-        ctx.fillStyle=g1;ctx.beginPath();ctx.arc(p[0],p[1],14,0,Math.PI*2);ctx.fill();
-        const g2=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],3.5);
-        g2.addColorStop(0,`rgba(255,255,255,${pulse*0.8})`);
-        g2.addColorStop(0.5,`rgba(200,235,255,${pulse*0.3})`);
+        ctx.fillStyle=g1;ctx.beginPath();ctx.arc(p[0],p[1],14*mb,0,Math.PI*2);ctx.fill();
+        const g2=ctx.createRadialGradient(p[0],p[1],0,p[0],p[1],3.5*mb);
+        g2.addColorStop(0,`rgba(255,255,255,${pulse*0.8*mb})`);
+        g2.addColorStop(0.5,`rgba(200,235,255,${pulse*0.3*mb})`);
         g2.addColorStop(1,"rgba(160,210,255,0)");
-        ctx.fillStyle=g2;ctx.beginPath();ctx.arc(p[0],p[1],3.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=g2;ctx.beginPath();ctx.arc(p[0],p[1],3.5*mb,0,Math.PI*2);ctx.fill();
       });
 
       ACTIVE.forEach((c,i)=>{
