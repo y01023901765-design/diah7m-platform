@@ -9,6 +9,7 @@
     "test": "node test/e2e.js"
   },
   "dependencies": {
+    "@google/earthengine": "^1.7.13",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "express": "^4.21.0",
