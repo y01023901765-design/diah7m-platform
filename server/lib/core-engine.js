@@ -52,10 +52,19 @@ function severity(val, thresholds) {
 // ── Schema-compliant 보고서 생성 ──
 // ── 금지어 가드: 예측/매수/매도 표현 차단 ──
 const PROHIBITION_WORDS = ['예측','전망','매수','매도','추천','확정','반드시','것이다','될 것','할 것','상승할','하락할','predict','forecast','buy','sell','recommend','will rise','will fall'];
+// 부정문 허용 패턴 (예: "예측이 아닙니다", "not prediction")
+const NEGATION_PATTERNS = ['이 아닙니다','이 아님','not ','없습니다'];
 
 function filterProhibited(text) {
   for (const w of PROHIBITION_WORDS) {
-    if (text.includes(w)) return text.replace(new RegExp(w, 'g'), '[관측 언어 위반 — 제거됨]');
+    if (!text.includes(w)) continue;
+    // 금지어 주변에 부정 표현이 있으면 허용
+    const idx = text.indexOf(w);
+    const surrounding = text.slice(Math.max(0, idx - 5), idx + w.length + 15);
+    const isNegated = NEGATION_PATTERNS.some(neg => surrounding.includes(neg));
+    if (!isNegated) {
+      return text.replace(new RegExp(w, 'g'), '[관측 언어 위반 — 제거됨]');
+    }
   }
   return text;
 }
@@ -89,22 +98,23 @@ function generateActions(systems, crossSignals, dualLockActive, causalStage, ove
     });
   }
 
-  // 3. 시스템별 severity 기반 watch
-  for (const [key, sys] of Object.entries(systems)) {
-    if (sys.severity >= 4) {
+  // 3. 시스템별 level 기반 watch (systems는 배열: [{system_id, level, ...}])
+  const sysArr = Array.isArray(systems) ? systems : Object.entries(systems).map(([k,v]) => ({system_id:k,...v}));
+  for (const sys of sysArr) {
+    if (sys.level >= 4) {
       actions.push({
         type: 'watch',
         pattern: 'high_severity',
-        evidence: { system: key, severity: sys.severity, gauge_count: sys.gauges?.length || 0 },
-        text: filterProhibited(`${SYSTEMS[key]?.name || key} 시스템이 심각(${sys.severity}/5) 수준입니다. 다음 업데이트에서 변화 추이 확인이 필요합니다.`),
-        confidence: sys.gauges ? (sys.gauges.filter(g => g.value != null).length / Math.max(sys.gauges.length, 1)) : 0.5,
+        evidence: { system: sys.system_id, severity: sys.level, gauge_count: sys.gauge_count || 0 },
+        text: filterProhibited(`${sys.system_name || sys.system_id} 시스템이 심각(${sys.level}/5) 수준입니다. 다음 업데이트에서 변화 추이 확인이 필요합니다.`),
+        confidence: 0.8,
       });
-    } else if (sys.severity >= 3) {
+    } else if (sys.level >= 3) {
       actions.push({
         type: 'watch',
         pattern: 'elevated_severity',
-        evidence: { system: key, severity: sys.severity },
-        text: filterProhibited(`${SYSTEMS[key]?.name || key} 시스템이 주의(${sys.severity}/5) 수준입니다. 추세 방향 확인이 필요합니다.`),
+        evidence: { system: sys.system_id, severity: sys.level },
+        text: filterProhibited(`${sys.system_name || sys.system_id} 시스템이 주의(${sys.level}/5) 수준입니다. 추세 방향 확인이 필요합니다.`),
         confidence: 0.6,
       });
     }
@@ -129,6 +139,12 @@ function generateActions(systems, crossSignals, dualLockActive, causalStage, ove
     });
   }
 
+  // 10개 제한: context(면책)는 반드시 포함
+  if (actions.length > 10) {
+    const contexts = actions.filter(a => a.type === 'context');
+    const others = actions.filter(a => a.type !== 'context');
+    return [...others.slice(0, 10 - contexts.length), ...contexts].slice(0, 10);
+  }
   return actions;
 }
 

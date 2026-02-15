@@ -184,12 +184,13 @@
 
     "ActionSignal": {
       "type": "object",
-      "required": ["action", "direction"],
+      "required": ["type", "pattern", "text"],
       "properties": {
-        "action": { "type": "string", "maxLength": 500 },
-        "direction": { "type": "string", "enum": ["BUY", "SELL", "AVOID", "HOLD", "WATCH"] },
-        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-        "related_gauges": { "type": "array", "items": { "type": "string" } }
+        "type": { "type": "string", "enum": ["observation", "watch", "context"] },
+        "pattern": { "type": "string", "enum": ["cross_signal", "dual_lock", "high_severity", "elevated_severity", "overall_alert", "disclaimer"] },
+        "evidence": { "type": "object" },
+        "text": { "type": "string", "maxLength": 500 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     },
 
