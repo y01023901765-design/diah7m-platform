@@ -115,8 +115,8 @@ function StockView({stock:s,lang,onBack}){
       </div>
     </div>
 
-    {/* 5 Tabs */}
-    <div style={{display:"flex",gap:0,borderBottom:`1px solid ${LT.border}`,marginBottom:16}}>
+    {/* 5 Tabs — mobile scroll */}
+    <div style={{display:"flex",gap:0,borderBottom:`1px solid ${LT.border}`,marginBottom:16,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       {tabs.map(tb=>(<button key={tb.id} onClick={()=>setTab(tb.id)} style={{padding:"12px 16px",border:"none",background:"transparent",color:tab===tb.id?LT.text:LT.textDim,borderBottom:tab===tb.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===tb.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{tb.label}</button>))}
     </div>
 
@@ -132,8 +132,9 @@ function StockView({stock:s,lang,onBack}){
             {facs.length-normalCnt-warnCnt>0&&<span style={{color:LT.textDim}}>●{facs.length-normalCnt-warnCnt}</span>}
           </div>
         </div>
-        <div style={{display:"flex",padding:"6px 0",fontSize:14,color:LT.textDim,fontWeight:600,borderBottom:`1px solid ${LT.border}`}}>
-          <span style={{flex:1}}>{t('svFacName',L)}</span>
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"flex",padding:"6px 0",fontSize:14,color:LT.textDim,fontWeight:600,borderBottom:`1px solid ${LT.border}`,minWidth:480}}>
+          <span style={{flex:1,minWidth:130}}>{t('svFacName',L)}</span>
           <span style={{width:65,textAlign:"right"}}>VIIRS</span>
           <span style={{width:65,textAlign:"right"}}>NO₂</span>
           <span style={{width:65,textAlign:"right"}}>{t('svTherm',L)}</span>
@@ -158,6 +159,7 @@ function StockView({stock:s,lang,onBack}){
           </div>
         ))}
         {facs.length===0&&<div style={{padding:20,textAlign:"center",color:LT.textDim,fontSize:15}}>{t('svNoData',L)}</div>}
+        </div>{/* end scroll wrapper */}
       </div>
       {/* Verdict */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
@@ -178,7 +180,7 @@ function StockView({stock:s,lang,onBack}){
         {(facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]).map((f,i)=>(
           <div key={i} style={{marginBottom:i<2?16:0}}>
             <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc}</span></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svBefore',L)}</div>
                 <div style={{background:LT.bg3,borderRadius:6,height:100,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 30d ago</div>
@@ -226,7 +228,7 @@ function StockView({stock:s,lang,onBack}){
       {/* Trust: Past→Present */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>📡 {t('svTrustTitle',L)}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div style={{background:LT.bg2,borderRadius:8,padding:14,border:`1px solid ${LT.border}`}}>
             <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:6}}>◀ {t('svPast',L)}</div>
             <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7}}>{t('svPastEx',L)}</div>
@@ -326,7 +328,7 @@ function StockView({stock:s,lang,onBack}){
           <span style={{fontSize:15,color:LT.textDim}}>{t('svChartPlaceholder',L)}</span>
         </div>
         {/* Key financials grid */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
           {[
             {label:t('svMktCap',L),val:s.sid==='TSLA'?'$1.09T':'—'},
             {label:t('svMktPE',L),val:s.sid==='TSLA'?'68.5':'—'},

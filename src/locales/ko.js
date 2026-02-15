@@ -320,6 +320,7 @@ export default
   svFlagTrend:'추세 전환',svFlagTrendDesc:'30일 이동평균 방향 전환',
   svMarketTitle:'시장 데이터',svChartPlaceholder:'주가 차트 (Yahoo Finance 연동 예정)',
   svMktCap:'시가총액',svMktPE:'PER',svMktVol:'거래량',svMkt52:'52주 범위',
+  lastUpdate:'마지막 수집:',satToStock:'주식종목 위성감시로 이동',satToStockDesc:'100종목 276시설의 위성 데이터를 실시간 비교합니다',
   cnt_KOR:'대한민국',cnt_USA:'미국',cnt_JPN:'일본',cnt_DEU:'독일',cnt_GBR:'영국',cnt_FRA:'프랑스',cnt_CAN:'캐나다',cnt_AUS:'호주',cnt_ITA:'이탈리아',cnt_ESP:'스페인',cnt_NLD:'네덜란드',cnt_CHE:'스위스',cnt_SWE:'스웨덴',cnt_NOR:'노르웨이',cnt_DNK:'덴마크',cnt_FIN:'핀란드',cnt_AUT:'오스트리아',cnt_BEL:'벨기에',cnt_IRL:'아일랜드',cnt_PRT:'포르투갈',cnt_GRC:'그리스',cnt_CZE:'체코',cnt_POL:'폴란드',cnt_HUN:'헝가리',cnt_SVK:'슬로바키아',cnt_SVN:'슬로베니아',cnt_EST:'에스토니아',cnt_LVA:'라트비아',cnt_LTU:'리투아니아',cnt_ISL:'아이슬란드',cnt_LUX:'룩셈부르크',cnt_NZL:'뉴질랜드',cnt_ISR:'이스라엘',cnt_TUR:'튀르키예',cnt_MEX:'멕시코',cnt_CHL:'칠레',cnt_COL:'콜롬비아',cnt_CRI:'코스타리카',cnt_SGP:'싱가포르',cnt_HKG:'홍콩',cnt_TWN:'대만',cnt_IND:'인도',cnt_CHN:'중국',
 };
 // 위 닫는 }; 앞에 추가해야 하므로 sed 사용

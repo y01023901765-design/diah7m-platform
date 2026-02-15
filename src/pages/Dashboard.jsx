@@ -83,23 +83,53 @@ function DashboardPage({user,onNav,lang,country}){
   const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
-  const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)}];
+  const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)+(alertCnt>0?` (${alertCnt})`:'')  }];
   const demoUser={...user,plan:demoPlan};
+  // 43국 리스트
+  const COUNTRIES=[
+    {iso:'KOR',flag:'🇰🇷'},{iso:'USA',flag:'🇺🇸'},{iso:'JPN',flag:'🇯🇵'},{iso:'DEU',flag:'🇩🇪'},{iso:'GBR',flag:'🇬🇧'},
+    {iso:'FRA',flag:'🇫🇷'},{iso:'CAN',flag:'🇨🇦'},{iso:'AUS',flag:'🇦🇺'},{iso:'ITA',flag:'🇮🇹'},{iso:'ESP',flag:'🇪🇸'},
+    {iso:'NLD',flag:'🇳🇱'},{iso:'CHE',flag:'🇨🇭'},{iso:'SWE',flag:'🇸🇪'},{iso:'NOR',flag:'🇳🇴'},{iso:'DNK',flag:'🇩🇰'},
+    {iso:'FIN',flag:'🇫🇮'},{iso:'AUT',flag:'🇦🇹'},{iso:'BEL',flag:'🇧🇪'},{iso:'IRL',flag:'🇮🇪'},{iso:'PRT',flag:'🇵🇹'},
+    {iso:'GRC',flag:'🇬🇷'},{iso:'CZE',flag:'🇨🇿'},{iso:'POL',flag:'🇵🇱'},{iso:'HUN',flag:'🇭🇺'},{iso:'SVK',flag:'🇸🇰'},
+    {iso:'SVN',flag:'🇸🇮'},{iso:'EST',flag:'🇪🇪'},{iso:'LVA',flag:'🇱🇻'},{iso:'LTU',flag:'🇱🇹'},{iso:'ISL',flag:'🇮🇸'},
+    {iso:'LUX',flag:'🇱🇺'},{iso:'NZL',flag:'🇳🇿'},{iso:'ISR',flag:'🇮🇱'},{iso:'TUR',flag:'🇹🇷'},{iso:'MEX',flag:'🇲🇽'},
+    {iso:'CHL',flag:'🇨🇱'},{iso:'COL',flag:'🇨🇴'},{iso:'CRI',flag:'🇨🇷'},{iso:'SGP',flag:'🇸🇬'},{iso:'HKG',flag:'🇭🇰'},
+    {iso:'TWN',flag:'🇹🇼'},{iso:'IND',flag:'🇮🇳'},{iso:'CHN',flag:'🇨🇳'},
+  ];
+  const curFlag=COUNTRIES.find(c=>c.iso===iso3)?.flag||'🌍';
+  const [showCountryPicker,setShowCountryPicker]=useState(false);
   return(<div style={{maxWidth:780,margin:"0 auto",padding:"20px 16px"}}>
-    {/* Level 1: Content Tabs — 주 네비게이션 */}
+    {/* Country Selector + Data Freshness */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{position:"relative"}}>
+        <button onClick={()=>setShowCountryPicker(p=>!p)} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.surface,cursor:"pointer",fontSize:15}}>
+          <span>{curFlag}</span>
+          <span style={{fontWeight:700,color:LT.text}}>{t('cnt_'+iso3,L)||iso3}</span>
+          <span style={{color:LT.textDim,fontSize:12}}>▼</span>
+        </button>
+        {showCountryPicker&&<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:LT.surface,border:`1px solid ${LT.border}`,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:100,maxHeight:320,overflowY:"auto",width:280,padding:8}}>
+          {COUNTRIES.map(c=>(<button key={c.iso} onClick={()=>{onNav('dashboard',{country:c.iso});setShowCountryPicker(false);}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 10px",borderRadius:6,border:"none",background:c.iso===iso3?LT.bg3:"transparent",color:LT.text,fontSize:14,cursor:"pointer",textAlign:"left"}}>
+            <span>{c.flag}</span>
+            <span style={{fontWeight:c.iso===iso3?700:400}}>{t('cnt_'+c.iso,L)||c.iso}</span>
+            {c.iso===iso3&&<span style={{marginLeft:"auto",color:LT.good,fontWeight:700}}>✓</span>}
+          </button>))}
+        </div>}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:13,color:LT.textDim}}>{t('lastUpdate',L)} {dataInfo?.lastUpdated?new Date(dataInfo.lastUpdated).toLocaleDateString():'2026.01.15'}</span>
+        <span style={{fontSize:13,color:apiStatus==='live'?LT.good:LT.warn,fontWeight:600}}>{apiStatus==='live'?'● LIVE':'● DEMO'}</span>
+      </div>
+    </div>
+    {/* Level 1: Content Tabs */}
     <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`}}>
       {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{t.label}</button>))}
     </div>
-    {/* Level 2: Utility — DEMO 스위처 + 상태 (작고 눈에 안 띄게) */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-      <div style={{display:"flex",alignItems:"center",gap:4}}>
-        <span style={{fontSize:14,color:LT.textDim}}>DEMO</span>
-        {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"2px 8px",borderRadius:4,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:14,fontWeight:demoPlan===p?700:400,
-          background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
-      </div>
-      <span style={{fontSize:14,color:apiStatus==='live'?LT.good:apiStatus==='demo'?LT.warn:LT.textDim}}>
-        {apiStatus==='live'?'● LIVE':apiStatus==='demo'?'● DEMO':'● ...'}
-      </span>
+    {/* Level 2: Utility — DEMO 스위처 (최소) */}
+    <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:16}}>
+      <span style={{fontSize:13,color:LT.textDim}}>DEMO</span>
+      {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"2px 8px",borderRadius:4,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:13,fontWeight:demoPlan===p?700:400,
+        background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
     </div>
     {tab==='overview'&&<>
       {/* 국가 헤더 — 글로벌 국가 선택 시 */}
@@ -176,6 +206,15 @@ function DashboardPage({user,onNav,lang,country}){
         {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
+      {/* Stock 연결 */}
+      <div onClick={()=>onNav('stock')} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}
+        onMouseEnter={e=>e.currentTarget.style.background=LT.bg2} onMouseLeave={e=>e.currentTarget.style.background=LT.surface}>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>📈 {t('satToStock',L)}</div>
+          <div style={{fontSize:15,color:LT.textMid,marginTop:2}}>{t('satToStockDesc',L)}</div>
+        </div>
+        <span style={{fontSize:20,color:LT.textDim}}>→</span>
+      </div>
     </>}
     {tab==='alerts'&&<>
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("alertCenter",L)}</div></div>

@@ -94,7 +94,16 @@ export default function App(){
           {page==='mypage'&&user&&<MyPage user={user} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
         </div>
-        {page!=='login'&&page!=='signup'&&<div style={{padding:"20px 16px",textAlign:"center",fontSize:13,color:TH.textDim,borderTop:`1px solid ${TH.border}`,marginTop:40}}>© Human Body National Economics · DIAH-7M · Jong-Won Yoon | NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>}
+        {page!=='login'&&page!=='signup'&&<footer style={{borderTop:`1px solid ${TH.border}`,marginTop:40,padding:"24px 16px 16px"}}>
+          <div style={{maxWidth:780,margin:"0 auto"}}>
+            <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:16}}>
+              <div><div style={{fontSize:14,fontWeight:700,color:TH.text,marginBottom:6}}>DIAH-7M</div><div style={{fontSize:13,color:TH.textDim,lineHeight:1.7}}>Human Body National Economics<br/>인체국가경제론 · 윤종원</div></div>
+              <div><div style={{fontSize:14,fontWeight:700,color:TH.text,marginBottom:6}}>Data Sources</div><div style={{fontSize:13,color:TH.textDim,lineHeight:1.7}}>NASA VIIRS · Copernicus Sentinel-1/5P<br/>Landsat-9 · ECOS · FRED · World Bank</div></div>
+              <div><div style={{fontSize:14,fontWeight:700,color:TH.text,marginBottom:6}}>Legal</div><div style={{fontSize:13,color:TH.textDim,lineHeight:1.7}}>ISBN 978-89-01-29340-3<br/>Observation only · Not investment advice</div></div>
+            </div>
+            <div style={{borderTop:`1px solid ${TH.border}`,paddingTop:12,fontSize:12,color:TH.textDim,textAlign:"center"}}>© 2026 DIAH-7M · All rights reserved</div>
+          </div>
+        </footer>}
       </>}
       {user&&<ChatbotWidget lang={lang}/>}
     </div>

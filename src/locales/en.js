@@ -322,5 +322,6 @@ export default {
   svFlagTrend:'Trend Reversal',svFlagTrendDesc:'30-day moving average direction change',
   svMarketTitle:'Market Data',svChartPlaceholder:'Price chart (Yahoo Finance integration planned)',
   svMktCap:'Market Cap',svMktPE:'P/E Ratio',svMktVol:'Volume',svMkt52:'52-week Range',
+  lastUpdate:'Last updated:',satToStock:'Go to Stock Satellite Monitor',satToStockDesc:'Compare satellite data across 100 stocks and 276 facilities in real time',
   cnt_KOR:'South Korea',cnt_USA:'United States',cnt_JPN:'Japan',cnt_DEU:'Germany',cnt_GBR:'United Kingdom',cnt_FRA:'France',cnt_CAN:'Canada',cnt_AUS:'Australia',cnt_ITA:'Italy',cnt_ESP:'Spain',cnt_NLD:'Netherlands',cnt_CHE:'Switzerland',cnt_SWE:'Sweden',cnt_NOR:'Norway',cnt_DNK:'Denmark',cnt_FIN:'Finland',cnt_AUT:'Austria',cnt_BEL:'Belgium',cnt_IRL:'Ireland',cnt_PRT:'Portugal',cnt_GRC:'Greece',cnt_CZE:'Czechia',cnt_POL:'Poland',cnt_HUN:'Hungary',cnt_SVK:'Slovakia',cnt_SVN:'Slovenia',cnt_EST:'Estonia',cnt_LVA:'Latvia',cnt_LTU:'Lithuania',cnt_ISL:'Iceland',cnt_LUX:'Luxembourg',cnt_NZL:'New Zealand',cnt_ISR:'Israel',cnt_TUR:'Türkiye',cnt_MEX:'Mexico',cnt_CHL:'Chile',cnt_COL:'Colombia',cnt_CRI:'Costa Rica',cnt_SGP:'Singapore',cnt_HKG:'Hong Kong',cnt_TWN:'Taiwan',cnt_IND:'India',cnt_CHN:'China',
 };
