@@ -1,235 +1,227 @@
 /**
- * DIAH-7M 위성 데이터 수집 모듈
+ * DIAH-7M 위성 데이터 수집 모듈 (v2)
+ * ═══════════════════════════════════
  * Google Earth Engine → Node.js
  * 
- * 필요: npm install @google/earthengine
+ * GPT 합의 설계:
+ * - 인증: Render Secret File 1순위, base64 2순위
+ * - 수집: 매일 06:00 KST 배치, 센서별 게이트
+ * - VIIRS: 최근 7일 룩백
+ * - Landsat: 구름 10% 미만 최신 이미지
+ * - 순차 실행 (CPU 스파이크 방지)
+ * - 관측성 메타: run_id/asof_kst/duration_ms/failures
  */
 
-const ee = require('@google/earthengine');
-const fs = require('fs');
+'use strict';
 
-// GEE 서비스 계정 인증
-const SERVICE_ACCOUNT = process.env.GEE_SERVICE_ACCOUNT || '';
-const KEY_FILE = process.env.GEE_KEY_FILE || '';
+let ee;
+try { ee = require('@google/earthengine'); } catch (e) {
+  console.warn('  ⚠️ @google/earthengine not installed — satellite collection disabled');
+  ee = null;
+}
+const fs = require('fs');
+const path = require('path');
 
 let geeInitialized = false;
 
-/**
- * GEE 초기화 (한 번만 실행)
- */
-async function initializeGEE() {
+// ═══ 1. GEE 인증 ═══
+async function authenticateGEE() {
   if (geeInitialized) return;
-  
+  if (!ee) throw new Error('@google/earthengine not installed');
+
+  let credentials;
+
+  // 1순위: Secret File / GOOGLE_APPLICATION_CREDENTIALS
+  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GEE_KEY_FILE;
+  if (credPath && fs.existsSync(credPath)) {
+    credentials = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+    console.log('  🔑 GEE: Secret File auth (' + path.basename(credPath) + ')');
+  }
+
+  // 2순위: base64 env
+  if (!credentials && process.env.GEE_CREDENTIALS_B64) {
+    const decoded = Buffer.from(process.env.GEE_CREDENTIALS_B64, 'base64').toString();
+    credentials = JSON.parse(decoded);
+    const tmpPath = '/tmp/gee-sa.json';
+    fs.writeFileSync(tmpPath, decoded, { mode: 0o600 });
+    console.log('  🔑 GEE: base64 auth (' + decoded.length + 'B)');
+  }
+
+  if (!credentials) {
+    throw new Error('GEE credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS or GEE_CREDENTIALS_B64');
+  }
+
   return new Promise((resolve, reject) => {
-    const privateKey = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'));
-    
     ee.data.authenticateViaPrivateKey(
-      privateKey,
-      () => {
-        ee.initialize(null, null, () => {
-          geeInitialized = true;
-          console.log('  ✅ GEE 초기화 완료');
-          resolve();
-        }, reject);
-      },
+      credentials,
+      () => ee.initialize(null, null, () => { geeInitialized = true; console.log('  ✅ GEE initialized'); resolve(); }, reject),
       reject
     );
   });
 }
 
-/**
- * S2: 서울 야간광량 (VIIRS DNB)
- * 
- * @param {number} monthsBack - 조회 기간 (개월)
- * @returns {Promise<Object>} - {value, prevValue, date, status}
- */
-async function fetchS2Nightlight(monthsBack = 3) {
-  await initializeGEE();
-  
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - monthsBack);
-  const endDate = new Date();
-  
-  const seoul = ee.Geometry.Rectangle([126.7, 37.4, 127.2, 37.7]);
-  
-  const viirs = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-    .filterBounds(seoul)
+// ═══ 2. VIIRS 야간광 (S2) ═══
+const REGIONS = {
+  KR: { name: '대한민국', bbox: [126.0, 33.0, 130.0, 39.0] },
+};
+
+async function fetchVIIRS(regionCode, lookbackDays) {
+  regionCode = regionCode || 'KR';
+  lookbackDays = lookbackDays || 7;
+  const t0 = Date.now();
+  await authenticateGEE();
+
+  var region = REGIONS[regionCode];
+  if (!region) throw new Error('Unknown region: ' + regionCode);
+  var geometry = ee.Geometry.Rectangle(region.bbox);
+
+  var endDate = new Date();
+  var startDate = new Date();
+  startDate.setDate(startDate.getDate() - lookbackDays);
+
+  var collection = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+    .filterBounds(geometry)
     .filterDate(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
     .select('avg_rad')
-    .sort('system:time_start', false);  // 최신순
-  
-  return new Promise((resolve, reject) => {
-    viirs.getInfo((error, collection) => {
-      if (error) return reject(error);
-      
-      const features = collection.features;
-      if (features.length === 0) {
-        return resolve({ status: 'NO_DATA', error: 'No data available' });
-      }
-      
-      // 최신 2개월 데이터 추출
-      const results = [];
-      for (let i = 0; i < Math.min(2, features.length); i++) {
-        const image = ee.Image(features[i].id);
-        
-        image.reduceRegion({
-          reducer: ee.Reducer.mean(),
-          geometry: seoul,
-          scale: 1000,
-          maxPixels: 1e9
-        }).getInfo((err, stats) => {
-          if (err) return;
-          
-          const value = stats.avg_rad;
-          if (value && value > 0) {
-            const date = new Date(features[i].properties['system:time_start']);
-            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`;
-            
-            results.push({
-              date: dateStr,
-              value: Math.round(value * 100) / 100
-            });
-          }
-          
-          // 2개 완료되면 결과 반환
-          if (results.length === 2 || i === features.length - 1) {
-            resolve({
-              gaugeId: 'S2',
-              source: 'GEE_VIIRS',
-              name: '야간광량(서울)',
-              unit: 'nW/cm²/sr',
-              value: results[0].value,
-              prevValue: results[1] ? results[1].value : null,
-              date: results[0].date,
-              status: 'OK',
-              rows: results.length
-            });
-          }
+    .sort('system:time_start', false);
+
+  // 60일 롤링 평균
+  var rollingStart = new Date();
+  rollingStart.setDate(rollingStart.getDate() - 60);
+  var rollingCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+    .filterBounds(geometry)
+    .filterDate(rollingStart.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+    .select('avg_rad');
+
+  return new Promise(function(resolve) {
+    collection.first().reduceRegion({
+      reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
+    }).evaluate(function(err, latestStats) {
+      if (err || !latestStats || !latestStats.avg_rad) {
+        return resolve({
+          gaugeId: 'S2', source: 'SATELLITE', name: '야간광량',
+          status: 'NO_DATA', error: (err && err.message) || 'No VIIRS data',
+          duration_ms: Date.now() - t0
         });
       }
+
+      rollingCol.mean().reduceRegion({
+        reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
+      }).evaluate(function(err2, rollingStats) {
+        var val = Math.round(((rollingStats && rollingStats.avg_rad) || latestStats.avg_rad) * 100) / 100;
+        resolve({
+          gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
+          value: val, latestValue: Math.round(latestStats.avg_rad * 100) / 100,
+          prevValue: null, date: new Date().toISOString().slice(0, 10),
+          region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
+          source_meta: { dataset: 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG', rolling_days: 60, scale: 1000 }
+        });
+      });
     });
   });
 }
 
-/**
- * R6: 서울 도시열섬 (Landsat-9)
- * 
- * @param {number} monthsBack - 조회 기간 (개월)
- * @returns {Promise<Object>} - {value, prevValue, date, status}
- */
-async function fetchR6HeatIsland(monthsBack = 6) {
-  await initializeGEE();
-  
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - monthsBack);
-  const endDate = new Date();
-  
-  const seoul = ee.Geometry.Rectangle([126.7, 37.4, 127.2, 37.7]);
-  
-  // Landsat-9 열적외선 (구름 20% 이하)
-  const landsat = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
-    .filterBounds(seoul)
+// ═══ 3. Landsat-9 도시열섬 (R6) ═══
+async function fetchLandsat(regionCode, lookbackDays) {
+  regionCode = regionCode || 'KR';
+  lookbackDays = lookbackDays || 60;
+  var t0 = Date.now();
+  await authenticateGEE();
+
+  var region = REGIONS[regionCode];
+  if (!region) throw new Error('Unknown region: ' + regionCode);
+  var geometry = ee.Geometry.Rectangle(region.bbox);
+
+  var endDate = new Date();
+  var startDate = new Date();
+  startDate.setDate(startDate.getDate() - lookbackDays);
+
+  var collection = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+    .filterBounds(geometry)
     .filterDate(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
-    .filter(ee.Filter.lt('CLOUD_COVER', 20))
-    .sort('system:time_start', false);  // 최신순
-  
-  return new Promise((resolve, reject) => {
-    landsat.getInfo((error, collection) => {
-      if (error) return reject(error);
-      
-      const features = collection.features;
-      if (features.length === 0) {
-        return resolve({ status: 'NO_DATA', error: 'No Landsat data available' });
-      }
-      
-      // 최신 2개 이미지 처리
-      const results = [];
-      for (let i = 0; i < Math.min(2, features.length); i++) {
-        const image = ee.Image(features[i].id);
-        
-        // 열밴드 (ST_B10) 추출 및 켈빈→섭씨 변환
-        const thermal = image.select('ST_B10').multiply(0.00341802).add(149.0).subtract(273.15);
-        
-        thermal.reduceRegion({
-          reducer: ee.Reducer.mean(),
-          geometry: seoul,
-          scale: 100,  // 100m 해상도
-          maxPixels: 1e9
-        }).getInfo((err, stats) => {
-          if (err) return;
-          
-          const temp = stats.ST_B10;
-          if (temp !== null && temp !== undefined) {
-            const date = new Date(features[i].properties['system:time_start']);
-            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-            
-            results.push({
-              date: dateStr,
-              value: Math.round(temp * 10) / 10  // 소수점 1자리
-            });
-          }
-          
-          // 2개 완료되면 결과 반환
-          if (results.length === 2 || i === features.length - 1) {
-            results.sort((a, b) => b.date.localeCompare(a.date));  // 최신순 정렬
-            
-            resolve({
-              gaugeId: 'R6',
-              source: 'GEE_LANDSAT',
-              name: '도시열섬(서울)',
-              unit: '°C',
-              value: results[0].value,
-              prevValue: results[1] ? results[1].value : null,
-              date: results[0].date,
-              status: 'OK',
-              rows: results.length
-            });
-          }
+    .filter(ee.Filter.lt('CLOUD_COVER', 10))
+    .sort('system:time_start', false);
+
+  return new Promise(function(resolve) {
+    collection.first().reduceRegion({
+      reducer: ee.Reducer.mean(), geometry: geometry, scale: 100, maxPixels: 1e9
+    }).evaluate(function(err, stats) {
+      if (err || !stats || !stats.ST_B10) {
+        return resolve({
+          gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬',
+          status: 'NO_DATA', error: (err && err.message) || 'No clear Landsat data',
+          duration_ms: Date.now() - t0
         });
       }
+      var tempC = Math.round((stats.ST_B10 * 0.00341802 + 149.0 - 273.15) * 10) / 10;
+      resolve({
+        gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬', unit: '°C',
+        value: tempC, prevValue: null, date: new Date().toISOString().slice(0, 10),
+        region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
+        source_meta: { dataset: 'LANDSAT/LC09/C02/T1_L2', cloud_filter: 10, scale: 100 }
+      });
     });
   });
 }
 
-/**
- * 전체 위성 데이터 수집
- * 
- * @returns {Promise<Object>} - {S2, R6, ...}
- */
-async function fetchAllSatellite() {
-  const results = {};
-  
-  try {
-    results.S2 = await fetchS2Nightlight();
-  } catch (err) {
-    results.S2 = { gaugeId: 'S2', status: 'ERROR', error: err.message };
+// ═══ 4. 전체 위성 수집 (순차) ═══
+var SENSOR_CONFIG = {
+  S2: { fn: fetchVIIRS, minIntervalDays: 1 },
+  R6: { fn: fetchLandsat, minIntervalDays: 7 },
+};
+
+async function fetchAllSatellite(regionCode, lastSuccessMap) {
+  regionCode = regionCode || 'KR';
+  lastSuccessMap = lastSuccessMap || {};
+  var runStart = Date.now();
+  var results = {};
+  var failures = [];
+  var now = Date.now();
+
+  for (var _entry of Object.entries(SENSOR_CONFIG)) {
+    var gaugeId = _entry[0], config = _entry[1];
+    var lastSuccess = lastSuccessMap[gaugeId];
+    if (lastSuccess) {
+      var daysSince = (now - new Date(lastSuccess).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < config.minIntervalDays) {
+        results[gaugeId] = { gaugeId: gaugeId, status: 'SKIP', reason: 'Last success ' + Math.round(daysSince * 10) / 10 + 'd ago' };
+        continue;
+      }
+    }
+    try {
+      results[gaugeId] = await config.fn(regionCode);
+    } catch (err) {
+      results[gaugeId] = { gaugeId: gaugeId, status: 'ERROR', error: err.message };
+      failures.push({ gaugeId: gaugeId, error: err.message });
+    }
   }
-  
-  try {
-    results.R6 = await fetchR6HeatIsland();
-  } catch (err) {
-    results.R6 = { gaugeId: 'R6', status: 'ERROR', error: err.message };
-  }
-  
-  return results;
+
+  return {
+    results: results,
+    meta: {
+      run_id: 'sat_' + runStart,
+      asof_kst: new Date(now + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 19) + ' KST',
+      duration_ms: Date.now() - runStart,
+      region: regionCode,
+      collected: Object.values(results).filter(function(r) { return r.status === 'OK'; }).length,
+      skipped: Object.values(results).filter(function(r) { return r.status === 'SKIP'; }).length,
+      failed: failures.length,
+      failures: failures,
+    }
+  };
 }
 
-// 테스트 실행
 if (require.main === module) {
-  console.log('=== DIAH-7M 위성 데이터 테스트 ===\n');
-  
-  fetchS2Nightlight().then(result => {
-    console.log('S2 야간광량:', JSON.stringify(result, null, 2));
-    process.exit(0);
-  }).catch(err => {
-    console.error('❌ 오류:', err);
-    process.exit(1);
-  });
+  console.log('=== DIAH-7M Satellite Test ===\n');
+  fetchAllSatellite('KR').then(function(r) { console.log(JSON.stringify(r, null, 2)); process.exit(0); })
+    .catch(function(e) { console.error('Error:', e); process.exit(1); });
 }
 
 module.exports = {
-  initializeGEE,
-  fetchS2Nightlight,
-  fetchR6HeatIsland,
-  fetchAllSatellite
+  authenticateGEE: authenticateGEE,
+  fetchVIIRS: fetchVIIRS,
+  fetchLandsat: fetchLandsat,
+  fetchAllSatellite: fetchAllSatellite,
+  REGIONS: REGIONS,
+  SENSOR_CONFIG: SENSOR_CONFIG,
 };

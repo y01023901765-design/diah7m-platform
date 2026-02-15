@@ -43,25 +43,35 @@ router.post('/collect', async (req, res) => {
 
   // 비동기 수집 (응답 후 백그라운드 실행)
   try {
-    const asof = new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 19) + ' KST';
+    const { fetchAllSatellite } = require('../lib/fetch-satellite');
+    const lastSuccessMap = {};
+    if (satSnapshot.S2?.date) lastSuccessMap.S2 = satSnapshot.S2.date;
+    if (satSnapshot.R6?.date) lastSuccessMap.R6 = satSnapshot.R6.date;
+
+    const { results, meta } = await fetchAllSatellite('KR', lastSuccessMap);
     
-    // TODO: 실제 GEE 수집 로직 (Phase A-2에서 구현)
-    // const s2 = await fetchVIIRS();
-    // const r5 = await fetchSentinel1();
-    // const r6 = await fetchLandsat9();
-    
+    // 성공한 결과만 스냅샷에 저장
+    for (const [id, data] of Object.entries(results)) {
+      if (data.status === 'OK') satSnapshot[id] = data;
+    }
+
     satSnapshot.meta = {
-      last_collect_asof: asof,
-      last_success_asof: asof,
-      last_run_id: jobId,
-      status: 'COLLECTED',
+      last_collect_asof: meta.asof_kst,
+      last_success_asof: meta.collected > 0 ? meta.asof_kst : satSnapshot.meta.last_success_asof,
+      last_run_id: meta.run_id,
+      status: meta.collected > 0 ? 'COLLECTED' : (meta.failed > 0 ? 'PARTIAL' : 'NO_CHANGE'),
+      duration_ms: meta.duration_ms,
+      collected: meta.collected,
+      skipped: meta.skipped,
+      failed: meta.failed,
+      failures: meta.failures,
     };
 
-    console.log(`[Satellite] Collection ${jobId} completed at ${asof}`);
+    console.log(`[Satellite] ${jobId}: ${meta.collected} collected, ${meta.skipped} skipped, ${meta.failed} failed (${meta.duration_ms}ms)`);
   } catch (e) {
     satSnapshot.meta.status = 'FAILED';
     satSnapshot.meta.last_collect_asof = new Date().toISOString();
-    console.error(`[Satellite] Collection ${jobId} failed:`, e.message);
+    console.error(`[Satellite] ${jobId} failed:`, e.message);
   }
 });
 
