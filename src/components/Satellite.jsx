@@ -5,7 +5,7 @@ import { SAT_META, isSat, SAT_XREF, TP, LEAD, EV_STYLE } from './TierLock';
 
 function SatBadge({code}){
   const s=SAT_META[code]; if(!s) return null;
-  return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,background:LT.bg2,color:LT.textMid,fontSize:14,fontWeight:600,border:`1px solid ${LT.border}`}}>{s.icon} {s.sat}</span>;
+  return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,background:LT.bg2,color:LT.textMid,fontSize:15,fontWeight:600,border:`1px solid ${LT.border}`}}>{s.icon} {s.sat}</span>;
 }
 
 function SatXrefBanner({code,lang}){
@@ -18,7 +18,7 @@ function SatXrefBanner({code,lang}){
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
         <span style={{fontSize:16}}>🛰️</span>
         <span style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('satEarlyDetect',L)}</span>
-        <span style={{fontSize:14,fontWeight:600,padding:"3px 8px",borderRadius:6,background:LT.bg3,color:LT.textMid,marginLeft:"auto",border:`1px solid ${LT.border}`}}>{ld.emoji} {tp.rng} {t('satStatBefore',L)}</span>
+        <span style={{fontSize:15,fontWeight:600,padding:"3px 8px",borderRadius:6,background:LT.bg3,color:LT.textMid,marginLeft:"auto",border:`1px solid ${LT.border}`}}>{ld.emoji} {tp.rng} {t('satStatBefore',L)}</span>
       </div>
       <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7,marginBottom:12,padding:"10px 14px",background:LT.surface,borderRadius:6,borderLeft:`3px solid ${LT.border}`}}>{tp.lk}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -34,8 +34,8 @@ function SatXrefBanner({code,lang}){
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,padding:"6px 12px",background:LT.surface,borderRadius:6,border:`1px solid ${LT.border}`}}>
-        <span style={{fontSize:14,fontWeight:700,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textMid,border:`1px solid ${LT.border}`}}>{t('satEvidence',L)} {evs.label}</span>
-        <span style={{fontSize:14,color:LT.textDim}}>{evs.desc}</span>
+        <span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textMid,border:`1px solid ${LT.border}`}}>{t('satEvidence',L)} {evs.label}</span>
+        <span style={{fontSize:15,color:LT.textDim}}>{evs.desc}</span>
       </div>
     </div>
   );
@@ -56,14 +56,14 @@ function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,color})
     {[{lb:bf.date,val:bf.val,ds:"30일 전",isCurrent:false},
       {lb:af.date,val:af.val,ds:"최신",isCurrent:true}].map((s,i)=>(
       <div key={i} style={{flex:1}}>
-        <div style={{fontSize:14,color:s.isCurrent?LT.text:LT.textDim,marginBottom:4,textAlign:"center",fontWeight:s.isCurrent?700:400}}>{s.isCurrent?"최신 촬영분":"30일 전 수집"} · {s.lb}</div>
+        <div style={{fontSize:15,color:s.isCurrent?LT.text:LT.textDim,marginBottom:4,textAlign:"center",fontWeight:s.isCurrent?700:400}}>{s.isCurrent?"최신 촬영분":"30일 전 수집"} · {s.lb}</div>
         <div style={{width:"100%",aspectRatio:"1.6",borderRadius:8,border:`1px solid ${s.isCurrent?LT.text+'20':LT.border}`,overflow:"hidden",position:"relative",background:LT.bg2}}>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
             <div style={{fontSize:28,marginBottom:4}}>🛰️</div>
-            <div style={{fontSize:14,color:LT.textDim,textAlign:"center",padding:"0 10px",lineHeight:1.4}}>{sensor}<br/>{product}</div>
+            <div style={{fontSize:15,color:LT.textDim,textAlign:"center",padding:"0 10px",lineHeight:1.4}}>{sensor}<br/>{product}</div>
           </div>
           <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 8px",background:LT.bg3,borderTop:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:14,color:LT.textDim}}>{coord} · {radius}</div>
+            <div style={{fontSize:15,color:LT.textDim}}>{coord} · {radius}</div>
           </div>
         </div>
         <div style={{textAlign:"center",marginTop:8}}>
@@ -78,13 +78,13 @@ function EvPkg({ev}){
   return(<div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:LT.surface,border:`1px solid ${LT.border}`}}>
     <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:6}}>📎 증거 패키지</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-      <div style={{fontSize:14,color:LT.textMid,fontFamily:"monospace",lineHeight:1.7}}>출처: {ev.source}<br/>센서: {ev.sensor}<br/>제품: {ev.product}<br/>해상도: {ev.resolution}</div>
-      <div style={{fontSize:14,color:LT.textMid,fontFamily:"monospace",lineHeight:1.7}}>처리: {ev.process}<br/>크롭: {ev.crop}<br/>해시: {ev.hash}<br/>결측: {ev.missing}</div>
+      <div style={{fontSize:15,color:LT.textMid,fontFamily:"monospace",lineHeight:1.7}}>출처: {ev.source}<br/>센서: {ev.sensor}<br/>제품: {ev.product}<br/>해상도: {ev.resolution}</div>
+      <div style={{fontSize:15,color:LT.textMid,fontFamily:"monospace",lineHeight:1.7}}>처리: {ev.process}<br/>크롭: {ev.crop}<br/>해시: {ev.hash}<br/>결측: {ev.missing}</div>
     </div>
     <div style={{display:"flex",gap:6,marginTop:8}}>
       {ev.qg.map((g,i)=>(<div key={i} style={{flex:1,textAlign:"center",padding:"4px 0",borderRadius:4,
         background:LT.bg2,border:`1px solid ${LT.border}`}}>
-        <span style={{fontSize:14,fontFamily:"monospace",color:g.ok?LT.good:LT.danger,fontWeight:600}}>{g.ok?"✓":"✗"} {g.l}</span>
+        <span style={{fontSize:15,fontFamily:"monospace",color:g.ok?LT.good:LT.danger,fontWeight:600}}>{g.ok?"✓":"✗"} {g.l}</span>
       </div>))}
     </div>
   </div>);
@@ -95,9 +95,9 @@ function BtPanel({entries}){
     {entries.map((b,i)=>(<div key={i} style={{padding:10,borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`,marginBottom:i<entries.length-1?6:0}}>
       <div style={{fontSize:15,color:LT.text,fontWeight:700,marginBottom:6}}>{b.signal}</div>
       <div style={{display:"flex",gap:16}}>
-        <div><div style={{fontSize:14,color:LT.textDim}}>표본</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>N={b.n}</div></div>
-        <div><div style={{fontSize:14,color:LT.textDim}}>적중</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>{b.hit}/{b.n} ({Math.round(b.hit/b.n*100)}%)</div></div>
-        <div><div style={{fontSize:14,color:LT.textDim}}>리드타임</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>{b.median}</div><div style={{fontSize:14,color:LT.textDim}}>IQR {b.iqr}</div></div>
+        <div><div style={{fontSize:15,color:LT.textDim}}>표본</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>N={b.n}</div></div>
+        <div><div style={{fontSize:15,color:LT.textDim}}>적중</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>{b.hit}/{b.n} ({Math.round(b.hit/b.n*100)}%)</div></div>
+        <div><div style={{fontSize:15,color:LT.textDim}}>리드타임</div><div style={{fontSize:15,fontFamily:"monospace",fontWeight:700,color:LT.text}}>{b.median}</div><div style={{fontSize:15,color:LT.textDim}}>IQR {b.iqr}</div></div>
       </div>
     </div>))}
   </div>);
@@ -107,7 +107,7 @@ function LtPanel({layers}){
     <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:8}}>⏱️ 위성→지표 리드타임</div>
     {layers.map((l,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",
       borderBottom:i<layers.length-1?`1px solid ${LT.border}`:"none"}}>
-      <span style={{fontSize:14,width:56,flexShrink:0,fontWeight:600}}>{l.icon} {l.layer}</span>
+      <span style={{fontSize:15,width:56,flexShrink:0,fontWeight:600}}>{l.icon} {l.layer}</span>
       <div style={{flex:1}}><div style={{position:"relative",height:8,background:LT.bg3,borderRadius:4}}>
         <div style={{position:"absolute",height:"100%",left:`${(parseInt(l.iqr)/100)*100}%`,
           width:`${((parseInt(l.iqr.split("~")[1])-parseInt(l.iqr))/100)*100}%`,background:LT.border,borderRadius:3}}/>
@@ -116,7 +116,7 @@ function LtPanel({layers}){
       </div></div>
       <div style={{textAlign:"right",flexShrink:0}}>
         <div style={{fontSize:15,fontFamily:"monospace",color:LT.text,fontWeight:700}}>중앙 {l.median}</div>
-        <div style={{fontSize:14,color:LT.textDim,fontFamily:"monospace"}}>N={l.n}</div>
+        <div style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}>N={l.n}</div>
       </div>
     </div>))}
   </div>);
@@ -133,12 +133,12 @@ function SatEvidencePanel({data:d}){
       </div>
       <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto"}}>
         {d.layers.map((l,i)=>(<button key={i} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${i===0?LT.text:LT.border}`,
-          background:i===0?LT.bg3:'transparent',color:i===0?LT.text:LT.textDim,fontSize:14,
+          background:i===0?LT.bg3:'transparent',color:i===0?LT.text:LT.textDim,fontSize:15,
           fontFamily:"monospace",cursor:"pointer",whiteSpace:"nowrap",fontWeight:i===0?700:400}}>{l}</button>))}
       </div>
       <SatCompare before={d.before} after={d.after} sensor={d.sensor} product={d.product} coord={d.coord} radius={d.radius} unit={d.unit} color={d.color}/>
       {d.coverage&&<div style={{marginTop:8,padding:"6px 10px",borderRadius:4,background:LT.surface,border:`1px solid ${LT.border}`}}>
-        <span style={{fontSize:14,color:LT.textMid,fontFamily:"monospace"}}>⚠ 커버리지: {d.coverage}</span>
+        <span style={{fontSize:15,color:LT.textMid,fontFamily:"monospace"}}>⚠ 커버리지: {d.coverage}</span>
       </div>}
       <EvPkg ev={d.ev}/>
     </div>
@@ -177,8 +177,8 @@ function SatEvidencePanel({data:d}){
       </div>
     </div>
     <div style={{padding:"8px 12px",borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`,marginTop:10}}>
-      <div style={{fontSize:14,color:LT.danger,fontWeight:700}}>⚠ 관측 전용 · 예측 금지</div>
-      <div style={{fontSize:14,color:LT.textDim,lineHeight:1.5,marginTop:2}}>물리적 관측 사실만 표시. 전망·추천 표현은 시스템 레벨에서 차단됩니다.</div>
+      <div style={{fontSize:15,color:LT.danger,fontWeight:700}}>⚠ 관측 전용 · 예측 금지</div>
+      <div style={{fontSize:15,color:LT.textDim,lineHeight:1.5,marginTop:2}}>물리적 관측 사실만 표시. 전망·추천 표현은 시스템 레벨에서 차단됩니다.</div>
     </div>
   </div>);
 }
