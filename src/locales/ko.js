@@ -288,6 +288,18 @@ export default
   stockSearch:'🔍 종목명·티커·섹터 검색',stockCol:'종목',stockColSat:'위성',stockColPrice:'가격',stockColChg:'등락',
   stockFacLabel:'시설',stockMore:'종목 더보기',stockMoreDesc:'플랜에서 전체 종목 감시',
   stockYT:'연동 콘텐츠',stockYTDesc:'첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 시그널은 구독자 전용.',
+  stockHero:'증권사는 실적 발표를 기다립니다. DIAH-7M은 공장 불빛을 먼저 봅니다.',
+  stockKpi1:'위성 감시 시설',stockKpi2:'이상 감지',stockKpi3:'평균 선행일',
+  svFacTitle:'시설별 위성 현황',svFacName:'시설',svTherm:'열적외선',svStatus:'상태',
+  svStat_normal:'정상',svStat_warning:'감산 의심',svStat_collecting:'수집중',svStat_construction:'건설중',svNoData:'시설 데이터 준비 중',
+  svTrustTitle:'위성 → 실적 연결',svPast:'과거 검증',svNow:'현재 추적',
+  svPastEx:'23년 Q3 기가텍사스 야간광 ▲20% → 4주 후 생산량 +18% 발표',
+  svNowEx:'기가상하이 야간광 ▼15% 감지 중 → 다음 실적 발표 주의',
+  svSignalTitle:'투자 행동 시그널',svSigTotal:'전체',svSigNormal:'정상 가동',svSigWarn:'감산 의심',
+  svVerdict:'종합 판단',svVerdictOk:'전 시설 정상 가동. 관찰 유지.',svVerdictWarn:'감산 의심 시설 발견. 추이 확인 필요.',
+  svEdgeTitle:'DIAH-7M만의 시야',
+  svEdge1:'증권사: 실적 발표 후 리포트',svEdge2:'뉴스: 내부자 소스 의존',svEdge3:'DIAH-7M: 실적 발표 전 공장 가동 직접 관측',
+  svDisclaimer:'관측 전용 · 예측 금지',svDisclaimerDesc:'물리적 관측 사실만 표시. 투자 조언이 아닙니다.',
   cnt_KOR:'대한민국',cnt_USA:'미국',cnt_JPN:'일본',cnt_DEU:'독일',cnt_GBR:'영국',cnt_FRA:'프랑스',cnt_CAN:'캐나다',cnt_AUS:'호주',cnt_ITA:'이탈리아',cnt_ESP:'스페인',cnt_NLD:'네덜란드',cnt_CHE:'스위스',cnt_SWE:'스웨덴',cnt_NOR:'노르웨이',cnt_DNK:'덴마크',cnt_FIN:'핀란드',cnt_AUT:'오스트리아',cnt_BEL:'벨기에',cnt_IRL:'아일랜드',cnt_PRT:'포르투갈',cnt_GRC:'그리스',cnt_CZE:'체코',cnt_POL:'폴란드',cnt_HUN:'헝가리',cnt_SVK:'슬로바키아',cnt_SVN:'슬로베니아',cnt_EST:'에스토니아',cnt_LVA:'라트비아',cnt_LTU:'리투아니아',cnt_ISL:'아이슬란드',cnt_LUX:'룩셈부르크',cnt_NZL:'뉴질랜드',cnt_ISR:'이스라엘',cnt_TUR:'튀르키예',cnt_MEX:'멕시코',cnt_CHL:'칠레',cnt_COL:'콜롬비아',cnt_CRI:'코스타리카',cnt_SGP:'싱가포르',cnt_HKG:'홍콩',cnt_TWN:'대만',cnt_IND:'인도',cnt_CHN:'중국',
 };
 // 위 닫는 }; 앞에 추가해야 하므로 sed 사용
