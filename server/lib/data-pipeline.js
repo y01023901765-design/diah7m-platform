@@ -483,6 +483,7 @@ async function fetchGauge(gaugeId, ecosKey, kosisKey) {
 // 전체 수집 (59개)
 // ═══════════════════════════════════════════════════════════════
 async function fetchAll(ecosKey, kosisKey) {
+  const _fetchStart = Date.now();
   if (!process.env.FRED_API_KEY) console.warn('  ⚠️  FRED_API_KEY 미설정 — S5(EPU), O2(PMI) 수집 불가');
   if (!process.env.WAQI_TOKEN) console.warn('  ⚠️  WAQI_TOKEN 미설정 — G6는 demo 토큰으로 동작 (제한적)');
 
@@ -559,12 +560,17 @@ async function fetchAll(ecosKey, kosisKey) {
 
   // ── 관측성: failed ID 목록 ──
   const failed = failures.map(f => f.gaugeId);
+  const okCount = allResults.filter(r => r.status === 'OK').length;
+  const naCount = allResults.length - okCount;
 
   const stats = {
     run_id: `run_${Date.now()}`,
     asof_kst: new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 19) + ' KST',
+    duration_ms: Date.now() - _fetchStart,
     total: gaugeIds.length,
-    ok: allResults.filter(r => r.status === 'OK').length,
+    ok: okCount,
+    na_count: naCount,
+    missing_rate: +(naCount / gaugeIds.length).toFixed(3),
     pending: allResults.filter(r => r.status === 'PENDING').length,
     noData: allResults.filter(r => r.status === 'NO_DATA').length,
     apiError: allResults.filter(r => r.status === 'API_ERROR').length,

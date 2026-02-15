@@ -255,6 +255,19 @@ if (globalPipeline && globalPipeline.createGlobalRouter) {
   console.log('  ✅ Global router mounted (43 countries)');
 }
 
+// ═══ 8.5. 위성 라우트 (수집/조회 분리) ═══
+try {
+  const satRouter = require('./routes/satellite');
+  const adminAuth = auth?.authMiddleware && auth?.adminMiddleware
+    ? [auth.authMiddleware, auth.adminMiddleware]
+    : [(req, res) => res.status(401).json({ error: 'Auth required' })];
+  app.use('/api/admin/satellite', ...adminAuth, satRouter);
+  app.use('/api/v1/satellite', satRouter);
+  console.log('  ✅ Satellite routes mounted (collect + latest)');
+} catch (e) {
+  console.warn('  ⚠️ Satellite routes failed:', e.message);
+}
+
 // ═══ 9. SPA Fallback ═══
 if (fs.existsSync(distPath)) {
   app.get('*', (req, res) => {

@@ -232,6 +232,8 @@ function generateReport(gaugeData, options = {}) {
     }
     const avg = cnt > 0 ? sum / cnt : 2;
     const level = avg <= 1.5 ? 1 : avg <= 2.0 ? 2 : avg <= 2.5 ? 3 : avg <= 3.0 ? 4 : 5;
+    const coverage = sys.keys.length > 0 ? +(cnt / sys.keys.length).toFixed(2) : 0;
+    const coverage_flag = coverage >= 0.95 ? 'OK' : coverage >= 0.85 ? 'WARN' : 'DANGER';
     systems.push({
       system_id: sysKey,
       system_name: sys.name,
@@ -241,6 +243,9 @@ function generateReport(gaugeData, options = {}) {
       level,
       status: STATUS_MAP[level],
       gauge_count: cnt,
+      gauge_total: sys.keys.length,
+      coverage,
+      coverage_flag,
       tier_min: 'FREE',
     });
     totalScore += sum;
