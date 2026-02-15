@@ -34,7 +34,7 @@ secrets/
 
 # Server
 server/node_modules/
-server/data/
+# server/data/ — tracked (stock-profiles, catalog, recipe)
 server/.env
 
 # Cowork generated files

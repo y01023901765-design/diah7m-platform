@@ -1,0 +1,68 @@
+{
+  "$schema": "DIAH-7M Product Recipe v1.0",
+  "recipes": {
+    "NATIONAL_REPORT": {
+      "level": "L4",
+      "base": ["header", "systems_9axis", "gauges_59", "summary"],
+      "options": {
+        "action_signals": { "tier_min": "standard", "description": "투자 행동 시그널 (관찰 언어)" },
+        "system_efficiency": { "tier_min": "standard", "description": "체계 효율 분석" },
+        "blind_spots": { "tier_min": "standard", "description": "사각지대 탐지" },
+        "satellite_summary": { "tier_min": "standard", "description": "위성 검증 요약" },
+        "satellite_full": { "tier_min": "professional", "description": "위성 전체 데이터 + 영상" },
+        "global_context": { "tier_min": "professional", "description": "글로벌 맥락 비교" },
+        "causal_analysis": { "tier_min": "enterprise", "description": "5단계 인과 분석" }
+      },
+      "add_ons": {
+        "country_comparison": { "price": 4.99, "tier_min": "standard", "description": "2국 비교" },
+        "correlation_map": { "tier_min": "professional", "description": "상관관계 맵" },
+        "seasonal_pattern": { "tier_min": "professional", "description": "계절 패턴 분석" }
+      },
+      "frequencies": ["daily", "weekly", "monthly", "quarterly", "annual"],
+      "channels": ["web", "pdf", "word"]
+    },
+    "STOCK_SURVEILLANCE": {
+      "level": "L2",
+      "base": ["stock_header", "facility_satellite", "delta_flag"],
+      "options": {
+        "facility_detail": { "tier_min": "standard", "description": "공장별 위성 상세" },
+        "stock_signals": { "tier_min": "professional", "description": "주식 행동 시그널" },
+        "delta_4flags": { "tier_min": "professional", "description": "괴리 4플래그 상세" }
+      },
+      "add_ons": {
+        "supply_chain": { "price": 9.99, "tier_min": "professional", "description": "공급망 추적" },
+        "earnings_preview": { "price": 14.99, "tier_min": "professional", "description": "실적 전 위성 프리뷰" },
+        "competitor_compare": { "price": 4.99, "tier_min": "standard", "description": "경쟁사 비교" },
+        "production_trend": { "price": 4.99, "tier_min": "standard", "description": "생산 추세선" }
+      },
+      "frequencies": ["weekly", "monthly"],
+      "channels": ["web", "pdf"]
+    },
+    "COMPARISON": {
+      "level": "L4",
+      "base": ["comparison_header", "gauge_side_by_side"],
+      "options": {
+        "difference_analysis": { "tier_min": "standard", "description": "차이 분석" },
+        "satellite_comparison": { "tier_min": "professional", "description": "위성 비교" }
+      },
+      "add_ons": {},
+      "frequencies": ["monthly", "quarterly"],
+      "channels": ["web", "pdf"]
+    },
+    "CUSTOM_ENTERPRISE": {
+      "level": "ALL",
+      "base": ["custom_selection"],
+      "options": "ALL_CATALOG",
+      "add_ons": "ALL_CATALOG",
+      "custom_request": true,
+      "min_price": 500,
+      "frequencies": ["on_demand"],
+      "channels": ["web", "pdf", "word", "api"]
+    }
+  },
+  "compliance": {
+    "language_filter": "observation_only",
+    "blocked_terms": ["전망", "예상", "예측", "목표가", "will be"],
+    "required_disclaimer": "본 보고서는 관측 데이터 기반이며 투자 조언이 아닙니다."
+  }
+}
