@@ -157,7 +157,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   const canvasRef=useRef(null),geoRef=useRef(null),sizeRef=useRef({w:960,h:500}),projRef=useRef(null),hovRef=useRef(null),frameRef=useRef(null),decodedRef=useRef(null);
   useEffect(()=>{hovRef.current=hovered},[hovered]);
   useEffect(()=>{fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json").then(r=>r.json()).then(d=>{geoRef.current=d}).catch(()=>{})},[]);
-  useEffect(()=>{const fn=()=>{const w=window.innerWidth;sizeRef.current={w,h:Math.round(w*0.42)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
+  useEffect(()=>{const fn=()=>{const w=window.innerWidth;const ratio=w<600?0.55:0.42;sizeRef.current={w,h:Math.round(w*ratio)}};fn();window.addEventListener("resize",fn);return()=>window.removeEventListener("resize",fn)},[]);
 
   const decode=useCallback(()=>{
     const geo=geoRef.current;if(!geo||decodedRef.current)return;
@@ -326,9 +326,30 @@ export default function GlobeHero({lang='ko',onNav}){
         <div style={{paddingTop:32}}>
           <WorldMap hovered={hovered} setHovered={setHovered} setClicked={setClicked} setMousePos={setMousePos} lang={L}/>
         </div>
-        <div style={{position:"absolute",bottom:0,left:0,right:0,height:220,background:`linear-gradient(transparent,${T.bg0} 60%)`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:window.innerWidth<600?120:220,background:`linear-gradient(transparent,${T.bg0} 60%)`,pointerEvents:"none"}}/>
 
         {hovered&&(
+          window.innerWidth<600?
+          /* 모바일: 하단 고정 바 */
+          <div style={{
+            position:"absolute",bottom:0,left:0,right:0,
+            background:`${T.surface}f0`,backdropFilter:"blur(12px)",
+            padding:"10px 16px",display:"flex",alignItems:"center",gap:12,zIndex:20,
+            borderTop:`1px solid ${scoreColor(hovered.score)}40`,
+          }}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                <span style={{fontSize:11,padding:"1px 6px",borderRadius:4,background:`${scoreColor(hovered.score)}20`,color:scoreColor(hovered.score),fontWeight:700}}>
+                  {hovered.score>=70?t('gStatGood',L):hovered.score>=55?t('gStatWarn',L):t('gStatAlert',L)}
+                </span>
+                <span style={{fontSize:14,fontWeight:800,color:T.text}}>{cName(hovered)}</span>
+                <span style={{fontSize:11,color:T.textDim}}>{hovered.iso}</span>
+              </div>
+            </div>
+            <span style={{fontSize:22,fontWeight:900,color:scoreColor(hovered.score),fontFamily:"monospace"}}>{hovered.score}</span>
+          </div>
+          :
+          /* PC: 기존 플로팅 카드 */
           <div style={{
             position:"absolute",top:60,
             ...(popL?{left:12}:{right:12}),
@@ -353,16 +374,16 @@ export default function GlobeHero({lang='ko',onNav}){
           </div>
         )}
       
-        <div style={{textAlign:"center",padding:"20px 24px 16px",maxWidth:600,margin:"-40px auto 0",position:"relative",zIndex:5}}>
-        <h1 style={{fontSize:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
+        <div style={{textAlign:"center",padding:window.innerWidth<600?"12px 16px 12px":"20px 24px 16px",maxWidth:600,margin:window.innerWidth<600?"0 auto":"-40px auto 0",position:"relative",zIndex:5}}>
+        <h1 className="hero-title" style={{fontSize:window.innerWidth<600?28:38,fontWeight:900,margin:"0 0 8px",lineHeight:1.15,letterSpacing:-2}}>{t('heroTitle1',L)}<br/>{t('heroTitle2',L)}</h1>
         <p style={{fontSize:13,color:T.textMid,lineHeight:1.7,margin:"0 auto 14px",maxWidth:460}}>
           {t('heroDesc',L)} <strong style={{color:T.accent}}>{t('heroFast',L)}</strong> {t('heroDesc2',L)}<br/>
           {t('gHeroLine',L)}
         </p>
-        <div style={{display:"flex",gap:32,justifyContent:"center",marginBottom:8}}>
+        <div style={{display:"flex",gap:window.innerWidth<600?16:32,justifyContent:"center",marginBottom:8,flexWrap:"wrap"}}>
           {[{n:t('gGauges',L),v:"59"},{n:t('gSystems',L),v:"9"},{n:t('gCost',L),v:"$0"},{n:t('gLangs',L),v:"30"}].map(s=>(
             <div key={s.n}>
-              <div style={{fontSize:22,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div>
+              <div style={{fontSize:window.innerWidth<600?18:22,fontWeight:800,color:T.accent,fontFamily:"monospace"}}>{s.v}</div>
               <div style={{fontSize:12,color:T.textDim,marginTop:2}}>{s.n}</div>
             </div>
           ))}
