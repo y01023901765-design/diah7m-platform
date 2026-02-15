@@ -187,7 +187,17 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
     setHovered(found);canvasRef.current.style.cursor=found?"pointer":"default";
   };
 
-  return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",margin:"0 auto"}}/>;
+  return <canvas ref={canvasRef}
+    onMouseMove={handleMouse}
+    onMouseLeave={()=>setHovered(null)}
+    onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}}
+    onTouchStart={e=>{
+      const touch=e.touches[0];if(!touch)return;
+      // 터치 시 hover 감지 + 즉시 클릭
+      handleMouse({clientX:touch.clientX,clientY:touch.clientY});
+      setTimeout(()=>{if(hovRef.current)setClicked(hovRef.current)},50);
+    }}
+    style={{display:"block",width:"100%",margin:"0 auto"}}/>;
 }
 
 export default function GlobeHero({lang='ko',onNav}){
@@ -260,12 +270,13 @@ export default function GlobeHero({lang='ko',onNav}){
 
         {hovered&&(
           window.innerWidth<600?
-          /* 모바일: 하단 고정 바 */
-          <div style={{
+          /* 모바일: 하단 고정 바 — 클릭 시 팝업 */
+          <div onClick={()=>setClicked(hovered)} style={{
             position:"absolute",bottom:0,left:0,right:0,
             background:`${T.surface}f0`,backdropFilter:"blur(12px)",
             padding:"10px 16px",display:"flex",alignItems:"center",gap:12,zIndex:20,
             borderTop:`1px solid ${scoreColor(hovered.score)}40`,
+            cursor:"pointer",
           }}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
