@@ -1,0 +1,21 @@
+{
+  "name": "DIAH-7M | Satellite Economic Diagnosis",
+  "short_name": "DIAH-7M",
+  "description": "위성이 먼저 봅니다. 59개 경제 지표 × 위성 교차검증 = 2~4주 선행 경보",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04060e",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"],
+  "lang": "ko",
+  "dir": "ltr"
+}

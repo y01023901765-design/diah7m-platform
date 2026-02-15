@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+
+Sitemap: https://diah7m-platform.vercel.app/sitemap.xml

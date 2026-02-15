@@ -11,7 +11,7 @@ function GlobalNav({page,user,onNav,onLogout,lang,setLang}){
     {id:'mypage',label:`👤 ${t('mypage',L)}`,badge:0},
     ...(user.email==='admin@diah7m.com'?[{id:'admin',label:`⚙️ ${t('admin',L)}`,badge:0}]:[]),
   ]:[];
-  return(<nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:`1px solid ${LT.border}`,background:`${LT.bg0}e0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:200,direction:"ltr"}}>
+  return(<nav aria-label="Main navigation" role="navigation" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:`1px solid ${LT.border}`,background:`${LT.bg0}e0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:200,direction:"ltr"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       <div onClick={()=>onNav(user?'dashboard':'landing')} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><span style={{fontSize:16}}>🛰️</span><span style={{fontSize:14,fontWeight:800,color:LT.text}}>DIAH-7M</span></div>
       {user&&<span style={{fontSize:14,padding:"2px 8px",borderRadius:6,background:'#F0F0F0',color:LT.textMid,fontWeight:600}}>2026.01</span>}

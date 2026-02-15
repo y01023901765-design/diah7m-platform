@@ -2,15 +2,41 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>DIAH-7M | Satellite Economic Diagnosis</title>
     <meta name="description" content="위성이 먼저 봅니다. 59개 경제 지표 × 위성 교차검증 = 2~4주 선행 경보" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#00d4ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- OG / Social -->
+    <meta property="og:title" content="DIAH-7M | Satellite Economic Diagnosis" />
+    <meta property="og:description" content="위성이 먼저 봅니다. 59개 경제 지표 × 위성 교차검증 = 2~4주 선행 경보" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://diah7m-platform.vercel.app" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DIAH-7M" />
+    <meta name="twitter:description" content="Satellite-powered economic diagnostics platform" />
+    <!-- Fonts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Noto+Sans+KR:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+    <!-- Loading screen (before React hydrates) -->
+    <style>
+      #diah-loader{position:fixed;inset:0;background:#04060e;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;transition:opacity .4s}
+      #diah-loader.hide{opacity:0;pointer-events:none}
+      #diah-loader span{font-size:32px;animation:pulse 1.5s ease infinite}
+      #diah-loader p{color:#8b95a8;font-size:14px;margin-top:12px;font-family:'Pretendard',sans-serif}
+      @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    </style>
   </head>
   <body>
+    <div id="diah-loader"><span>🛰️</span><p>DIAH-7M Loading...</p></div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>window.addEventListener('load',()=>{setTimeout(()=>{const l=document.getElementById('diah-loader');if(l)l.classList.add('hide');setTimeout(()=>{if(l)l.remove()},500)},300)})</script>
   </body>
 </html>

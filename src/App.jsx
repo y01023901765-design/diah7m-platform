@@ -85,17 +85,18 @@ export default function App(){
 
   return(
     <div dir={isRTL?'rtl':'ltr'} style={{minHeight:"100vh",background:isDark?`linear-gradient(180deg,${T.bg0},${T.bg1})`:LT.bg0,fontFamily:lang==='ar'?"'Noto Sans Arabic','Pretendard',sans-serif":lang==='ja'?"'Noto Sans JP','Pretendard',sans-serif":lang==='zh'?"'Noto Sans SC','Pretendard',sans-serif":"'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif",color:TH.text}}>
+      <a href="#main-content" style={{position:"absolute",top:-40,left:0,background:TH.accent,color:TH.bg0,padding:"8px 16px",zIndex:1000,fontSize:14,fontWeight:700,transition:"top .2s"}} onFocus={e=>e.target.style.top='0'} onBlur={e=>e.target.style.top='-40px'}>Skip to content</a>
       <style>{RESPONSIVE_CSS(isDark)}</style>
       {page==='landing'?<LandingPage onNavigate={nav} lang={lang} setLang={setLang}/>:<>
         {page!=='login'&&page!=='signup'&&<GlobalNav page={page} user={user} onNav={nav} onLogout={handleLogout} lang={lang} setLang={setLang}/>}
-        <div style={{animation:"fadeIn 0.3s ease"}}>
+        <main id="main-content" role="main" style={{animation:"fadeIn 0.3s ease"}}>
           {(page==='login'||page==='signup')&&<AuthPage mode={page} onNavigate={nav} onLogin={handleLogin} lang={lang}/>}
           {page==='dashboard'&&user&&<DashboardPage user={user} onNav={nav} lang={lang} country={selectedCountry}/>}
           {page==='stock'&&user&&<StockPage user={user} lang={lang}/>}
           {page==='mypage'&&user&&<MyPage user={user} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
           {!['landing','login','signup','dashboard','stock','mypage','admin'].includes(page)&&<NotFound onNav={nav} lang={lang} isDark={isDark}/>}
-        </div>
+        </main>
         {page!=='login'&&page!=='signup'&&<footer style={{borderTop:`1px solid ${TH.border}`,marginTop:40,padding:"24px 16px 16px"}}>
           <div style={{maxWidth:780,margin:"0 auto"}}>
             <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:16}}>
