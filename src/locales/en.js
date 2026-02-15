@@ -283,7 +283,7 @@ export default {
   gStatGood:'Good',gStatWarn:'Caution',gStatAlert:'Alert',
   gGauges:'Economic Gauges',gSystems:'Body Systems',gCost:'Satellite Cost',gLangs:'Languages',
   gClickHint:'🛰️ Click a country to view its economic diagnostic report',
-  gTooltipClick:'Click → Diagnostic Report',gOpenReport:'Open Diagnostic Report',
+  gTooltipClick:'Click → Diagnostic Report',gOpenReport:'Open Diagnostic Report',backToKR:'Back to Korea',
   gHeroLine:'59 Economic Gauges · 9 Body Systems · 🛰️ Satellite',
   stockNav:'Stock',stockTitle:'Stock Satellite Monitor',stockPhase:'Phase 2',
   stockStocks:'stocks',stockFac:'facilities',stockCountries:'countries',stockDelayed:'15min delayed',

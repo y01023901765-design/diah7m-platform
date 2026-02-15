@@ -141,6 +141,27 @@ export async function dataMapping() {
   return api('/api/v1/data/mapping');
 }
 
+// ── Global (43국) ──
+export async function globalCountries() {
+  return api('/api/v1/global/countries');
+}
+
+export async function globalCountry(iso3) {
+  return api(`/api/v1/global/country/${iso3}`);
+}
+
+export async function globalOverview() {
+  return api('/api/v1/global/overview');
+}
+
+export async function globalCompare(iso3list) {
+  return api(`/api/v1/global/compare/${iso3list}`);
+}
+
+export async function globalCommodities() {
+  return api('/api/v1/global/commodities');
+}
+
 // ── Connection state ──
 export function isAuthenticated() {
   return !!getToken();

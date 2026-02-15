@@ -28,7 +28,7 @@ function mergeGaugeData(demoD, liveResults) {
   return merged;
 }
 
-function DashboardPage({user,onNav,lang}){
+function DashboardPage({user,onNav,lang,country}){
   const L=lang||'ko';
   const [expanded,setExpanded]=useState({});
   const [tab,setTab]=useState('overview');
@@ -36,46 +36,48 @@ function DashboardPage({user,onNav,lang}){
   const [apiStatus,setApiStatus]=useState('checking'); // checking|live|demo
   const [liveData,setLiveData]=useState(null); // API에서 가져온 실데이터
   const [dataInfo,setDataInfo]=useState(null); // 수집 현황 정보
+  const [countryInfo,setCountryInfo]=useState(null); // 글로벌 국가 데이터
   const toggle=k=>setExpanded(p=>({...p,[k]:!p[k]}));
 
-  // 1단계: API 연결 확인 → 2단계: 데이터 상태 확인 → 3단계: 실데이터 fetch
+  // 국가코드 (null이면 한국)
+  const iso3 = country || 'KOR';
+  const isKorea = iso3 === 'KOR';
+
+  // 1단계: API 연결 확인 → 2단계: 데이터 fetch
   useEffect(()=>{
     let cancelled = false;
     (async()=>{
       try {
-        // 1. 서버 살아있는지
         await API.healthCheck();
         if (cancelled) return;
 
-        // 2. 수집 상태 확인 (인증 불필요)
-        const status = await API.dataStatus();
-        if (cancelled) return;
-        setDataInfo(status);
-
-        if (status.available && status.lastUpdated) {
-          // 3. 실데이터 가져오기
-          try {
-            const latest = await API.dataLatest();
-            if (cancelled) return;
-            if (latest?.data) {
-              setLiveData(latest.data);
-              setApiStatus('live');
-              return;
-            }
-          } catch(e) {
-            // 인증 필요하거나 데이터 없음 → 데모 모드
-            console.log('Data fetch failed (auth required?):', e.message);
+        if (isKorea) {
+          // 한국: 기존 59게이지 실데이터
+          const status = await API.dataStatus();
+          if (cancelled) return;
+          setDataInfo(status);
+          if (status.available && status.lastUpdated) {
+            try {
+              const latest = await API.dataLatest();
+              if (cancelled) return;
+              if (latest?.data) { setLiveData(latest.data); setApiStatus('live'); return; }
+            } catch(e) { console.log('Data fetch failed:', e.message); }
           }
+        } else {
+          // 글로벌: 20게이지 라이트 데이터
+          try {
+            const cData = await API.globalCountry(iso3);
+            if (cancelled) return;
+            if (cData) { setCountryInfo(cData); setApiStatus('live'); return; }
+          } catch(e) { console.log('Global fetch failed:', e.message); }
         }
-        // 서버는 있지만 데이터 없음
         setApiStatus('demo');
       } catch {
-        // 서버 연결 실패
         setApiStatus('demo');
       }
     })();
     return () => { cancelled = true; };
-  },[]);
+  },[iso3]);
 
   // 실데이터 있으면 머지, 없으면 데모 그대로
   const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
@@ -100,6 +102,15 @@ function DashboardPage({user,onNav,lang}){
       </span>
     </div>
     {tab==='overview'&&<>
+      {/* 국가 헤더 — 글로벌 국가 선택 시 */}
+      {!isKorea&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"12px 16px",background:LT.surface,borderRadius:LT.cardRadius,border:`1px solid ${LT.border}`}}>
+        <span style={{fontSize:24}}>{countryInfo?.flag||'🌍'}</span>
+        <div>
+          <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{countryInfo?.name?.[L]||countryInfo?.name?.en||iso3}</div>
+          <div style={{fontSize:13,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||20} {t('gaugesLabel',L)} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
+        </div>
+        <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:12,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
+      </div>}
       {/* Score + State + Radar */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.08)',borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`}}>

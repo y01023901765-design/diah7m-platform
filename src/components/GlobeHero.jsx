@@ -50,7 +50,7 @@ const AMBIENT=[
 
 function scoreColor(s){return s>=70?T.good:s>=55?T.warn:T.danger}
 
-function ClickedPanel({country,onClose,lang='ko'}){
+function ClickedPanel({country,onClose,lang='ko',onNav}){
   if(!country)return null;const col=scoreColor(country.score);const L=lang;
   const nm=t('cnt_'+country.iso,L)||country.en||country.n;
   return(<div onClick={onClose} style={{position:"fixed",inset:0,background:`${T.bg0}c0`,backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
@@ -64,7 +64,7 @@ function ClickedPanel({country,onClose,lang='ko'}){
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.textDim,fontSize:12,cursor:"pointer"}}>{t('close',L)||'Close'}</button>
-        <button style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('gOpenReport',L)}</button>
+        <button onClick={()=>{onClose();if(onNav)onNav('dashboard',{country:country.iso});}} style={{flex:2,padding:"10px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${T.accent},#0099cc)`,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('gOpenReport',L)}</button>
       </div>
     </div>
   </div>);
@@ -263,7 +263,7 @@ function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
   return <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovered(null)} onClick={()=>{if(hovRef.current)setClicked(hovRef.current)}} style={{display:"block",width:"100%",margin:"0 auto"}}/>;
 }
 
-export default function GlobeHero({lang='ko'}){
+export default function GlobeHero({lang='ko',onNav}){
   const L=lang;
   const cName=(c)=>t('cnt_'+c.iso,L)||c.en||c.n;
   const [hovered,setHovered]=useState(null);
@@ -363,7 +363,7 @@ export default function GlobeHero({lang='ko'}){
       </div>
       </div>
 
-      <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L}/>
+      <ClickedPanel country={clicked} onClose={()=>setClicked(null)} lang={L} onNav={onNav}/>
     </div>
   );
 }

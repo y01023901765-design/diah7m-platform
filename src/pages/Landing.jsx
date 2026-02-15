@@ -47,7 +47,7 @@ function LandingPage({onNavigate,lang,setLang}){
           <button onClick={()=>onNavigate('signup')} style={{padding:"8px 16px",borderRadius:8,border:"none",background:T.accent,color:T.bg0,fontSize:12,fontWeight:700,cursor:"pointer"}}>{t('signup',L)}</button>
         </div>
       </nav>
-      <GlobeHero lang={L}/>
+      <GlobeHero lang={L} onNav={onNavigate}/>
 
       {/* ═══ FEATURES ═══ */}
       <div id="features" style={sectionStyle}>

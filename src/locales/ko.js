@@ -281,7 +281,7 @@ export default
   gStatGood:'양호',gStatWarn:'주의',gStatAlert:'경보',
   gGauges:'경제 게이지',gSystems:'인체 시스템',gCost:'위성 비용',gLangs:'지원 언어',
   gClickHint:'🛰️ 국가를 클릭하면 경제 진단 보고서를 확인할 수 있습니다',
-  gTooltipClick:'클릭 → 진단 보고서',gOpenReport:'진단 보고서 열기',
+  gTooltipClick:'클릭 → 진단 보고서',gOpenReport:'진단 보고서 열기',backToKR:'한국으로',
   gHeroLine:'59 경제 게이지 · 9 인체 시스템 · 🛰️ 위성',
   stockNav:'주식감시',stockTitle:'주식종목 위성감시',stockPhase:'Phase 2',
   stockStocks:'종목',stockFac:'시설',stockCountries:'개국',stockDelayed:'15분 지연',
