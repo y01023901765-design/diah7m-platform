@@ -83,15 +83,15 @@ function SystemSection({sysKey,sys,expanded,toggle,lang}){
   const [open,setOpen]=useState(false);
   return(
     <div style={{marginBottom:12}}>
-      <div onClick={()=>setOpen(!open)} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:"16px 20px",border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all .2s"}}>
-        <div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:20}}>{sys.icon}</span>
-            <span style={{fontSize:16,fontWeight:800,color:LT.text}}>{sysN(sysKey,L)}</span>
-            <span style={{fontSize:16,color:'#777',fontWeight:600}}>({sysB(sysKey,L)})</span>
-            {satCount>0&&<span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:10,background:LT.bg2,color:LT.textMid,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
+      <div onClick={()=>setOpen(!open)} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:"20px 20px",border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all .2s"}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:22}}>{sys.icon}</span>
+            <span style={{fontSize:20,fontWeight:800,color:LT.text}}>{sysN(sysKey,L)}</span>
+            <span style={{fontSize:15,color:'#777',fontWeight:500}}>({sysB(sysKey,L)})</span>
+            {satCount>0&&<span style={{fontSize:14,fontWeight:600,padding:"2px 8px",borderRadius:10,background:LT.bg2,color:LT.textMid,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
           </div>
-          <div style={{fontSize:16,color:LT.textDim,marginTop:4}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>
+          <div style={{fontSize:15,color:LT.textDim,marginTop:6}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{display:"flex",gap:6}}>
