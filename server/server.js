@@ -332,16 +332,17 @@ async function start() {
         const kosisKey = process.env.KOSIS_API_KEY;
         if (pipeline && dataStore && ecosKey) {
           // 21:00 UTC = 06:00 KST
-          cron.schedule('0 21 * * *', async () => {
+          cron.schedule('0 6 * * *', async () => {
             console.log(`[Cron] ${new Date().toISOString()} — Daily refresh started`);
             try {
               const { results, stats } = await pipeline.fetchAll(ecosKey, kosisKey || '');
               await dataStore.store(results);
+              dataStore.setLastRun(stats);
               console.log(`[Cron] Done: ${stats.ok}/${stats.total} OK`);
             } catch(e) {
               console.error(`[Cron] Failed: ${e.message}`);
             }
-          }, { timezone: 'UTC' });
+          }, { timezone: 'Asia/Seoul' });
           console.log('  ⏰ Cron: daily 06:00 KST refresh scheduled');
         } else {
           console.log('  ⚠️ Cron: skipped (missing pipeline/dataStore/ECOS_API_KEY)');

@@ -108,6 +108,9 @@ class DataStore {
     this.lastFetch = new Date().toISOString();
     this.lastRefreshResult = { ok: okCount, preserved, failed: Object.keys(pipelineResults).length - okCount - preserved, duration };
 
+    // ── 관측성: lastRun 상세 저장 ──
+    this.lastRun = null; // 호출측에서 setLastRun으로 설정
+
     // 로그 기록
     if (this.db) {
       try {
@@ -132,6 +135,11 @@ class DataStore {
     return data;
   }
 
+  // 관측성: 파이프라인 실행 상세 결과 저장
+  setLastRun(stats) {
+    this.lastRun = stats;
+  }
+
   // 전체 캐시 상태 (프론트 표시용)
   getStatus() {
     const entries = Object.entries(this.memCache);
@@ -139,12 +147,14 @@ class DataStore {
     const staleCount = entries.filter(([, v]) => v.stale).length;
     const expired = this.isStale();
     return {
+      available: ok > 0,
       total: entries.length,
       ok,
       stale: staleCount,
       expired,
       lastFetch: this.lastFetch,
       lastRefreshResult: this.lastRefreshResult || null,
+      lastRun: this.lastRun || null,
       ttlMs: DEFAULT_TTL_MS,
       ttlLabel: `${DEFAULT_TTL_MS / 3600000}h`,
     };

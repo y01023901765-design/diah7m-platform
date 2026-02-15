@@ -44,6 +44,7 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
       const t0 = Date.now();
       const { results, stats, errors } = await pipeline.fetchAll(ecosKey, '');
       const stored = await dataStore.store(results);
+      dataStore.setLastRun(stats);
       dataStore.fetching = false;
       res.json({
         success: true,
@@ -93,6 +94,7 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
       console.log(`[Pipeline] Fetch done: ${stats.ok}/${stats.total} OK (${Date.now()-t0}ms)`);
       
       const stored = await dataStore.store(results);
+      dataStore.setLastRun(stats);
       console.log(`[Pipeline] Store done: ${stored.stored} stored, ${stored.preserved} preserved`);
       
       dataStore.fetching = false;

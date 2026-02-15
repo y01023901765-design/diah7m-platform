@@ -532,7 +532,37 @@ async function fetchAll(ecosKey, kosisKey) {
 
   const allResults = Object.values(results);
   const latencies = allResults.filter(r => r.latency).map(r => r.latency);
+
+  // ── 관측성: bySource 집계 ──
+  const bySource = {};
+  for (const [id, data] of Object.entries(results)) {
+    const src = data.source || GAUGE_MAP[id]?.source || 'UNKNOWN';
+    if (!bySource[src]) bySource[src] = { ok: 0, fail: 0, ids: [] };
+    if (data.status === 'OK') bySource[src].ok++;
+    else { bySource[src].fail++; bySource[src].ids.push(id); }
+  }
+  // ids 정리 (ok는 불필요)
+  for (const src of Object.values(bySource)) delete src.ids;
+
+  // ── 관측성: failures 상세 ──
+  const failures = [];
+  for (const [id, data] of Object.entries(results)) {
+    if (data.status !== 'OK') {
+      failures.push({
+        gaugeId: id,
+        source: data.source || GAUGE_MAP[id]?.source || 'UNKNOWN',
+        status: data.status || 'ERROR',
+        error: data.error || null,
+      });
+    }
+  }
+
+  // ── 관측성: failed ID 목록 ──
+  const failed = failures.map(f => f.gaugeId);
+
   const stats = {
+    run_id: `run_${Date.now()}`,
+    asof_kst: new Date(Date.now() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 19) + ' KST',
     total: gaugeIds.length,
     ok: allResults.filter(r => r.status === 'OK').length,
     pending: allResults.filter(r => r.status === 'PENDING').length,
@@ -545,8 +575,17 @@ async function fetchAll(ecosKey, kosisKey) {
       max: latencies.length ? Math.max(...latencies) : 0,
       min: latencies.length ? Math.min(...latencies) : 0,
     },
+    failed,
+    bySource,
+    failures,
     timestamp: new Date().toISOString(),
   };
+
+  // ── 콘솔 로그 (cron/수동 실행 시 즉시 확인) ──
+  if (failed.length > 0) {
+    console.log(`  ⚠️  [GAUGE_FAIL] ${failed.length}건: ${failed.join(', ')}`);
+    failures.forEach(f => console.log(`    └─ ${f.gaugeId} (${f.source}): ${f.status} — ${f.error || 'unknown'}`));
+  }
 
   return { results, stats, errors };
 }
