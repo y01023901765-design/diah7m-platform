@@ -64,7 +64,7 @@ async function authenticateGEE() {
 
 // ═══ 2. VIIRS 야간광 (S2) ═══
 const REGIONS = {
-  KR: { name: '대한민국', bbox: [126.0, 33.0, 130.0, 39.0] },
+  KR: { name: '대한민국 (서울)', bbox: [126.7, 37.4, 127.2, 37.7] },
 };
 
 async function fetchVIIRS(regionCode, lookbackDays) {
@@ -183,7 +183,7 @@ async function fetchLandsat(regionCode, lookbackDays) {
   var collection = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
     .filterBounds(geometry)
     .filterDate(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
-    .filter(ee.Filter.lt('CLOUD_COVER', 10))
+    .filter(ee.Filter.lt('CLOUD_COVER', 30))
     .sort('system:time_start', false);
 
   return new Promise(function(resolve) {
@@ -202,7 +202,7 @@ async function fetchLandsat(regionCode, lookbackDays) {
         gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬', unit: '°C',
         value: tempC, prevValue: null, date: new Date().toISOString().slice(0, 10),
         region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
-        source_meta: { dataset: 'LANDSAT/LC09/C02/T1_L2', cloud_filter: 10, scale: 100 }
+        source_meta: { dataset: 'LANDSAT/LC09/C02/T1_L2', cloud_filter: 30, scale: 100 }
       });
     });
   });
