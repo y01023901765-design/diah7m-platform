@@ -399,7 +399,7 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
           if(isHov){
             ctx.font="bold 12px 'Pretendard',sans-serif";ctx.fillStyle="#fff";ctx.shadowColor="rgba(0,0,0,0.9)";ctx.shadowBlur=8;
             ctx.fillText(L==='ko'?pt.n:pt.en,p[0],p[1]-18);
-            if(pt.rank){ctx.font="10px monospace";ctx.fillStyle=LC.port.mid;ctx.fillText(`World #${pt.rank}`,p[0],p[1]+16);}
+            if(pt.rank){ctx.font="10px monospace";ctx.fillStyle=LC.port.mid;ctx.fillText(`${t('cmWorldRank',L)||'World'} #${pt.rank}`,p[0],p[1]+16);}
             ctx.shadowBlur=0;
           }
         });
@@ -457,10 +457,10 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
 
   // Layer config
   const LAYER_CFG=[
-    {key:'city',label:L==='ko'?'도시 야간광':'City Lights',icon:'💡',color:LC.city.mid,count:cities.length},
-    {key:'stock',label:L==='ko'?'주식 시설':'Stock Facilities',icon:'◆',color:LC.stock.mid,count:stocks.length},
-    {key:'port',label:L==='ko'?'항만·공항':'Ports & Airports',icon:'⚓',color:LC.port.mid,count:ports.length},
-    {key:'industry',label:L==='ko'?'산업단지':'Industrial Zones',icon:'🏭',color:LC.industry.mid,count:industries.length},
+    {key:'city',label:t('cmLayerCity',L),icon:'💡',color:LC.city.mid,count:cities.length},
+    {key:'stock',label:t('cmLayerStock',L),icon:'◆',color:LC.stock.mid,count:stocks.length},
+    {key:'port',label:t('cmLayerPort',L),icon:'⚓',color:LC.port.mid,count:ports.length},
+    {key:'industry',label:t('cmLayerIndustry',L),icon:'🏭',color:LC.industry.mid,count:industries.length},
   ];
 
   return(
@@ -538,11 +538,11 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
 
       {/* Active layers summary */}
       <div style={{padding:"8px 16px",borderTop:`1px solid ${T.border}`,display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",fontSize:11,color:T.textDim}}>
-        {layers.city&&<span style={{color:LC.city.label}}>💡 {cities.length} cities</span>}
-        {layers.stock&&<span style={{color:LC.stock.label}}>◆ {stocks.length} facilities</span>}
-        {layers.port&&<span style={{color:LC.port.label}}>⚓ {ports.length} ports/airports</span>}
-        {layers.industry&&<span style={{color:LC.industry.label}}>🏭 {industries.length} zones</span>}
-        {!layers.city&&!layers.stock&&!layers.port&&!layers.industry&&<span>Select a layer above</span>}
+        {layers.city&&<span style={{color:LC.city.label}}>💡 {cities.length} {t('cmCities',L)}</span>}
+        {layers.stock&&<span style={{color:LC.stock.label}}>◆ {stocks.length} {t('cmFacilities',L)}</span>}
+        {layers.port&&<span style={{color:LC.port.label}}>⚓ {ports.length} {t('cmPortsAir',L)}</span>}
+        {layers.industry&&<span style={{color:LC.industry.label}}>🏭 {industries.length} {t('cmZones',L)}</span>}
+        {!layers.city&&!layers.stock&&!layers.port&&!layers.industry&&<span>{t('cmSelectLayer',L)}</span>}
       </div>
     </div>
   );

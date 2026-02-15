@@ -110,7 +110,7 @@ function StockView({stock:s,lang,onBack}){
         <div style={{textAlign:"right"}}>
           <div style={{fontSize:24,fontWeight:800,color:LT.text,fontFamily:"monospace"}}>{price}</div>
           <div style={{fontSize:16,fontWeight:700,fontFamily:"monospace",color:isUp?LT.good:LT.danger}}>{change}</div>
-          <div style={{fontSize:14,color:LT.textDim,marginTop:2}}>15min delayed</div>
+          <div style={{fontSize:14,color:LT.textDim,marginTop:2}}>{t('svDelayed',L)}</div>
         </div>
       </div>
     </div>
