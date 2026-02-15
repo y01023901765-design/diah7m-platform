@@ -99,8 +99,10 @@ const GAUGE_META = {
     thresholds:{ mode:'RANGE',
       good:{ min:100, max:null }, warn:{ min:80, max:100 }, danger:{ min:null, max:80 } }},
   S2: { id:'S2', name:'야간광(VIIRS)', unit:'nW/cm²/sr', polarity:'LOW_BAD',
+    evaluation_type: 'RELATIVE',
+    base_config: { lookback_days: 365, method: 'PERCENT_CHANGE' },
     thresholds:{ mode:'RANGE',
-      good:{ min:30, max:null }, warn:{ min:20, max:30 }, danger:{ min:null, max:20 } }},
+      good:{ min:-0.05, max:null }, warn:{ min:-0.15, max:-0.05 }, danger:{ min:null, max:-0.15 } }},
   S3: { id:'S3', name:'경기선행지수', unit:'2020=100', polarity:'LOW_BAD',
     thresholds:{ mode:'RANGE',
       good:{ min:100, max:null }, warn:{ min:95, max:100 }, danger:{ min:null, max:95 } }},
@@ -223,8 +225,10 @@ const GAUGE_META = {
     thresholds:{ mode:'RANGE',
       good:{ min:null, max:3.0 }, warn:{ min:3.0, max:5.0 }, danger:{ min:5.0, max:null } }},
   R6: { id:'R6', name:'도시열섬(서울)', unit:'°C', polarity:'HIGH_BAD',
+    evaluation_type: 'RELATIVE',
+    base_config: { lookback_days: 365, method: 'PERCENT_CHANGE', seasonal: true },
     thresholds:{ mode:'RANGE',
-      good:{ min:null, max:2.0 }, warn:{ min:2.0, max:4.0 }, danger:{ min:4.0, max:null } }},
+      good:{ min:null, max:0.05 }, warn:{ min:0.05, max:0.15 }, danger:{ min:0.15, max:null } }},
 };
 
 module.exports = { GAUGE_META, THRESHOLDS_VERSION };
@@ -248,4 +252,14 @@ const DELTA_CONFIG = {
 // gauge-meta에 delta 병합
 for (const [id, delta] of Object.entries(DELTA_CONFIG)) {
   if (GAUGE_META[id]) GAUGE_META[id].delta = delta;
+}
+
+// ── 위성 게이지 stale 기준 (일반 지표와 분리) ──
+const STALE_DAYS = {
+  S2: 3,    // VIIRS: 일간 → 3일 이상 미갱신 시 stale
+  R5: 15,   // Sentinel-1: 5-12일 주기 → 15일
+  R6: 20,   // Landsat: 16일 주기 → 20일
+};
+for (const [id, days] of Object.entries(STALE_DAYS)) {
+  if (GAUGE_META[id]) GAUGE_META[id].max_stale_days = days;
 }

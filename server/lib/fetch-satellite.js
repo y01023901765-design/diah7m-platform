@@ -85,7 +85,14 @@ async function fetchVIIRS(regionCode, lookbackDays) {
     .select('avg_rad')
     .sort('system:time_start', false);
 
-  // 60일 롤링 평균
+  // 7일 빠른 평균 (민감도) + 60일 안정 평균 (추세) — GPT 합의 2채널
+  var sevenDayStart = new Date();
+  sevenDayStart.setDate(sevenDayStart.getDate() - 7);
+  var sevenDayCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+    .filterBounds(geometry)
+    .filterDate(sevenDayStart.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+    .select('avg_rad');
+
   var rollingStart = new Date();
   rollingStart.setDate(rollingStart.getDate() - 60);
   var rollingCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
@@ -94,6 +101,7 @@ async function fetchVIIRS(regionCode, lookbackDays) {
     .select('avg_rad');
 
   return new Promise(function(resolve) {
+    // 최신 단일 값
     collection.first().reduceRegion({
       reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
     }).evaluate(function(err, latestStats) {
@@ -105,16 +113,27 @@ async function fetchVIIRS(regionCode, lookbackDays) {
         });
       }
 
-      rollingCol.mean().reduceRegion({
+      // 7일 평균
+      sevenDayCol.mean().reduceRegion({
         reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
-      }).evaluate(function(err2, rollingStats) {
-        var val = Math.round(((rollingStats && rollingStats.avg_rad) || latestStats.avg_rad) * 100) / 100;
-        resolve({
-          gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
-          value: val, latestValue: Math.round(latestStats.avg_rad * 100) / 100,
-          prevValue: null, date: new Date().toISOString().slice(0, 10),
-          region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
-          source_meta: { dataset: 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG', rolling_days: 60, scale: 1000 }
+      }).evaluate(function(err7, sevenStats) {
+        var mean7d = (sevenStats && sevenStats.avg_rad) ? Math.round(sevenStats.avg_rad * 100) / 100 : null;
+
+        // 60일 평균
+        rollingCol.mean().reduceRegion({
+          reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
+        }).evaluate(function(err60, rollingStats) {
+          var mean60d = Math.round(((rollingStats && rollingStats.avg_rad) || latestStats.avg_rad) * 100) / 100;
+          resolve({
+            gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
+            value: mean60d,              // 엔진용: 60일 안정 추세
+            mean_7d: mean7d,             // 대시보드: 7일 민감 변화
+            mean_60d: mean60d,           // 대시보드: 60일 안정 추세
+            latestValue: Math.round(latestStats.avg_rad * 100) / 100,
+            prevValue: null, date: new Date().toISOString().slice(0, 10),
+            region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
+            source_meta: { dataset: 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG', channels: '7d+60d', scale: 1000 }
+          });
         });
       });
     });
