@@ -26,7 +26,11 @@ const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 // ── Yahoo Finance (KOSPI/KOSDAQ 등) ──
 // GPT 조언: 캐시 + 폴백 + provider 교체 가능 구조
 let yahooFinance = null;
-try { yahooFinance = require('yahoo-finance2').default; } catch(e) { console.log('  ⚠️ yahoo-finance2 not installed — KOSPI/KOSDAQ will be PENDING'); }
+try {
+  const YF = require('yahoo-finance2').default;
+  // v3: new YahooFinance() 인스턴스 필요
+  yahooFinance = typeof YF === 'function' ? new YF({ suppressNotices: ['yahooSurvey'] }) : YF;
+} catch(e) { console.log('  ⚠️ yahoo-finance2 not installed — KOSPI/KOSDAQ will be PENDING'); }
 
 const _yahooCache = {}; // { symbol: { value, timestamp, date } }
 const YAHOO_CACHE_TTL = 60 * 60 * 1000; // 1시간
@@ -114,7 +118,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'ECOS', stat:'901Y033', item:'A01', cycle:'M', name:'제조업출하(PMI대체)', unit:'2020=100', note:'제조업 출하지수 — PMI 대체' },
+  O2: { source:'ECOS', stat:'901Y034', item:'I31A', cycle:'M', name:'제조업출하(PMI대체)', unit:'2020=100', note:'제조업 출하지수 — PMI 대체' },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
