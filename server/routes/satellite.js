@@ -61,12 +61,14 @@ router.post('/collect', async (req, res) => {
 
   // 비동기 수집 (응답 후 백그라운드 실행)
   try {
-    const { fetchAllSatellite } = require('../lib/fetch-satellite');
+    const { fetchAllSatellite, REGIONS } = require('../lib/fetch-satellite');
+    const region = req.body?.region || req.query?.region || 'KR';
+    if (!REGIONS[region]) throw new Error(`Unknown region: ${region}. Available: ${Object.keys(REGIONS).join(',')}`);
     const lastSuccessMap = {};
     if (satSnapshot.S2?.date) lastSuccessMap.S2 = satSnapshot.S2.date;
     if (satSnapshot.R6?.date) lastSuccessMap.R6 = satSnapshot.R6.date;
 
-    const { results, meta } = await fetchAllSatellite('KR', lastSuccessMap);
+    const { results, meta } = await fetchAllSatellite(region, lastSuccessMap);
     
     // 성공한 결과만 스냅샷에 저장
     for (const [id, data] of Object.entries(results)) {
