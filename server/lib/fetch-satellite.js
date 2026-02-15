@@ -124,15 +124,38 @@ async function fetchVIIRS(regionCode, lookbackDays) {
           reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
         }).evaluate(function(err60, rollingStats) {
           var mean60d = Math.round(((rollingStats && rollingStats.avg_rad) || latestStats.avg_rad) * 100) / 100;
-          resolve({
-            gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
-            value: mean60d,              // 엔진용: 60일 안정 추세
-            mean_7d: mean7d,             // 대시보드: 7일 민감 변화
-            mean_60d: mean60d,           // 대시보드: 60일 안정 추세
-            latestValue: Math.round(latestStats.avg_rad * 100) / 100,
-            prevValue: null, date: new Date().toISOString().slice(0, 10),
-            region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
-            source_meta: { dataset: 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG', channels: '7d+60d', scale: 1000 }
+
+          // 365일 baseline (GEE 원샷 — Cold Start 해결)
+          var baselineStart = new Date();
+          baselineStart.setDate(baselineStart.getDate() - 365);
+          var baselineCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+            .filterBounds(geometry)
+            .filterDate(baselineStart.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+            .select('avg_rad');
+
+          baselineCol.mean().reduceRegion({
+            reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
+          }).evaluate(function(errBL, baselineStats) {
+            var baseline365 = (baselineStats && baselineStats.avg_rad) ? Math.round(baselineStats.avg_rad * 100) / 100 : null;
+            var anomaly = (baseline365 && baseline365 > 0) ? Math.round(((mean60d - baseline365) / baseline365) * 10000) / 10000 : null;
+
+            resolve({
+              gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
+              value: mean60d,
+              mean_7d: mean7d,
+              mean_60d: mean60d,
+              baseline_365d: baseline365,
+              anomaly: anomaly,
+              latestValue: Math.round(latestStats.avg_rad * 100) / 100,
+              prevValue: null, date: new Date().toISOString().slice(0, 10),
+              region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
+              source_meta: {
+                dataset: 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG',
+                channels: '7d+60d+baseline365',
+                scale: 1000,
+                baseline_days: 365,
+              }
+            });
           });
         });
       });

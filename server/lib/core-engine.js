@@ -59,6 +59,76 @@ function bumpLevel(level, steps) {
   return order[Math.min(order.length - 1, idx + steps)];
 }
 
+// ── RELATIVE(상대값) 판정 — GPT 합의: WARMUP/PARTIAL/READY 3단계 ──
+const RELATIVE_THRESHOLDS = {
+  WARMUP:  { minDays: 0,  maxDays: 13 },
+  PARTIAL: { minDays: 14, maxDays: 89 },
+  READY:   { minDays: 90 },
+};
+
+function getRelativeState(baselineDaysUsed, seasonal) {
+  if (seasonal) return baselineDaysUsed >= 365 ? 'READY' : 'WARMUP';
+  if (baselineDaysUsed >= RELATIVE_THRESHOLDS.READY.minDays) return 'READY';
+  if (baselineDaysUsed >= RELATIVE_THRESHOLDS.PARTIAL.minDays) return 'PARTIAL';
+  return 'WARMUP';
+}
+
+/**
+ * RELATIVE 판정: anomaly(변화율)로 severity 계산
+ * @param {number} anomaly - percent_change (-0.15 = -15%)
+ * @param {Object} meta - gauge-meta의 evaluation_type/thresholds
+ * @param {number} baselineDaysUsed - 실제 사용된 baseline 일수
+ * @returns {Object} relative 메타 + 판정 결과
+ */
+function evaluateRelative(anomaly, meta, baselineDaysUsed) {
+  const seasonal = meta.base_config?.seasonal || false;
+  const state = getRelativeState(baselineDaysUsed, seasonal);
+  const ready = state === 'READY';
+  const targetDays = meta.base_config?.lookback_days || 365;
+
+  const result = {
+    enabled: true,
+    method: meta.base_config?.method || 'PERCENT_CHANGE',
+    seasonal,
+    target_window_days: targetDays,
+    baseline_days_used: baselineDaysUsed,
+    state,
+    ready,
+    percent_change: anomaly != null ? Math.round(anomaly * 10000) / 100 : null, // -0.15 → -15.00%
+    relative_level: null,
+    relative_score: null,
+    relative_reason: ready ? 'baseline_sufficient' : 'baseline_insufficient',
+  };
+
+  // READY일 때만 점수/등급 반영
+  if (ready && anomaly != null && meta.thresholds?.mode === 'RANGE') {
+    const t = meta.thresholds;
+    if (t.danger && inRange(anomaly, t.danger))     { result.relative_level = 'DANGER'; result.relative_score = 5; }
+    else if (t.warn && inRange(anomaly, t.warn))    { result.relative_level = 'WARN';   result.relative_score = 3; }
+    else if (t.good && inRange(anomaly, t.good))    { result.relative_level = 'GOOD';   result.relative_score = 1; }
+    else                                             { result.relative_level = 'NORMAL'; result.relative_score = 2; }
+    result.relative_reason = 'relative_' + result.relative_level.toLowerCase();
+  }
+
+  return result;
+}
+
+/**
+ * RELATIVE severity 적용: ready일 때만 baseSeverity를 대체
+ */
+function applyRelative(baseSeverity, gaugeId, gaugeData) {
+  const meta = gaugeId ? GAUGE_META[gaugeId] : null;
+  if (!meta || meta.evaluation_type !== 'RELATIVE') return { severity: baseSeverity, relative: null };
+
+  const anomaly = gaugeData?.anomaly;
+  const baselineDays = gaugeData?.source_meta?.baseline_days || 365;
+  const rel = evaluateRelative(anomaly, meta, baselineDays);
+
+  // READY + relative_score가 있으면 대체, 아니면 기존 유지
+  const finalSev = (rel.ready && rel.relative_score != null) ? rel.relative_score : baseSeverity;
+  return { severity: finalSev, relative: rel };
+}
+
 function applyDelta(baseSeverity, currentVal, prevVal, gaugeId) {
   const meta = gaugeId ? GAUGE_META[gaugeId] : null;
   if (!meta?.delta?.enabled) return baseSeverity;
@@ -256,6 +326,9 @@ function generateReport(gaugeData, options = {}) {
   const gauges = [];
   for (const [key, val] of Object.entries(gaugeData)) {
     let sev = severity(val, thresholds[key], key); sev = applyDelta(sev, val, prevData[key], key);
+    // RELATIVE 적용 (위성 게이지)
+    const relResult = applyRelative(sev, key, gaugeData._satellite?.[key]);
+    sev = relResult.severity;
     gauges.push({
       gauge_id: key,
       name: key,
@@ -265,6 +338,7 @@ function generateReport(gaugeData, options = {}) {
       status: GAUGE_STATUS[sev] || '양호',
       severity_score: sev,
       tier_min: sev <= 2 ? 'FREE' : 'BASIC',
+      relative: relResult.relative || undefined,
     });
   }
 
@@ -378,4 +452,4 @@ function diagnose(gaugeData, thresholds = {}) {
   };
 }
 
-module.exports = { diagnose, generateReport, SYSTEMS, CROSS_SIGNALS };
+module.exports = { diagnose, generateReport, evaluateRelative, getRelativeState, SYSTEMS, CROSS_SIGNALS };
