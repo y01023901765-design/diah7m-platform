@@ -176,7 +176,7 @@ good:#00e5a0  warn:#f0b429  danger:#ff5c5c
 
 ```
 배경: bg0:#FFFFFF  bg1:#FAFAFA  bg2:#F5F5F5  bg3:#EEEEEE
-텍스트: text:#111111(제목,bold700~900)  textMid:#555555(본문,regular400)  textDim:#999999(라벨,regular400)
+텍스트: text:#111111(제목,bold700~900)  textMid:#444444(본문,regular400)  textDim:#777777(보조,regular400)
 테두리: border:#E0E0E0  divider:#F0F0F0
 accent: #111111 (검정=고급)
 상태만 컬러: good:#059669  warn:#D97706  danger:#DC2626
@@ -234,17 +234,24 @@ border: `1px solid ${LT.accent}30`  // 컬러 테두리
 
 ```
 서브페이지:
-  헤드라인:  28~36px  bold 800~900  #111
-  섹션제목:  20~24px  bold 700      #111
-  본문:      16px     regular 400    #555  ← 14px 이하 절대 금지
-  보조:      14px     regular 400    #999  ← 이게 최소
+  히어로수치: 24~42px  bold 800~900  #111  monospace
+  섹션제목:  18~22px  bold 700~800  #111
+  서브제목:  16px     bold 700      #111
+  본문:      15~16px  regular 400   #444  ← 핵심 기준
+  보조/라벨: 15px     regular 400   #777
+  NAV:       14px (서브페이지 유일한 14px)
   버튼:      15px 이상
-  수치:      20~42px  bold monospace #111
+
+위계 밸런스 규칙:
+  - 같은 카드 안에서 제목과 본문의 fontSize 차이 최소 2px 이상
+  - 제목 옆 부제(괄호)는 제목보다 작고 연하게: fontSize 작게 + #777
+  - 수치가 카드의 핵심이면 가장 크게 (22px+)
+  - 모든 서브페이지 컴포넌트 15/16px 중심 통일
 
 Landing:
-  히어로: 38~48px / 설명: 15~16px / stats: 12px 이상
+  히어로: 38~48px / 설명: 15~16px / stats: 14px 이상
 
-전체 사이트 12px 미만 금지 (8/9/10/11px 전부 금지)
+전체 사이트 12px 미만 금지. 서브페이지 14px 미만 금지 (NAV 제외).
 ```
 
 ---
