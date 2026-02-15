@@ -240,11 +240,39 @@ function DashboardPage({user,onNav,lang,country}){
       </div>
     </>}
     {tab==='alerts'&&<>
-      <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("alertCenter",L)}</div></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("alertCenter",L)}</div>
+        <button onClick={()=>{}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:14,cursor:"pointer"}}>{t('markAllRead',L)}</button>
+      </div>
+      {/* Filter pills */}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {[
+          {id:'all',label:t('filterAll',L),cnt:6},
+          {id:'alert',label:t('alert',L),cnt:3,c:LT.danger},
+          {id:'caution',label:t('caution',L),cnt:2,c:LT.warn},
+          {id:'watch',label:t('stWatch',L),cnt:1,c:LT.info},
+        ].map(f=>(<button key={f.id} style={{padding:"5px 12px",borderRadius:16,border:`1px solid ${f.c||LT.border}`,background:`${f.c||LT.textDim}08`,color:f.c||LT.text,fontSize:14,fontWeight:600,cursor:"pointer"}}>{f.label} {f.cnt}</button>))}
+      </div>
       <TierLock plan={demoUser?.plan} req="BASIC" lang={L}>
-      {[{t:t('alert',L),c:LT.danger,g:"D1",m:t('alertD1',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"D3",m:t('alertD3',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"L3",m:t('alertL3',L),d:"2026-01-12"},{t:t('caution',L),c:LT.warn,g:"R2",m:t('alertR2',L),d:"2026-01-10"},{t:t('caution',L),c:LT.warn,g:"C2",m:t('alertC2',L),d:"2026-01-08"},{t:t('stWatch',L),c:LT.info,g:"I4",m:t('alertI4',L),d:"2026-01-05"}].map((a,i)=>(<div key={i} style={{background:LT.surface,borderRadius:LT.smRadius,padding:"14px 16px",border:`1px solid ${LT.border}`,marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
-        <span style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:4,flexShrink:0}}/>
-        <div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:16,fontWeight:700,color:a.c}}>{a.t} · {a.g}</span><span style={{fontSize:16,color:LT.textDim}}>{a.d}</span></div><div style={{fontSize:15,color:LT.text,lineHeight:1.5}}>{a.m}</div></div>
+      {[
+        {t:t('alert',L),c:LT.danger,g:"D1",m:t('alertD1',L),d:"2026-01-15",read:false},
+        {t:t('alert',L),c:LT.danger,g:"D3",m:t('alertD3',L),d:"2026-01-15",read:false},
+        {t:t('alert',L),c:LT.danger,g:"L3",m:t('alertL3',L),d:"2026-01-12",read:false},
+        {t:t('caution',L),c:LT.warn,g:"R2",m:t('alertR2',L),d:"2026-01-10",read:true},
+        {t:t('caution',L),c:LT.warn,g:"C2",m:t('alertC2',L),d:"2026-01-08",read:true},
+        {t:t('stWatch',L),c:LT.info,g:"I4",m:t('alertI4',L),d:"2026-01-05",read:true},
+      ].map((a,i)=>(<div key={i} style={{background:a.read?LT.surface:LT.bg2,borderRadius:LT.smRadius,padding:"14px 16px",border:`1px solid ${a.read?LT.border:a.c+'30'}`,marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
+        <span style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:6,flexShrink:0}}/>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:15,fontWeight:a.read?500:700,color:a.c}}>{a.t} · {a.g}</span>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              {!a.read&&<span style={{width:6,height:6,borderRadius:3,background:LT.accent}}/>}
+              <span style={{fontSize:14,color:LT.textDim}}>{a.d}</span>
+            </div>
+          </div>
+          <div style={{fontSize:15,color:a.read?LT.textDim:LT.text,lineHeight:1.5}}>{a.m}</div>
+        </div>
       </div>))}
       </TierLock>
     </>}

@@ -120,6 +120,8 @@ export default {
   landHeroCopy:'証券会社は決算発表を待ちます。ニュースは内部情報に頼ります。DIAH-7Mは宇宙から工場の明かりを先に見ます。',
   landStat1:'経済指標',landStat2:'無料衛星',landStat3:'診断国家',landStat4:'週間先行',
   landOld:'従来の方法',landOldDesc:'決算発表後レポート。ニュース依存。意見ベース分析。後行的。主観的。',
-  alertsDetected:'件の異常検知',landNewDesc:'決算前に工場稼働を直接観測。物理データ基盤。先行的。客観的。測定であり意見ではない。',
+  alertsDetected:'件の異常検知',
+  milHistory:'獲得/使用履歴',milHLogin:'デイリーログイン',milHReport:'レポート交換',milHRefer:'友達招待ボーナス',milHExport:'データエクスポート',milHMonthly:'月次ボーナス',
+  err404Title:'衛星信号が見つかりません',err404Desc:'リクエストされたページは存在しません。URLを確認するか、下のボタンで移動してください。',err404Home:'ホーム',err404Dash:'ダッシュボード',markAllRead:'すべて既読',filterAll:'すべて',usageStats:'今月の利用状況',usReport:'レポート閲覧',usGauge:'ゲージ確認',usSatView:'衛星データ閲覧',landNewDesc:'決算前に工場稼働を直接観測。物理データ基盤。先行的。客観的。測定であり意見ではない。',
   cnt_KOR:'韓国',cnt_USA:'アメリカ',cnt_JPN:'日本',cnt_DEU:'ドイツ',cnt_GBR:'イギリス',cnt_FRA:'フランス',cnt_CAN:'カナダ',cnt_AUS:'オーストラリア',cnt_ITA:'イタリア',cnt_ESP:'スペイン',cnt_NLD:'オランダ',cnt_CHE:'スイス',cnt_SWE:'スウェーデン',cnt_NOR:'ノルウェー',cnt_DNK:'デンマーク',cnt_FIN:'フィンランド',cnt_AUT:'オーストリア',cnt_BEL:'ベルギー',cnt_IRL:'アイルランド',cnt_PRT:'ポルトガル',cnt_GRC:'ギリシャ',cnt_CZE:'チェコ',cnt_POL:'ポーランド',cnt_HUN:'ハンガリー',cnt_SVK:'スロバキア',cnt_SVN:'スロベニア',cnt_EST:'エストニア',cnt_LVA:'ラトビア',cnt_LTU:'リトアニア',cnt_ISL:'アイスランド',cnt_LUX:'ルクセンブルク',cnt_NZL:'ニュージーランド',cnt_ISR:'イスラエル',cnt_TUR:'トルコ',cnt_MEX:'メキシコ',cnt_CHL:'チリ',cnt_COL:'コロンビア',cnt_CRI:'コスタリカ',cnt_SGP:'シンガポール',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'インド',cnt_CHN:'中国',
 };

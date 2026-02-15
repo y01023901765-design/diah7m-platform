@@ -82,6 +82,36 @@ function MyPage({user,lang,setGlobalLang}){
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("exchangeMenu",L)}</div>
         {exchanges.map(m=>(<div key={m.n} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${LT.border}`}}><span style={{fontSize:15,color:LT.text}}>{m.n}</span><button onClick={()=>{if(mileage<m.p){flash(`⚠️ ${t('milInsufficient',L)} (${m.p}P)`);return;}setMileage(prev=>prev-m.p);flash(`✅ ${m.n} (-${m.p}P)`);}} style={{padding:"4px 12px",borderRadius:6,border:`1px solid ${LT.warn}30`,background:`${LT.warn}08`,color:LT.warn,fontSize:16,fontWeight:700,cursor:"pointer"}}>{m.p}P</button></div>))}
       </div>
+      {/* Mileage History */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginTop:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("milHistory",L)}</div>
+        {[
+          {d:'2026-02-14',desc:t('milHLogin',L),amt:'+10',c:LT.good},
+          {d:'2026-02-13',desc:t('milHReport',L),amt:'-500',c:LT.info},
+          {d:'2026-02-12',desc:t('milHLogin',L),amt:'+10',c:LT.good},
+          {d:'2026-02-10',desc:t('milHRefer',L),amt:'+300',c:LT.good},
+          {d:'2026-02-08',desc:t('milHLogin',L),amt:'+10',c:LT.good},
+          {d:'2026-02-05',desc:t('milHExport',L),amt:'-300',c:LT.info},
+          {d:'2026-02-01',desc:t('milHMonthly',L),amt:'+100',c:LT.good},
+        ].map((h,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<6?`1px solid ${LT.border}`:"none"}}>
+          <div><span style={{fontSize:14,color:LT.textDim,marginRight:8,fontFamily:"monospace"}}>{h.d}</span><span style={{fontSize:15,color:LT.text}}>{h.desc}</span></div>
+          <span style={{fontSize:15,fontWeight:700,color:h.c,fontFamily:"monospace"}}>{h.amt}P</span>
+        </div>))}
+      </div>
+      {/* Usage Stats */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginTop:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("usageStats",L)}</div>
+        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          {[
+            {v:'24',label:t('usReport',L),c:LT.accent},
+            {v:'156',label:t('usGauge',L),c:LT.good},
+            {v:'8',label:t('usSatView',L),c:LT.sat},
+          ].map((s,i)=>(<div key={i} style={{textAlign:"center",padding:12,background:LT.bg2,borderRadius:8}}>
+            <div style={{fontSize:22,fontWeight:900,color:s.c,fontFamily:"monospace"}}>{s.v}</div>
+            <div style={{fontSize:14,color:LT.textDim,marginTop:2}}>{s.label}</div>
+          </div>))}
+        </div>
+      </div>
     </div>}
     {tab==='settings'&&<div>
       <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:20}}>{t("notifSettings",L)}</h2>

@@ -12,6 +12,7 @@ import DashboardPage from './pages/Dashboard';
 import MyPage from './pages/MyPage';
 import AdminPage from './pages/Admin';
 import StockPage from './pages/Stock';
+import NotFound from './pages/NotFound';
 
 // ── Components ──
 import GlobalNav from './components/GlobalNav';
@@ -93,6 +94,7 @@ export default function App(){
           {page==='stock'&&user&&<StockPage user={user} lang={lang}/>}
           {page==='mypage'&&user&&<MyPage user={user} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
+          {!['landing','login','signup','dashboard','stock','mypage','admin'].includes(page)&&<NotFound onNav={nav} lang={lang} isDark={isDark}/>}
         </div>
         {page!=='login'&&page!=='signup'&&<footer style={{borderTop:`1px solid ${TH.border}`,marginTop:40,padding:"24px 16px 16px"}}>
           <div style={{maxWidth:780,margin:"0 auto"}}>
