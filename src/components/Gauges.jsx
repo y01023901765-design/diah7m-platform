@@ -88,7 +88,7 @@ function SystemSection({sysKey,sys,expanded,toggle,lang}){
           <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:22}}>{sys.icon}</span>
             <span style={{fontSize:20,fontWeight:800,color:LT.text}}>{sysN(sysKey,L)}</span>
-            <span style={{fontSize:15,color:'#777',fontWeight:500}}>({sysB(sysKey,L)})</span>
+            <span style={{fontSize:15,color:LT.textDim,fontWeight:500}}>({sysB(sysKey,L)})</span>
             {satCount>0&&<span style={{fontSize:14,fontWeight:600,padding:"2px 8px",borderRadius:10,background:LT.bg2,color:LT.textMid,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
           </div>
           <div style={{fontSize:15,color:LT.textDim,marginTop:6}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>

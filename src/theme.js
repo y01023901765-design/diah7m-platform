@@ -19,15 +19,15 @@ const L = {
   border:'#E0E0E0', borderLight:'#EEEEEE',
   // 텍스트: 검정~회색 3단계 명암비
   text:'#111111',       // 제목, 핵심 수치 — 거의 검정
-  textMid:'#555555',    // 본문, 설명 — 중간 회색
-  textDim:'#999999',    // 보조, 라벨 — 연한 회색
+  textMid:'#444444',    // 본문, 설명 — 진한 회색 (배경 대비 선명)
+  textDim:'#777777',    // 보조, 라벨 — 중간 회색 (뿌옇지 않게)
   white:'#ffffff',
   // 컬러는 상태 표시에만 최소 사용
   accent:'#111111',     // 버튼, 링크 — 검정 (고급)
   accentDim:'#11111108', accentMid:'#11111120',
-  good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#555555',
+  good:'#059669', warn:'#D97706', danger:'#DC2626', info:'#444444',
   orange:'#EA580C', orangeDim:'#EA580C08', enterprise:'#D97706',
-  sat:'#555555', satDim:'#55555508', satBorder:'#333333',
+  sat:'#444444', satDim:'#44444408', satBorder:'#333333',
   cardRadius:12, smRadius:8,
   // 라이트 전용
   cardShadow:'0 1px 3px rgba(0,0,0,0.06)',
