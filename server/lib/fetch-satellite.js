@@ -69,7 +69,7 @@ const REGIONS = {
 
 async function fetchVIIRS(regionCode, lookbackDays) {
   regionCode = regionCode || 'KR';
-  lookbackDays = lookbackDays || 90; // VCMSLCFG는 월간 데이터 → 최소 90일 룩백
+  lookbackDays = lookbackDays || 365; // VCMSLCFG 월간, 발행 2~3개월 지연 → 넉넉히 365일
   const t0 = Date.now();
   await authenticateGEE();
 
@@ -168,7 +168,7 @@ async function fetchVIIRS(regionCode, lookbackDays) {
 // ═══ 3. Landsat-9 도시열섬 (R6) ═══
 async function fetchLandsat(regionCode, lookbackDays) {
   regionCode = regionCode || 'KR';
-  lookbackDays = lookbackDays || 60;
+  lookbackDays = lookbackDays || 180; // 구름 없는 이미지 확보 위해 넉넉히
   var t0 = Date.now();
   await authenticateGEE();
 
