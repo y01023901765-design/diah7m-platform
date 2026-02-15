@@ -12,6 +12,9 @@ const createAuthRouter = require('./auth');         // 🟢 창3
 const createDiagnosisRouter = require('./diagnosis'); // 🔵 창1
 const createDataRouter = require('./data');           // 🔵 창1
 const createAdminRouter = require('./admin');         // 🟢 창3
+const createStockRouter = require('./stock');         // 🛰️ Phase2
+const createCatalogRouter = require('./catalog');     // 🛒 Phase3
+const createNotificationRouter = require('./notification'); // 🔔 알림
 
 /**
  * 모든 라우트를 app에 마운트
@@ -31,11 +34,14 @@ function mountRoutes(app, deps) {
     }
   }
 
-  // 순서 유지: auth → diagnosis → data → admin (원본 server.js와 동일)
+  // 순서 유지: auth → diagnosis → data → admin → stock → catalog → notification
   mount('routes/auth', createAuthRouter);
   mount('routes/diagnosis', createDiagnosisRouter);
   mount('routes/data', createDataRouter);
   mount('routes/admin', createAdminRouter);
+  mount('routes/stock', createStockRouter);
+  mount('routes/catalog', createCatalogRouter);
+  mount('routes/notification', createNotificationRouter);
 
   console.log(`  ✅ Routes mounted: ${mounted.join(', ')}`);
   return mounted;

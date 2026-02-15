@@ -130,6 +130,27 @@ class DBAdapter {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id)
       );
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        severity TEXT DEFAULT 'watch',
+        gauge TEXT,
+        message TEXT,
+        read INTEGER DEFAULT 0,
+        read_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      );
+      CREATE TABLE IF NOT EXISTS quote_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        service_ids TEXT,
+        message TEXT,
+        contact TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      );
     `;
     if (this.type === 'pg') {
       await this.db.query(schema.replace(/AUTOINCREMENT/g, 'GENERATED ALWAYS AS IDENTITY')

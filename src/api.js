@@ -167,6 +167,64 @@ export function isAuthenticated() {
   return !!getToken();
 }
 
+// ── Stock (Phase 2) ──
+export async function stockList(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return api(`/api/v1/stock/list${qs ? '?' + qs : ''}`);
+}
+export async function stockSearch(q) {
+  return api(`/api/v1/stock/search?q=${encodeURIComponent(q)}`);
+}
+export async function stockProfile(ticker) {
+  return api(`/api/v1/stock/${ticker}`);
+}
+export async function stockFacilities(ticker) {
+  return api(`/api/v1/stock/${ticker}/facilities`);
+}
+export async function stockDelta(ticker) {
+  return api(`/api/v1/stock/${ticker}/delta`);
+}
+export async function stockFlow(ticker) {
+  return api(`/api/v1/stock/${ticker}/flow`);
+}
+export async function stockSignals(ticker) {
+  return api(`/api/v1/stock/${ticker}/signals`);
+}
+
+// ── Catalog (Phase 3) ──
+export async function catalogCategories() {
+  return api('/api/v1/catalog/categories');
+}
+export async function catalogCategory(id) {
+  return api(`/api/v1/catalog/category/${id}`);
+}
+export async function catalogSearch(q) {
+  return api(`/api/v1/catalog/search?q=${encodeURIComponent(q)}`);
+}
+export async function catalogQuote(serviceIds, message, contact) {
+  return api('/api/v1/catalog/quote', {
+    method: 'POST',
+    body: JSON.stringify({ serviceIds, message, contact }),
+  });
+}
+
+// ── Notifications ──
+export async function getNotifications(filter = 'all', limit = 50) {
+  return api(`/api/v1/notifications?filter=${filter}&limit=${limit}`);
+}
+export async function getUnreadCount() {
+  return api('/api/v1/notifications/unread');
+}
+export async function markNotificationRead(id) {
+  return api(`/api/v1/notifications/${id}/read`, { method: 'PATCH' });
+}
+export async function markAllNotificationsRead() {
+  return api('/api/v1/notifications/read-all', { method: 'PATCH' });
+}
+export async function deleteNotification(id) {
+  return api(`/api/v1/notifications/${id}`, { method: 'DELETE' });
+}
+
 export function getStoredUser() {
   try {
     const u = localStorage.getItem('diah7m-user');
