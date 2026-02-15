@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import T from '../theme';
 import { t, LANG_LIST } from '../i18n';
+import SatelliteIcon from '../components/SatelliteIcon';
 import LangSelector from '../components/LangSelector';
 import { SYS, sysN, sysB } from '../components/TierLock';
 import GlobeHero from '../components/GlobeHero';
@@ -40,7 +41,7 @@ function LandingPage({onNavigate,lang,setLang}){
     <div style={{minHeight:"100vh",background:`linear-gradient(180deg,${T.bg0},${T.bg1} 30%,${T.bg2} 70%,${T.bg0})`,color:T.text}}>
       {/* ═══ NAV ═══ */}
       <nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 24px",borderBottom:`1px solid ${T.border}`,background:`${T.bg0}d0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:100,direction:"ltr"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>🛰️</span><span style={{fontSize:16,fontWeight:800,letterSpacing:-.5}}>DIAH-7M</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><SatelliteIcon size={32}/><span style={{fontSize:16,fontWeight:800,letterSpacing:-.5}}>DIAH-7M</span></div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <LangSelector lang={L} setLang={setLang}/>
           <button onClick={()=>onNavigate('login')} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${T.border}`,background:"transparent",color:T.text,fontSize:12,fontWeight:600,cursor:"pointer"}}>{t('login',L)}</button>

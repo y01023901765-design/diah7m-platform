@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { t } from "../i18n";
 import CountryMap from "./CountryMap";
+import SatelliteIcon from "./SatelliteIcon";
 
 const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e'};
 
@@ -70,84 +71,6 @@ function ClickedPanel({country,onClose,lang='ko',onNav,onOpenMap}){
       </div>
     </div>
   </div>);
-}
-
-// Realistic satellite SVG - Sentinel-2 inspired
-function RealisticSatellite(){
-  return(
-    <svg width="100" height="48" viewBox="0 0 100 48" fill="none">
-      {/* Left solar array */}
-      <g transform="translate(0,8)">
-        {/* Panel frame */}
-        <rect x="2" y="4" width="28" height="24" rx="1" fill="#1a2845" stroke="#3a5a8a" strokeWidth="0.6"/>
-        {/* Solar cells - 4x3 grid */}
-        {[0,1,2,3].map(col=>[0,1,2].map(row=>(
-          <rect key={`l${col}${row}`} x={4+col*6.5} y={6+row*7.5} width={5.5} height={6.5} rx={0.5}
-            fill={`hsl(${210+col*3},${50+row*5}%,${18+row*3}%)`}
-            stroke="#2a4a7a" strokeWidth="0.3"/>
-        )))}
-        {/* Panel shine */}
-        <rect x="2" y="4" width="28" height="24" rx="1" fill="url(#panelShine)" opacity="0.15"/>
-      </g>
-      {/* Panel arm left */}
-      <rect x="30" y="20" width="8" height="3" rx="0.5" fill="#2a3a55" stroke="#4a6a9a" strokeWidth="0.4"/>
-      <circle cx="32" cy="21.5" r="1.2" fill="#3a5a8a" stroke="#5a8aba" strokeWidth="0.3"/>
-
-      {/* Main body */}
-      <g transform="translate(38,4)">
-        {/* Body shell */}
-        <rect x="0" y="4" width="24" height="32" rx="3" fill="#1a2540" stroke="#3a5a8a" strokeWidth="0.8"/>
-        {/* Top panel */}
-        <rect x="2" y="6" width="20" height="8" rx="1.5" fill="#0f1a2d" stroke="#2a4a6a" strokeWidth="0.4"/>
-        {/* Status lights */}
-        <circle cx="6" cy="10" r="1" fill="#00ff88" opacity="0.8"/>
-        <circle cx="10" cy="10" r="1" fill={T.accent} opacity="0.6"/>
-        <circle cx="14" cy="10" r="0.8" fill="#ff6644" opacity="0.3"/>
-        {/* Main sensor/camera */}
-        <rect x="4" y="16" width="16" height="14" rx="2" fill="#0a1220" stroke="#2a4a6a" strokeWidth="0.5"/>
-        <circle cx="12" cy="23" r="5" fill="#080e1a" stroke="#3a6a9a" strokeWidth="0.6"/>
-        <circle cx="12" cy="23" r="3.2" fill="#0c1828" stroke={T.accent} strokeWidth="0.4" opacity="0.7"/>
-        <circle cx="12" cy="23" r="1.5" fill={`${T.accent}60`}/>
-        <circle cx="12" cy="23" r="0.6" fill={T.accent}/>
-        {/* Lens reflection */}
-        <circle cx="10.5" cy="21.5" r="0.8" fill="white" opacity="0.15"/>
-        {/* Bottom vent */}
-        <rect x="3" y="32" width="18" height="2" rx="0.5" fill="#1a2540" stroke="#2a3a55" strokeWidth="0.3"/>
-        {/* Antenna */}
-        <line x1="12" y1="4" x2="12" y2="0" stroke="#5a7a9a" strokeWidth="0.8"/>
-        <circle cx="12" cy="0" r="1.5" fill="none" stroke="#5a8aba" strokeWidth="0.5"/>
-        <circle cx="12" cy="0" r="0.5" fill={T.accent} opacity="0.8"/>
-      </g>
-
-      {/* Panel arm right */}
-      <rect x="62" y="20" width="8" height="3" rx="0.5" fill="#2a3a55" stroke="#4a6a9a" strokeWidth="0.4"/>
-      <circle cx="68" cy="21.5" r="1.2" fill="#3a5a8a" stroke="#5a8aba" strokeWidth="0.3"/>
-
-      {/* Right solar array */}
-      <g transform="translate(70,8)">
-        <rect x="0" y="4" width="28" height="24" rx="1" fill="#1a2845" stroke="#3a5a8a" strokeWidth="0.6"/>
-        {[0,1,2,3].map(col=>[0,1,2].map(row=>(
-          <rect key={`r${col}${row}`} x={2+col*6.5} y={6+row*7.5} width={5.5} height={6.5} rx={0.5}
-            fill={`hsl(${210+col*3},${50+row*5}%,${18+row*3}%)`}
-            stroke="#2a4a7a" strokeWidth="0.3"/>
-        )))}
-        <rect x="0" y="4" width="28" height="24" rx="1" fill="url(#panelShine2)" opacity="0.15"/>
-      </g>
-
-      <defs>
-        <linearGradient id="panelShine" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="white" stopOpacity="0.3"/>
-          <stop offset="50%" stopColor="white" stopOpacity="0"/>
-          <stop offset="100%" stopColor="white" stopOpacity="0.1"/>
-        </linearGradient>
-        <linearGradient id="panelShine2" x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="white" stopOpacity="0.3"/>
-          <stop offset="50%" stopColor="white" stopOpacity="0"/>
-          <stop offset="100%" stopColor="white" stopOpacity="0.1"/>
-        </linearGradient>
-      </defs>
-    </svg>
-  );
 }
 
 function WorldMap({hovered,setHovered,setClicked,setMousePos,lang='ko'}){
@@ -301,7 +224,7 @@ export default function GlobeHero({lang='ko',onNav}){
             transformOrigin:"center center",
             filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 15px ${T.accent}50)`,
           }}>
-            <RealisticSatellite/>
+            <SatelliteIcon size={window.innerWidth<600?60:100}/>
           </div>
           {/* Beam — 위성 바로 아래에서 시작, 150°+ 광각 */}
           {/* tan(75°)≈3.73, h=560 → half-width=2089 */}
