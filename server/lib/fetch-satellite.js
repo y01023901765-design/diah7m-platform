@@ -9,7 +9,7 @@ const ee = require('@google/earthengine');
 const fs = require('fs');
 
 // GEE 서비스 계정 인증
-const SERVICE_ACCOUNT = 'make-699@make1-456808.iam.gserviceaccount.com';
+const SERVICE_ACCOUNT = process.env.GEE_SERVICE_ACCOUNT || '';
 const KEY_FILE = './keys/make1-456808-be67c3bfb578.json';
 
 let geeInitialized = false;

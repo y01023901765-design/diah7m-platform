@@ -6,9 +6,10 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = function createAdminRouter({ db, auth, engine, state }) {
+  const denyAll = (req, res) => res.status(401).json({ error: 'Auth module not available' });
   const adminAuth = [
-    auth?.authMiddleware || ((req, res, next) => next()),
-    auth?.adminMiddleware || ((req, res, next) => next()),
+    auth?.authMiddleware || denyAll,
+    auth?.adminMiddleware || denyAll,
   ];
 
   // -- KPI --

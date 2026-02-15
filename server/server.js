@@ -64,9 +64,15 @@ async function initDataStore() {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// CORS
+// CORS — production에서는 Vercel 도메인만 허용
+const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
+  ? ['https://diah7m-platform.vercel.app', 'https://diah7m.com', 'https://www.diah7m.com']
+  : ['*'];
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes('*') || ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -154,8 +160,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 디버그 라우트 (개발용, 원본 유지)
-app.get('/api/test/:id', async (req, res) => {
+// ═══ 디버그 라우트 (production에서는 관리자 인증 필요) ═══
+const debugAuth = process.env.NODE_ENV === 'production'
+  ? (req, res, next) => {
+      const key = req.query.key || req.headers['x-admin-key'];
+      if (!key || key !== process.env.ADMIN_PASSWORD) {
+        return res.status(403).json({ error: 'Debug routes require admin key in production' });
+      }
+      next();
+    }
+  : (req, res, next) => next();
+
+app.get('/api/test/:id', debugAuth, async (req, res) => {
   try {
     if (!pipeline || !pipeline.testGauge) return res.status(503).json({ error: 'Pipeline unavailable' });
     const result = await pipeline.testGauge(req.params.id, process.env.ECOS_API_KEY, process.env.KOSIS_API_KEY);
@@ -163,7 +179,7 @@ app.get('/api/test/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/ecos-items/:stat', async (req, res) => {
+app.get('/api/ecos-items/:stat', debugAuth, async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
   const { stat } = req.params;
@@ -182,7 +198,7 @@ app.get('/api/ecos-items/:stat', async (req, res) => {
   } catch (e) { res.json({ error: e.message }); }
 });
 
-app.get('/api/ecos-items', async (req, res) => {
+app.get('/api/ecos-items', debugAuth, async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
   const stats = (req.query.stats || '721Y001,901Y009').split(',');
@@ -202,7 +218,7 @@ app.get('/api/ecos-items', async (req, res) => {
   res.json(results);
 });
 
-app.get('/api/ecos-probe', async (req, res) => {
+app.get('/api/ecos-probe', debugAuth, async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
   const { stat } = req.query;
@@ -254,7 +270,8 @@ app.use((err, req, res, _next) => {
     err.message.includes('Invalid') || err.message.includes('required') ? 400 :
     err.message.includes('denied') ? 403 : 500
   );
-  res.status(status).json({ error: err.message });
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(status).json({ error: isProd ? 'Internal server error' : err.message });
 });
 
 // ═══ 11. 서버 시작 ═══
@@ -279,7 +296,9 @@ async function start() {
       if (auth) {
         const admin = await db.get("SELECT id FROM users WHERE email = 'admin@diah7m.com'");
         if (!admin) {
-          const hash = auth.hashPassword(process.env.ADMIN_PASSWORD || 'diah7m-admin-2026');
+          const adminPw = process.env.ADMIN_PASSWORD;
+          if (!adminPw) { console.log('  ⚠️  ADMIN_PASSWORD not set — skip admin seed'); return; }
+          const hash = auth.hashPassword(adminPw);
           await db.run(
             "INSERT INTO users (email, password_hash, name, plan, role, mileage) VALUES ('admin@diah7m.com', ?, 'Admin', 'ENTERPRISE', 'admin', 99999)",
             [hash]
