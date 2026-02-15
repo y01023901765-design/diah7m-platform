@@ -40,3 +40,5 @@ server/.env
 # Cowork generated files
 *.docx
 gen_report.cjs
+server.js.backup
+server/data/diah7m.db

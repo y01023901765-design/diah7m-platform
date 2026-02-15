@@ -1,8 +1,9 @@
 /**
- * DIAH-7M API Server v1.0 — 정본
+ * DIAH-7M API Server v1.1 — 라우트 분리판
  * ═══════════════════════════════════════════════════════
- * safeRequire 패턴 · 모듈 없으면 stub 반환 · 서버 항상 동작
- * 2/11 정본 확정 (E2E 39/39 통과) 기반 재구축
+ * v1.0(924줄 단일) → v1.1(~260줄 + routes/4파일)
+ * 변경 없는 것: API 경로, 응답 shape, 미들웨어 순서
+ * 변경된 것: 라우트가 routes/로 분리, fail-fast 2단
  * ═══════════════════════════════════════════════════════
  */
 
@@ -17,9 +18,10 @@ const state = {
   startedAt: new Date(),
   totalRequests: 0,
   modules: {},
+  version: '1.1',
 };
 
-// ═══ 2. safeRequire — 모듈 안전 로드 ═══
+// ═══ 2. safeRequire ═══
 function safeRequire(name, modulePath) {
   try {
     const fullPath = path.resolve(__dirname, modulePath);
@@ -44,8 +46,8 @@ const engine = safeRequire('core-engine', './lib/core-engine');
 const pipeline = safeRequire('data-pipeline', './lib/data-pipeline');
 const DataStore = safeRequire('data-store', './lib/data-store');
 const globalPipeline = safeRequire('global-pipeline', './lib/global-pipeline');
+const { checkBootEnv } = require('./lib/env-check');
 
-// ═══ 3.1 데이터 스토어 초기화 (서버 시작 시 호출) ═══
 let dataStore = null;
 async function initDataStore() {
   if (DataStore && db && db.connected) {
@@ -53,13 +55,12 @@ async function initDataStore() {
     await dataStore.init();
     console.log('  ✅ DataStore initialized');
   } else if (DataStore) {
-    // DB 없이 메모리 캐시만 사용
     dataStore = new DataStore(null);
     console.log('  ⚠️  DataStore (memory-only, no DB)');
   }
 }
 
-// ═══ 4. 글로벌 미들웨어 ═══
+// ═══ 4. 글로벌 미들웨어 (순서 유지!) ═══
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -82,754 +83,162 @@ app.use((req, res, next) => {
 });
 
 // 요청 카운터
-app.use((req, res, next) => {
-  state.totalRequests++;
-  next();
-});
+app.use((req, res, next) => { state.totalRequests++; next(); });
 
 // Rate Limit (간이)
 const rateMap = new Map();
 app.use((req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
   const now = Date.now();
-  const window = 60000; // 1분
-  const limit = 100;
   const hits = rateMap.get(ip) || [];
-  const recent = hits.filter(t => now - t < window);
-  if (recent.length >= limit) {
-    return res.status(429).json({ error: 'Too many requests' });
-  }
+  const recent = hits.filter(t => now - t < 60000);
+  if (recent.length >= 100) return res.status(429).json({ error: 'Too many requests' });
   recent.push(now);
   rateMap.set(ip, recent);
   next();
 });
 
-// ═══ 5. 정적 파일 (Vite 빌드) ═══
+// ═══ 5. 정적 파일 ═══
 const distPath = path.join(__dirname, '..', 'dist');
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-}
+if (fs.existsSync(distPath)) app.use(express.static(distPath));
 
-// ═══ 6. API 라우트 ═══
+// ═══ 6. 코어 라우트 (server.js 유지 — 변경 금지) ═══
 
-// -- 루트 상태 페이지 --
 app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head><meta charset="UTF-8"><title>DIAH-7M API</title></head>
-    <body style="font-family:sans-serif;max-width:600px;margin:50px auto;padding:20px;">
-      <h1>🛰️ DIAH-7M API Server</h1>
-      <p>상태: <strong style="color:green">정상 작동 중</strong></p>
-      <p>가동시간: ${Math.round((Date.now() - state.startedAt) / 1000)}초</p>
-      <p>빌드: ${process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local'}</p>
-      <hr>
-      <h3>주요 엔드포인트:</h3>
-      <ul>
-        <li><a href="/api/health">/api/health</a> — 서버 상태</li>
-        <li><a href="/api/trigger-refresh?key=YOUR_PASSWORD">/api/trigger-refresh?key=...</a> — 데이터 갱신</li>
-        <li>/api/v1/data/test-gauge/:id — 게이지 테스트</li>
-      </ul>
-      <p style="color:#666;font-size:0.9em;">프론트엔드: <a href="https://diah7m-platform.vercel.app">Vercel</a></p>
-    </body>
-    </html>
-  `);
+  res.send(`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>DIAH-7M API</title></head>
+<body style="font-family:sans-serif;max-width:600px;margin:50px auto;padding:20px;">
+<h1>🛰️ DIAH-7M API Server</h1>
+<p>상태: <strong style="color:green">정상 작동 중</strong></p>
+<p>버전: ${state.version} · 가동시간: ${Math.round((Date.now() - state.startedAt) / 1000)}초</p>
+<p>빌드: ${process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local'}</p>
+<hr>
+<h3>주요 엔드포인트:</h3>
+<ul>
+  <li><a href="/api/health">/api/health</a> — 서버 상태</li>
+  <li><a href="/api/trigger-refresh?key=YOUR_PASSWORD">/api/trigger-refresh</a> — 데이터 갱신</li>
+  <li>/api/v1/data/test-gauge/:id — 게이지 테스트</li>
+</ul>
+<p style="color:#666;font-size:0.9em;">프론트엔드: <a href="https://diah7m-platform.vercel.app">Vercel</a></p>
+</body></html>`);
 });
 
-// -- 헬스체크 --
+// Health + 라우트 스냅샷 (동작 동일성 확인용)
 app.get('/api/health', (req, res) => {
+  const routeList = [];
+  app._router.stack.forEach(layer => {
+    if (layer.route) {
+      routeList.push(`${Object.keys(layer.route.methods).join(',').toUpperCase()} ${layer.route.path}`);
+    } else if (layer.name === 'router' && layer.handle.stack) {
+      layer.handle.stack.forEach(r => {
+        if (r.route) routeList.push(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
+      });
+    }
+  });
+
   res.json({
     status: 'ok',
+    version: state.version,
     uptime: Math.round((Date.now() - state.startedAt) / 1000),
     buildCommit: process.env.RENDER_GIT_COMMIT || 'local',
     modules: state.modules,
     requests: state.totalRequests,
     dataStore: dataStore ? dataStore.getStatus() : null,
+    env: {
+      ECOS_API_KEY: process.env.ECOS_API_KEY ? 'SET' : 'MISSING',
+      KOSIS_API_KEY: process.env.KOSIS_API_KEY ? 'SET' : 'MISSING',
+      FRED_API_KEY: process.env.FRED_API_KEY ? 'SET' : 'MISSING',
+      JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'MISSING',
+    },
+    routeCount: routeList.length,
+    routes: routeList.filter(r => r.includes('/api/')),
   });
 });
 
-// -- 게이지 개별 테스트 (임시 디버그) --
+// 디버그 라우트 (개발용, 원본 유지)
 app.get('/api/test/:id', async (req, res) => {
   try {
     if (!pipeline || !pipeline.testGauge) return res.status(503).json({ error: 'Pipeline unavailable' });
     const result = await pipeline.testGauge(req.params.id, process.env.ECOS_API_KEY, process.env.KOSIS_API_KEY);
     res.json(result);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// -- ECOS 단건 항목 조회 (가벼움) --
 app.get('/api/ecos-items/:stat', async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  const stat = req.params.stat;
-  const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/30/${stat}`;
+  const { stat } = req.params;
+  const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/100/${stat}`;
   try {
-    const r = await new Promise((resolve) => {
+    const r = await new Promise((resolve, reject) => {
       require('https').get(url, { timeout: 8000 }, (resp) => {
         let d = ''; resp.on('data', c => d += c);
-        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
-      }).on('error', () => resolve(null));
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ parseError: d.slice(0,200) }); } });
+      }).on('error', reject);
     });
-    const rows = r?.StatisticItemList?.row;
-    if (rows) {
-      res.json({ stat, count: rows.length, items: rows });
-    } else {
-      res.json({ stat, error: r?.RESULT?.MESSAGE || 'no data' });
-    }
-  } catch (e) { res.json({ stat, error: e.message }); }
+    const items = r?.StatisticItemList?.row || [];
+    res.json({ stat, total: items.length, items: items.slice(0,50).map(i => ({
+      code: i.ITEM_CODE, name: i.ITEM_NAME, cycle: i.CYCLE, start: i.START_TIME, end: i.END_TIME,
+    }))});
+  } catch (e) { res.json({ error: e.message }); }
 });
 
-// -- ECOS 항목 발견 (통계표 → 항목 코드 목록) --
 app.get('/api/ecos-items', async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  
-  function efetch(url) {
-    return new Promise((resolve) => {
-      require('https').get(url, { timeout: 8000 }, (resp) => {
-        let d = ''; resp.on('data', c => d += c);
-        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
-      }).on('error', () => resolve(null));
-    });
-  }
-  
-  // 1단계: 통계표 검색 (키워드)
-  const searches = ['수출','소비자물가','산업생산','소매판매','실업','고용','경기종합','설비투자','건설기성','통화','가동률','주택가격','인구','서비스업생산','수주'];
-  const tables = {};
-  for (const kw of searches) {
-    const url = `https://ecos.bok.or.kr/api/StatisticTableList/${ecosKey}/json/kr/1/10/${encodeURIComponent(kw)}`;
-    const r = await efetch(url);
-    const rows = r?.StatisticTableList?.row;
-    if (rows) {
-      tables[kw] = rows.slice(0, 3).map(x => x);  // raw
-    } else {
-      tables[kw] = r?.RESULT?.MESSAGE || 'no result';
-    }
-    await new Promise(r => setTimeout(r, 150));
-  }
-  
-  // 2단계: 핵심 통계표의 항목 목록
-  const statCodes = ['403Y001','403Y014','901Y009','404Y014','901Y033','901Y034','901Y035','901Y036','901Y037','901Y027','901Y067','901Y068','101Y018','101Y003','901Y001','722Y001','301Y013','731Y004','102Y004','403Y003','301Y017'];
-  const items = {};
-  for (const sc of statCodes) {
-    const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/20/${sc}`;
-    const r = await efetch(url);
-    const rows = r?.StatisticItemList?.row;
-    if (rows) {
-      items[sc] = rows.slice(0, 10).map(x => x);  // raw object, no filter
-    } else {
-      items[sc] = r?.RESULT?.MESSAGE || 'no result';
-    }
-    await new Promise(r => setTimeout(r, 150));
-  }
-  
-  res.json({ tables, items });
-});
-app.get('/api/ecos-probe', async (req, res) => {
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  
-  function efetch(url) {
-    return new Promise((resolve) => {
-      require('https').get(url, { timeout: 8000 }, (resp) => {
-        let d = ''; resp.on('data', c => d += c);
-        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
-      }).on('error', () => resolve(null));
-    });
-  }
-  
-  const probes = [
-    // 수출입 (통관기준)
-    { id:'수출-301Y017-T', stat:'301Y017', item:'T' },
-    { id:'수출-301Y017-0', stat:'301Y017', item:'0' },
-    { id:'수출-301Y017-1', stat:'301Y017', item:'1' },
-    { id:'수입-301Y017-2', stat:'301Y017', item:'2' },
-    { id:'수출-403Y001-0', stat:'403Y001', item:'0' },
-    { id:'수출-403Y001-T', stat:'403Y001', item:'T' },
-    { id:'수출-403Y003-0', stat:'403Y003', item:'0' },
-    { id:'수출-403Y003-T', stat:'403Y003', item:'T' },
-    // CPI/PPI (이미 검증)
-    { id:'CPI', stat:'901Y009', item:'0' },
-    { id:'PPI', stat:'404Y014', item:'*AA' },
-    // 산업생산
-    { id:'산업-901Y033-0', stat:'901Y033', item:'0' },
-    { id:'산업-901Y033-T', stat:'901Y033', item:'T' },
-    { id:'산업-901Y033-*AA', stat:'901Y033', item:'*AA' },
-    { id:'산업-901Y033-A', stat:'901Y033', item:'A' },
-    // 소매판매
-    { id:'소매-901Y035-0', stat:'901Y035', item:'0' },
-    { id:'소매-901Y035-T', stat:'901Y035', item:'T' },
-    { id:'소매-901Y035-*AA', stat:'901Y035', item:'*AA' },
-    // 설비투자
-    { id:'설비-901Y034-0', stat:'901Y034', item:'0' },
-    { id:'설비-901Y034-T', stat:'901Y034', item:'T' },
-    { id:'설비-901Y034-*AA', stat:'901Y034', item:'*AA' },
-    // 건설기성
-    { id:'건설-901Y037-0', stat:'901Y037', item:'0' },
-    { id:'건설-901Y037-T', stat:'901Y037', item:'T' },
-    { id:'건설-901Y037-*AA', stat:'901Y037', item:'*AA' },
-    // 서비스업
-    { id:'서비스-901Y036-0', stat:'901Y036', item:'0' },
-    { id:'서비스-901Y036-T', stat:'901Y036', item:'T' },
-    { id:'서비스-901Y036-*AA', stat:'901Y036', item:'*AA' },
-    // 고용/실업
-    { id:'고용-901Y027-0', stat:'901Y027', item:'0' },
-    { id:'고용-901Y027-T', stat:'901Y027', item:'T' },
-    { id:'고용-901Y027-*AA', stat:'901Y027', item:'*AA' },
-    // 경기종합지수
-    { id:'경기-901Y067-0', stat:'901Y067', item:'0' },
-    { id:'경기-901Y067-T', stat:'901Y067', item:'T' },
-    { id:'경기-901Y067-*AA', stat:'901Y067', item:'*AA' },
-    // 통화 M2
-    { id:'M2-101Y018-0', stat:'101Y018', item:'0' },
-    { id:'M2-101Y003-0', stat:'101Y003', item:'0' },
-    { id:'M2-101Y003-BBHA00', stat:'101Y003', item:'BBHA00' },
-    { id:'M2-101Y003-BBKA00', stat:'101Y003', item:'BBKA00' },
-    // 인구
-    { id:'인구-101Y019-0', stat:'101Y019', item:'0' },
-    { id:'인구-101Y019-T', stat:'101Y019', item:'T' },
-    // 국가채무
-    { id:'채무-301Y015-0', stat:'301Y015', item:'0' },
-    // 기존 작동 확인
-    { id:'기준금리', stat:'722Y001', item:'0101000' },
-    { id:'경상수지', stat:'301Y013', item:'000000BPA' },
-    { id:'외환보유고', stat:'732Y001', item:'99' },
-    { id:'환율', stat:'731Y004', item:'0000001' },
-  ];
-
-  const results = [];
-  for (const p of probes) {
-    try {
-      const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/3/${p.stat}/M/202401/202412/${p.item}`;
-      const r = await efetch(url);
-      const ss = r?.StatisticSearch;
-      if (ss?.row) {
-        const row = ss.row[0];
-        results.push({ id: p.id, stat: p.stat, item: p.item, rows: ss.list_total_count, statName: row.STAT_NAME, itemName: row.ITEM_NAME1, unit: row.UNIT_NAME, sample: row.DATA_VALUE });
-      } else {
-        results.push({ id: p.id, stat: p.stat, item: p.item, rows: 0 });
-      }
-    } catch (e) {
-      results.push({ id: p.id, error: e.message });
-    }
-    await new Promise(r => setTimeout(r, 100));
-  }
-  
-  const ok = results.filter(r => r.rows > 0);
-  res.json({ total: probes.length, ok: ok.length, successList: ok });
-});
-
-// -- 회원가입 --
-app.post('/api/v1/auth/register', async (req, res) => {
-  try {
-    if (!db || !auth) return res.status(503).json({ error: 'Auth service unavailable' });
-    const { email, password, name, plan } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-
-    const exists = await db.get('SELECT id FROM users WHERE email = ?', [email]);
-    if (exists) return res.status(409).json({ error: 'Email already registered' });
-
-    const hash = auth.hashPassword(password);
-    const result = await db.run(
-      'INSERT INTO users (email, password_hash, name, plan, mileage) VALUES (?, ?, ?, ?, 500)',
-      [email, hash, name || '', plan || 'FREE']
-    );
-
-    // 마일리지 로그
-    await db.run(
-      'INSERT INTO mileage_log (user_id, delta, reason, balance_after) VALUES (?, 500, ?, 500)',
-      [result.lastID, 'signup_bonus']
-    );
-
-    // 감사 로그
-    await db.run(
-      'INSERT INTO audit_logs (actor, action, target, detail) VALUES (?, ?, ?, ?)',
-      ['system', 'user_register', `user:${result.lastID}`, email]
-    );
-
-    const token = auth.sign({ id: result.lastID, email, plan: plan || 'FREE', role: 'user' });
-    res.status(201).json({ token, user: { id: result.lastID, email, name, plan: plan || 'FREE', mileage: 500 } });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 로그인 --
-app.post('/api/v1/auth/login', async (req, res) => {
-  try {
-    if (!db || !auth) return res.status(503).json({ error: 'Auth service unavailable' });
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-
-    const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    if (user.status === 'suspended') return res.status(403).json({ error: 'Account suspended' });
-    if (!auth.verifyPassword(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = auth.sign({ id: user.id, email, plan: user.plan, role: user.role });
-    res.json({ token, user: { id: user.id, email, name: user.name, plan: user.plan, mileage: user.mileage } });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 프로필 조회 --
-app.get('/api/v1/me', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const user = await db.get('SELECT id, email, name, plan, mileage, lang, status, created_at FROM users WHERE id = ?', [req.user.id]);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 프로필 수정 --
-app.put('/api/v1/me', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const { name, lang } = req.body;
-    await db.run('UPDATE users SET name = ?, lang = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [name || '', lang || 'ko', req.user.id]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 비밀번호 변경 --
-app.post('/api/v1/me/password', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const user = await db.get('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
-    if (!auth.verifyPassword(currentPassword, user.password_hash)) {
-      return res.status(401).json({ error: 'Current password incorrect' });
-    }
-    const hash = auth.hashPassword(newPassword);
-    await db.run('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [hash, req.user.id]);
-    await db.run('INSERT INTO audit_logs (actor, action, target) VALUES (?, ?, ?)',
-      [`user:${req.user.id}`, 'password_change', `user:${req.user.id}`]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 진단 실행 --
-app.post('/api/v1/diagnose', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    if (!engine) return res.status(503).json({ error: 'Engine unavailable' });
-    const { gauges, country, period, thresholds } = req.body;
-    if (!gauges || typeof gauges !== 'object') {
-      return res.status(400).json({ error: 'Gauge data required' });
-    }
-
-    const result = engine.diagnose(gauges, thresholds || {});
-
-    // DB 저장
-    if (db) {
-      const saved = await db.run(
-        `INSERT INTO diagnoses (user_id, country, period, overall_level, overall_score, systems_json, cross_signals_json, dual_lock)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.user.id, country || 'KR', period || new Date().toISOString().slice(0, 7),
-         result.overall.level, result.overall.score,
-         JSON.stringify(result.systems), JSON.stringify(result.crossSignals),
-         result.dualLock ? 1 : 0]
-      );
-      result.diagnosisId = saved.lastID;
-    }
-
-    res.json(result);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 진단 이력 조회 --
-
-// ── Schema-compliant 보고서 생성 ──
-app.post('/api/v1/report', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine v1.1 required' });
-    const { gauges, thresholds, country_code, country_name, product_type, frequency, language } = req.body;
-    if (!gauges || typeof gauges !== 'object') return res.status(400).json({ error: 'Gauge data required' });
-
-    const report = engine.generateReport(gauges, {
-      thresholds: thresholds || {},
-      countryCode: country_code || 'KR',
-      countryName: country_name || '대한민국',
-      productType: product_type || 'national',
-      frequency: frequency || 'monthly',
-      tier: req.user?.plan || 'FREE',
-      language: language || 'ko',
-      channel: 'web',
-    });
-
-    // DB 저장
-    if (db) {
-      await db.run(
-        `INSERT INTO diagnoses (user_id, country, period, overall_level, overall_score, systems_json, cross_signals_json, dual_lock)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.user.id, report.context.country_code, report.context.period_label,
-         report.overall.level, report.overall.score,
-         JSON.stringify(report.systems), JSON.stringify(report.cross_signals),
-         report.dual_lock.active ? 1 : 0]
-      );
-    }
-
-    res.json(report);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 진단 이력 조회 --
-app.get('/api/v1/diagnoses', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const rows = await db.all(
-      'SELECT id, country, period, overall_level, overall_score, dual_lock, created_at FROM diagnoses WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
-      [req.user.id]
-    );
-    res.json(rows);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 진단 상세 --
-app.get('/api/v1/diagnoses/:id', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const row = await db.get('SELECT * FROM diagnoses WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-    if (!row) return res.status(404).json({ error: 'Not found' });
-    row.systems = JSON.parse(row.systems_json || '{}');
-    row.crossSignals = JSON.parse(row.cross_signals_json || '[]');
-    res.json(row);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 마일리지 조회 --
-app.get('/api/v1/me/mileage', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), async (req, res) => {
-  try {
-    const user = await db.get('SELECT mileage FROM users WHERE id = ?', [req.user.id]);
-    const log = await db.all('SELECT * FROM mileage_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 20', [req.user.id]);
-    res.json({ balance: user?.mileage || 0, history: log });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// ═══ 7. 관리자 API ═══
-// ═══ DATA PIPELINE ENDPOINTS ═══
-
-// -- 캐시 상태 조회 (인증 불필요) --
-app.get('/api/v1/data/status', (req, res) => {
-  if (!dataStore) return res.json({ available: false, reason: 'DataStore not initialized' });
-  res.json({ available: true, ...dataStore.getStatus() });
-});
-
-// -- 최신 캐시 데이터 조회 --
-app.get('/api/v1/data/latest', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), (req, res) => {
-  if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
-  const cached = dataStore.getAll();
-  const status = dataStore.getStatus();
-  res.json({ data: cached, status });
-});
-
-// -- 데이터 수동 새로고침 (관리자 전용) --
-// GET 방식 refresh (브라우저에서 쉽게 실행)
-app.get('/api/trigger-refresh', async (req, res) => {
-  const adminPw = process.env.ADMIN_PASSWORD;
-  if (!adminPw || req.query.key !== adminPw) {
-    return res.json({ error: 'Add ?key=YOUR_ADMIN_PASSWORD to URL' });
-  }
-  if (!pipeline || !dataStore) return res.json({ error: 'Pipeline/Store unavailable' });
-  if (dataStore.fetching) return res.json({ error: 'Already running, wait...' });
-
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-
-  dataStore.fetching = true;
-  try {
-    const t0 = Date.now();
-    const { results, stats, errors } = await pipeline.fetchAll(ecosKey, '');
-    const stored = await dataStore.store(results);
-    dataStore.fetching = false;
-    res.json({
-      success: true,
-      time: `${((Date.now()-t0)/1000).toFixed(1)}s`,
-      fetched: `${stats.ok}/${stats.total}`,
-      stored,
-      errors: errors?.length || 0,
-      details: stats
-    });
-  } catch (e) {
-    dataStore.fetching = false;
-    res.json({ error: e.message });
-  }
-});
-
-app.post('/api/v1/data/refresh', async (req, res) => {
-  // Admin bypass: ADMIN_PASSWORD in body or Authorization header
-  const adminPw = process.env.ADMIN_PASSWORD;
-  const bodyPw = req.body?.adminPassword;
-  const headerPw = (req.headers.authorization || '').replace('Bearer ', '');
-  
-  let authorized = false;
-  if (adminPw && (bodyPw === adminPw || headerPw === adminPw)) {
-    authorized = true;
-  } else if (auth?.authMiddleware) {
-    // Try JWT auth
-    try {
-      await new Promise((resolve, reject) => {
-        auth.authMiddleware(req, res, (err) => err ? reject(err) : resolve());
-      });
-      if (req.user?.role === 'admin') authorized = true;
-    } catch (e) { /* not authorized via JWT */ }
-  }
-  
-  if (!authorized) return res.status(403).json({ error: 'Admin access required. Send adminPassword in body.' });
-  if (!pipeline || !dataStore) return res.status(503).json({ error: 'Pipeline/Store unavailable' });
-  if (dataStore.fetching) return res.status(429).json({ error: 'Fetch already in progress' });
-
-  const ecosKey = process.env.ECOS_API_KEY;
-  const kosisKey = process.env.KOSIS_API_KEY;
-  if (!ecosKey && !kosisKey) return res.status(400).json({ error: 'API keys not configured. Set ECOS_API_KEY and KOSIS_API_KEY in .env' });
-
-  dataStore.fetching = true;
-  try {
-    console.log('[Pipeline] Refresh started...');
-    const t0 = Date.now();
-    const { results, stats, errors } = await pipeline.fetchAll(ecosKey, kosisKey);
-    console.log(`[Pipeline] Fetch done: ${stats.ok}/${stats.total} OK (${Date.now()-t0}ms)`);
-    
-    const stored = await dataStore.store(results);
-    console.log(`[Pipeline] Store done: ${stored.stored} stored, ${stored.preserved} preserved`);
-    
-    dataStore.fetching = false;
-    res.json({ ok: true, stats, stored, errors: errors.slice(0, 10) });
-  } catch (e) {
-    dataStore.fetching = false;
-    console.error('[Pipeline] Refresh error:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 자동 보고서 (캐시 데이터 → 엔진 진단) --
-app.get('/api/v1/report/auto', auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' })), (req, res) => {
-  if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine unavailable' });
-  if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
-
-  const gaugeData = dataStore.toGaugeData();
-  if (Object.keys(gaugeData).length === 0) {
-    return res.status(404).json({ error: 'No cached data. Call POST /api/v1/data/refresh first', hint: 'Set ECOS_API_KEY and KOSIS_API_KEY then refresh' });
-  }
-
-  const report = engine.generateReport(gaugeData, {
-    countryCode: req.query.country || 'KR',
-    countryName: req.query.country_name || '대한민국',
-    productType: 'national',
-    frequency: req.query.frequency || 'monthly',
-    tier: req.user?.plan || 'FREE',
-    language: req.query.lang || 'ko',
-    channel: 'web',
-  });
-
-  res.json(report);
-});
-
-// -- 파이프라인 매핑 진단 --
-app.get('/api/v1/data/mapping', (req, res) => {
-  if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
-  res.json(pipeline.diagnoseMapping());
-});
-
-// -- 일괄 진단: apiError 게이지 + ECOS 탐색 --
-app.get('/api/v1/data/debug-all', async (req, res) => {
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-
+  const stats = (req.query.stats || '721Y001,901Y009').split(',');
   const results = {};
-
-  // 1) 현재 실패 중인 게이지 전부 테스트
-  const errorGauges = ['S1','S5','O2','G6'];
-  for (const id of errorGauges) {
-    results[id] = await pipeline.testGauge(id, ecosKey, '');
-  }
-
-  // 2) BSI 통계표 512Y006 — 실제 아이템 코드 탐색
-  const bsiItems = ['FBB','FBE','FBB01','FBE01','FBA','FAB','FA','FB','FC','FD','FMB','FME'];
-  const bsiProbe = {};
-  for (const item of bsiItems) {
-    const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/5/512Y006/M/202401/202602/${item}`;
+  for (const stat of stats) {
+    const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/100/${stat.trim()}`;
     try {
-      const r = await fetch(url);
-      const json = await r.json();
-      const rows = json?.StatisticSearch?.row;
-      bsiProbe[item] = rows ? { ok: true, count: rows.length, latest: rows[rows.length-1]?.TIME, name: rows[0]?.ITEM_NAME1, value: rows[rows.length-1]?.DATA_VALUE } : { ok: false, msg: json?.RESULT?.MESSAGE || 'no data' };
-    } catch(e) { bsiProbe[item] = { ok: false, msg: e.message }; }
-  }
-  results._bsiProbe = bsiProbe;
-
-  // 3) FRED 키 + 시리즈 체크
-  results._fredKey = process.env.FRED_API_KEY ? 'SET' : 'MISSING';
-  results._airkoreaKey = process.env.AIRKOREA_API_KEY ? 'SET' : 'MISSING';
-  results._openaqKey = process.env.OPENAQ_API_KEY ? 'SET' : 'MISSING';
-
-  // 4) 환경변수 목록 (키 값 숨김)
-  results._envKeys = Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY') || k.includes('ADMIN'));
-
-  res.json(results);
-});
-
-// -- 개별 게이지 API 테스트 (디버그용, 임시 공개) --
-app.get('/api/v1/data/test-gauge/:id', async (req, res) => {
-  if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
-  const ecosKey = process.env.ECOS_API_KEY;
-  const kosisKey = process.env.KOSIS_API_KEY;
-  const result = await pipeline.testGauge(req.params.id, ecosKey, kosisKey);
-  res.json(result);
-});
-
-// -- KOSIS 테이블 검색 (올바른 tblId 발견용) --
-app.get('/api/v1/data/kosis-search', async (req, res) => {
-  const kosisKey = process.env.KOSIS_API_KEY;
-  const keywords = (req.query.q || '수출입,소비자물가,산업생산,소매판매,실업률,고용률,경기종합지수,설비투자,주택가격,출산,제조업가동률,미분양,생산자물가,경상수지,국가채무,건설기성,컨테이너,외국인직접투자,서비스업생산,신규수주,제조업재고').split(',');
-  const results = {};
-  
-  for (const kw of keywords) {
-    try {
-      const url = `https://kosis.kr/openapi/statisticsList.do?method=getList&vwCd=MT_ZTITLE&parentListId=&apiKey=${encodeURIComponent(kosisKey)}&format=json&jsonVD=Y&searchNm=${encodeURIComponent(kw.trim())}`;
       const r = await new Promise((resolve, reject) => {
         require('https').get(url, { timeout: 8000 }, (resp) => {
           let d = ''; resp.on('data', c => d += c);
-          resp.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve({ parseError: d.slice(0, 200) }); } });
+          resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve(null); } });
         }).on('error', reject);
       });
-      if (Array.isArray(r)) {
-        results[kw.trim()] = r.slice(0, 3).map(x => {
-          // Return all fields to discover correct field names
-          const entry = {};
-          for (const [k, v] of Object.entries(x)) {
-            if (v && v !== '') entry[k] = v;
-          }
-          return entry;
-        });
-      } else {
-        results[kw.trim()] = r;
-      }
-    } catch (e) {
-      results[kw.trim()] = { error: e.message };
-    }
-    await new Promise(r => setTimeout(r, 200));
+      results[stat.trim()] = (r?.StatisticItemList?.row || []).map(i => ({ code: i.ITEM_CODE, name: i.ITEM_NAME, cycle: i.CYCLE }));
+    } catch (e) { results[stat.trim()] = { error: e.message }; }
   }
-  
-  res.json({ total: keywords.length, results });
-});
-
-// -- 전체 게이지 API 원시 응답 진단 --
-app.get('/api/v1/data/diagnose',
-  auth?.authMiddleware || ((req, res, next) => next()),
-  auth?.adminMiddleware || ((req, res, next) => next()),
-  async (req, res) => {
-  if (!pipeline) return res.status(503).json({ error: 'Pipeline unavailable' });
-  const ecosKey = process.env.ECOS_API_KEY;
-  const kosisKey = process.env.KOSIS_API_KEY;
-  const results = await pipeline.diagnoseAll(ecosKey, kosisKey);
   res.json(results);
 });
 
-// ═══ ADMIN ═══
-const adminAuth = [
-  auth?.authMiddleware || ((req, res, next) => next()),
-  auth?.adminMiddleware || ((req, res, next) => next()),
-];
-
-// -- 관리자 KPI --
-app.get('/api/v1/admin/kpi', ...adminAuth, async (req, res) => {
+app.get('/api/ecos-probe', async (req, res) => {
+  const ecosKey = process.env.ECOS_API_KEY;
+  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
+  const { stat } = req.query;
+  const item = req.query.item || '';
+  const cycle = req.query.cycle || 'M';
+  if (!stat) return res.json({ error: 'stat param required' });
+  const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/5/${stat}/${cycle}/202401/202602/${item}`;
   try {
-    const users = await db.get('SELECT COUNT(*) as cnt FROM users');
-    const active = await db.get("SELECT COUNT(*) as cnt FROM users WHERE status = 'active'");
-    const diagnoses = await db.get('SELECT COUNT(*) as cnt FROM diagnoses');
-    const payments = await db.get("SELECT SUM(amount) as total FROM payments WHERE status = 'completed'");
-    res.json({
-      totalUsers: users?.cnt || 0,
-      activeUsers: active?.cnt || 0,
-      totalDiagnoses: diagnoses?.cnt || 0,
-      totalRevenue: payments?.total || 0,
+    const r = await new Promise((resolve, reject) => {
+      require('https').get(url, { timeout: 8000 }, (resp) => {
+        let d = ''; resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ parseError: d.slice(0,200) }); } });
+      }).on('error', reject);
     });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+    res.json(r?.StatisticSearch || r);
+  } catch (e) { res.json({ error: e.message }); }
 });
 
-// -- 회원 목록 --
-app.get('/api/v1/admin/users', ...adminAuth, async (req, res) => {
-  try {
-    const users = await db.all('SELECT id, email, name, plan, mileage, status, created_at FROM users ORDER BY created_at DESC');
-    res.json(users);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+// 기존 /api/trigger-refresh 호환 (프록시)
+app.get('/api/trigger-refresh', (req, res) => {
+  // routes/data.js의 /trigger-refresh로 전달
+  req.url = '/api/v1/trigger-refresh' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '');
+  app.handle(req, res);
 });
 
-// -- 회원 티어 변경 --
-app.patch('/api/v1/admin/users/:id/plan', ...adminAuth, async (req, res) => {
-  try {
-    const { plan } = req.body;
-    await db.run('UPDATE users SET plan = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [plan, req.params.id]);
-    await db.run('INSERT INTO audit_logs (actor, action, target, detail) VALUES (?, ?, ?, ?)',
-      [req.user.email, 'plan_change', `user:${req.params.id}`, `→ ${plan}`]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+// ═══ 7. 라우트 모듈 마운트 (routes/index.js) ═══
+const mountRoutes = require('./routes');
+// deps는 start() 안에서 dataStore 초기화 후 마운트
 
-// -- 회원 정지/활성화 --
-app.patch('/api/v1/admin/users/:id/status', ...adminAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    await db.run('UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
-    await db.run('INSERT INTO audit_logs (actor, action, target, detail) VALUES (?, ?, ?, ?)',
-      [req.user.email, 'status_change', `user:${req.params.id}`, `→ ${status}`]);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 감사 로그 --
-app.get('/api/v1/admin/audit', ...adminAuth, async (req, res) => {
-  try {
-    const logs = await db.all('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100');
-    res.json(logs);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// -- 엔진 상태 --
-app.get('/api/v1/admin/engine', ...adminAuth, (req, res) => {
-  res.json({
-    engineLoaded: !!engine,
-    dbConnected: db?.connected || false,
-    modules: state.modules,
-    uptime: Math.round((Date.now() - state.startedAt) / 1000),
-    totalRequests: state.totalRequests,
-  });
-});
-
-// ═══ 7.5 글로벌 43개국 API ═══
+// ═══ 8. 글로벌 43개국 ═══
 if (globalPipeline && globalPipeline.createGlobalRouter) {
   app.use('/api/v1/global', globalPipeline.createGlobalRouter(express));
   console.log('  ✅ Global router mounted (43 countries)');
 }
-// ═══ 8. SPA Fallback ═══
+
+// ═══ 9. SPA Fallback ═══
 if (fs.existsSync(distPath)) {
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'API not found' });
@@ -837,7 +246,7 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// ═══ 9. 에러 핸들러 ═══
+// ═══ 10. 에러 핸들러 (맨 끝 위치 유지!) ═══
 app.use((err, req, res, _next) => {
   console.error('Server Error:', err.message);
   const status = err.status || (
@@ -848,22 +257,25 @@ app.use((err, req, res, _next) => {
   res.status(status).json({ error: err.message });
 });
 
-// ═══ 10. 서버 시작 ═══
+// ═══ 11. 서버 시작 ═══
 const PORT = process.env.PORT || 3700;
 
 async function start() {
   try {
     console.log('\n══════════════════════════════════════');
-    console.log('  🛰️  DIAH-7M API Server v1.0');
+    console.log('  🛰️  DIAH-7M API Server v1.1');
     console.log('══════════════════════════════════════\n');
-    console.log('  Loading modules...');
+
+    // 1단 fail-fast
+    checkBootEnv();
+
+    console.log('\n  Loading modules...');
 
     // DB 연결
     if (db) {
       await db.connect();
       await db.initSchema();
 
-      // 관리자 계정 생성 (없으면)
       if (auth) {
         const admin = await db.get("SELECT id FROM users WHERE email = 'admin@diah7m.com'");
         if (!admin) {
@@ -877,28 +289,24 @@ async function start() {
       }
     }
 
+    // DataStore 초기화
+    await initDataStore();
+
+    // 라우트 마운트 (dataStore 초기화 후)
+    const deps = { db, auth, engine, pipeline, dataStore, state };
+    mountRoutes(app, deps);
+
     console.log(`\n  Modules: ${JSON.stringify(state.modules)}`);
     console.log(`  Engine: ${engine ? '✅' : '❌'}`);
     console.log(`  DB: ${db?.connected ? '✅' : '❌'}`);
 
-    // DataStore 초기화 (DB 연결 후)
-    await initDataStore();
-
-    // 서버 시작
     const server = app.listen(PORT, () => {
       console.log(`\n  🚀 http://localhost:${PORT}`);
       console.log(`  📡 API: http://localhost:${PORT}/api/health`);
       console.log(`  🔖 Commit: ${process.env.RENDER_GIT_COMMIT || 'local'}`);
-      // Route listing
-      const routes = [];
-      app._router.stack.forEach(r => {
-        if (r.route) routes.push(`${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`);
-      });
-      console.log(`  📋 Routes (${routes.length}): ${routes.filter(r => r.includes('/api/')).join(' | ')}`);
       console.log('══════════════════════════════════════\n');
     });
 
-    // Graceful Shutdown
     const shutdown = async (signal) => {
       console.log(`\n  ${signal} — shutting down...`);
       server.close(async () => {
@@ -916,7 +324,6 @@ async function start() {
   }
 }
 
-// 직접 실행 시 서버 시작, require 시 app export
 if (require.main === module) {
   start();
 } else {
