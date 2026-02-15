@@ -52,23 +52,23 @@ function SparkLine({data,c,w=140,h=32}){
   </svg>);
 }
 function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,color}){
-  return(<div style={{display:"flex",gap:8}}>
-    {[{lb:bf.date,val:bf.val,ds:"30일 전 수집",isCurrent:false},
-      {lb:af.date,val:af.val,ds:"최신 촬영분",isCurrent:true}].map((s,i)=>(
+  return(<div style={{display:"flex",gap:10}}>
+    {[{lb:bf.date,val:bf.val,ds:"30일 전",isCurrent:false},
+      {lb:af.date,val:af.val,ds:"최신",isCurrent:true}].map((s,i)=>(
       <div key={i} style={{flex:1}}>
-        <div style={{fontSize:14,color:s.isCurrent?LT.text:LT.textDim,fontFamily:"monospace",marginBottom:6,textAlign:"center",fontWeight:s.isCurrent?600:400}}>{s.ds} · {s.lb}</div>
-        <div style={{width:"100%",aspectRatio:"1",borderRadius:8,border:`1px solid ${LT.border}`,overflow:"hidden",position:"relative",background:LT.bg2}}>
+        <div style={{fontSize:14,color:s.isCurrent?LT.text:LT.textDim,marginBottom:4,textAlign:"center",fontWeight:s.isCurrent?700:400}}>{s.isCurrent?"최신 촬영분":"30일 전 수집"} · {s.lb}</div>
+        <div style={{width:"100%",aspectRatio:"1.6",borderRadius:8,border:`1px solid ${s.isCurrent?LT.text+'20':LT.border}`,overflow:"hidden",position:"relative",background:LT.bg2}}>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
-            <div style={{fontSize:32,marginBottom:6}}>🛰️</div>
-            <div style={{fontSize:14,color:LT.textMid,fontFamily:"monospace",textAlign:"center",padding:"0 10px",lineHeight:1.5}}>{sensor}<br/>{product}</div>
+            <div style={{fontSize:28,marginBottom:4}}>🛰️</div>
+            <div style={{fontSize:14,color:LT.textDim,textAlign:"center",padding:"0 10px",lineHeight:1.4}}>{sensor}<br/>{product}</div>
           </div>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"6px 8px",background:LT.bg3,borderTop:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:14,fontFamily:"monospace",color:LT.textDim}}>{coord} · {radius}</div>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 8px",background:LT.bg3,borderTop:`1px solid ${LT.border}`}}>
+            <div style={{fontSize:14,color:LT.textDim}}>{coord} · {radius}</div>
           </div>
         </div>
-        <div style={{textAlign:"center",marginTop:6}}>
-          <span style={{fontSize:18,fontFamily:"monospace",fontWeight:700,color:LT.text}}>{s.val}</span>
-          <span style={{fontSize:14,color:LT.textDim,fontFamily:"monospace"}}> {unit}</span>
+        <div style={{textAlign:"center",marginTop:8}}>
+          <span style={{fontSize:24,fontFamily:"monospace",fontWeight:800,color:LT.text}}>{s.val}</span>
+          <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}> {unit}</span>
         </div>
       </div>
     ))}
@@ -144,11 +144,11 @@ function SatEvidencePanel({data:d}){
     </div>
     <div style={{background:LT.surface,borderRadius:LT.smRadius,padding:14,border:`1px solid ${LT.border}`,marginTop:10}}>
       <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:8}}>📈 30일 추세</div>
-      <div style={{display:"flex",gap:20}}>
+      <div style={{display:"flex",gap:24}}>
         {d.trends.map((tr,i)=>(<div key={i}>
-          <div style={{fontSize:14,color:LT.textMid,fontFamily:"monospace",marginBottom:4,fontWeight:600}}>{tr.label}</div>
+          <div style={{fontSize:15,color:LT.text,fontWeight:700,marginBottom:4}}>{tr.label}</div>
           <SparkLine data={tr.data} c={LT.textMid}/>
-          <div style={{fontSize:14,color:tr.change>0?LT.good:LT.danger,fontFamily:"monospace",fontWeight:600,marginTop:2}}>{tr.change>0?"▲":"▼"}{Math.abs(tr.change)}%</div>
+          <div style={{fontSize:16,color:tr.change>0?LT.good:LT.danger,fontFamily:"monospace",fontWeight:700,marginTop:3}}>{tr.change>0?"▲":"▼"}{Math.abs(tr.change)}%</div>
         </div>))}
       </div>
     </div>
