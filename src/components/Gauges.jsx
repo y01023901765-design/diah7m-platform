@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import T, { L as LT } from '../theme';
-import { t, gc, gi } from '../i18n';
+import { t, gc } from '../i18n';
 import { SatBadge, SatXrefBanner, SatEvidencePanel, SparkLine } from './Satellite';
 import TierLock, { isSat, SAT_META, D, gN, sysN, sysB, sysM } from './TierLock';
 import { TIER_ACCESS, tierLevel } from '../data/gauges';

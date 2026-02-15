@@ -4,7 +4,7 @@ import T, { L as LT } from '../theme';
 function ProductMgmt(){
   const [sub,setSub]=useState('list');
   const [detail,setDetail]=useState(null);
-  const [editPrice,setEditPrice]=useState(null);
+  
   const subs=[{id:'list',lb:'📋 상품목록'},{id:'price',lb:'💰 가격관리'},{id:'coupon',lb:'🎫 쿠폰'},{id:'category',lb:'📂 카테고리'},{id:'stats',lb:'📊 판매통계'}];
   const statusC={판매중:LT.good,판매중지:LT.danger,품절:LT.textDim,준비중:LT.warn,시즌종료:'#8b5cf6'};
   const products=[

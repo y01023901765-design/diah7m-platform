@@ -91,8 +91,9 @@ app.use((req, res, next) => {
 // 요청 카운터
 app.use((req, res, next) => { state.totalRequests++; next(); });
 
-// Rate Limit (간이)
+// Rate Limit (간이 + 메모리 정리)
 const rateMap = new Map();
+setInterval(() => { const now = Date.now(); for (const [ip, hits] of rateMap) { const fresh = hits.filter(t => now - t < 60000); if (fresh.length === 0) rateMap.delete(ip); else rateMap.set(ip, fresh); } }, 5 * 60 * 1000);
 app.use((req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
   const now = Date.now();

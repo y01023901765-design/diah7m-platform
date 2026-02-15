@@ -26,13 +26,12 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
     res.json({ data: cached, status });
   });
 
-  // -- GET 방식 refresh (브라우저에서 쉽게 실행) --
-  // 주의: 이 라우트는 /api/v1/trigger-refresh로 마운트됨.
-  // 기존 /api/trigger-refresh 호환은 server.js에서 별도 프록시.
+  // -- refresh (Header 인증 방식) --
   router.get('/trigger-refresh', async (req, res) => {
     const adminPw = process.env.ADMIN_PASSWORD;
-    if (!adminPw || req.query.key !== adminPw) {
-      return res.json({ error: 'Add ?key=YOUR_ADMIN_PASSWORD to URL' });
+    const key = req.headers['x-admin-key'] || req.query.key;
+    if (!adminPw || key !== adminPw) {
+      return res.status(403).json({ error: 'Admin key required (x-admin-key header or ?key= param)' });
     }
     if (!pipeline || !dataStore) return res.json({ error: 'Pipeline/Store unavailable' });
     if (dataStore.fetching) return res.json({ error: 'Already running, wait...' });
@@ -137,7 +136,7 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
 
     results._fredKey = process.env.FRED_API_KEY ? 'SET' : 'MISSING';
     results._airkoreaKey = process.env.AIRKOREA_API_KEY ? 'SET' : 'MISSING';
-    results._envKeys = Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY') || k.includes('ADMIN'));
+    // 환경변수 키 노출 금지 (보안)
 
     res.json(results);
   });

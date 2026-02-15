@@ -8,7 +8,7 @@ function GlobalNav({page,user,onNav,onLogout,lang,setLang}){
   return(<nav style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",borderBottom:`1px solid ${LT.border}`,background:`${LT.bg0}e0`,backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:200,direction:"ltr"}}>    <div style={{display:"flex",alignItems:"center",gap:12}}>
       <div onClick={()=>onNav(user?'dashboard':'landing')} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><span style={{fontSize:16}}>🛰️</span><span style={{fontSize:14,fontWeight:800,color:LT.text}}>DIAH-7M</span></div>
       {user&&<span style={{fontSize:14,padding:"2px 8px",borderRadius:6,background:'#F0F0F0',color:LT.textMid,fontWeight:600}}>2026.01</span>}
-      {user&&pages.map(p=>(<button key={p.id} onClick={()=>onNav(p.id)} style={{padding:"6px 12px",borderRadius:6,border:"none",background:"transparent",color:page===p.id?LT.text:LT.textDim,fontWeight:page===p.id?700:400,fontSize:14,fontWeight:page===p.id?700:500,cursor:"pointer"}}>{p.label}</button>))}
+      {user&&pages.map(p=>(<button key={p.id} onClick={()=>onNav(p.id)} style={{padding:"6px 12px",borderRadius:6,border:"none",background:"transparent",color:page===p.id?LT.text:LT.textDim,fontSize:14,fontWeight:page===p.id?700:500,cursor:"pointer"}}>{p.label}</button>))}
     </div>
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <LangSelector lang={L} setLang={setLang}/>

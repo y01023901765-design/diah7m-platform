@@ -173,7 +173,7 @@ class DBAdapter {
 
   async all(sql, params = []) {
     if (this.type === 'pg') {
-      const result = await this.db.query(sql, params);
+      const result = await this.db.query(this._pgSQL(sql), params);
       return result.rows;
     }
     const results = [];

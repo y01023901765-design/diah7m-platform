@@ -365,7 +365,7 @@ function StockPage({user,lang}){
     if(search){const q=search.toLowerCase();return getName(s).toLowerCase().includes(q)||s.sid.toLowerCase().includes(q)||s.sec.toLowerCase().includes(q);}
     return true;
   });
-  const countries=[...new Set(STOCKS.map(s=>s.c))].length;
+
   const totalFac=STOCKS.reduce((a,s)=>a+s.fac,0);
 
   if(selected) return(

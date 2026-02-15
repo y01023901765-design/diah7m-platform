@@ -16,7 +16,7 @@ function AuthPage({mode,onNavigate,onLogin,lang}){
   const switchMode=(m)=>{setAuthMode(m);setError('');setStep(1);setResetSent(false);};
 
   // ── 지역별 소셜로그인 ──
-  const blang=L;
+
   const GLOBAL_SOCIAL=[
     {id:'google',name:'Google',icon:'G',bg:'#4285F4',fg:'#fff'},
     {id:'apple',name:'Apple',icon:'',bg:'#000',fg:'#fff'},

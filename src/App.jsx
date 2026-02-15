@@ -91,7 +91,7 @@ export default function App(){
           {(page==='login'||page==='signup')&&<AuthPage mode={page} onNavigate={nav} onLogin={handleLogin} lang={lang}/>}
           {page==='dashboard'&&user&&<DashboardPage user={user} onNav={nav} lang={lang} country={selectedCountry}/>}
           {page==='stock'&&user&&<StockPage user={user} lang={lang}/>}
-          {page==='mypage'&&user&&<MyPage user={user} onNav={nav} lang={lang} setGlobalLang={setLang}/>}
+          {page==='mypage'&&user&&<MyPage user={user} lang={lang} setGlobalLang={setLang}/>}
           {page==='admin'&&user&&<AdminPage lang={lang}/>}
         </div>
         {page!=='login'&&page!=='signup'&&<div style={{padding:"20px 16px",textAlign:"center",fontSize:13,color:TH.textDim,borderTop:`1px solid ${TH.border}`,marginTop:40}}>© Human Body National Economics · DIAH-7M · Jong-Won Yoon | NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>}

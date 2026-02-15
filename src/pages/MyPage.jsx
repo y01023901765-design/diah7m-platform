@@ -3,7 +3,7 @@ import T, { L as LT } from '../theme';
 import { t, LANG_LIST } from '../i18n';
 import * as API from '../api';
 
-function MyPage({user,onNav,lang,setGlobalLang}){
+function MyPage({user,lang,setGlobalLang}){
   const [tab,setTab]=useState('profile');
   const [msg,setMsg]=useState('');
   const [profile,setProfile]=useState({name:user.name||'',phone:''});

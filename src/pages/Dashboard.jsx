@@ -4,7 +4,7 @@ import { t, gc } from '../i18n';
 import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
 import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components/TierLock';
-import { TIER_ACCESS, tierLevel } from '../data/gauges';
+import { TIER_ACCESS } from '../data/gauges';
 import * as API from '../api';
 
 // ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
@@ -77,7 +77,7 @@ function DashboardPage({user,onNav,lang,country}){
       }
     })();
     return () => { cancelled = true; };
-  },[iso3]);
+  },[iso3, isKorea]);
 
   // 실데이터 있으면 머지, 없으면 데모 그대로
   const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
