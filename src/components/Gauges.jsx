@@ -16,14 +16,14 @@ function GaugeRow({d,open,toggle,lang}){
     <div style={{background:LT.surface,borderRadius:LT.smRadius,border:`1px solid ${LT.border}`,marginBottom:6,overflow:"hidden",cursor:"pointer",transition:"all .2s",position:"relative"}} onClick={toggle}>
       {sat&&<div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:LT.border}}/>}
       <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,position:"relative"}}>
-        <span style={{fontSize:15,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:sat?LT.sat:LT.textMid,width:32,flexShrink:0}}>{d.c}</span>
+        <span style={{fontSize:15,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:LT.textMid,width:32,flexShrink:0}}>{d.c}</span>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontSize:16,fontWeight:700,color:LT.text}}>{gN(d.c,L)}</span>
             {sat&&<SatBadge code={d.c}/>}
             {TIER[d.c]&&<span style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:15,padding:"2px 7px",borderRadius:4,fontWeight:700,
-              background:`${TIER_LABEL[TIER[d.c]].color}15`,color:TIER_LABEL[TIER[d.c]].color,
-              border:`1px solid ${TIER_LABEL[TIER[d.c]].color}30`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:16}}>🛰️</span>}{TIER_LABEL[TIER[d.c]].ko}</span>}
+              background:LT.bg2,color:LT.textMid,
+              border:`1px solid ${LT.border}`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:16}}>🛰️</span>}{TIER_LABEL[TIER[d.c]].ko}</span>}
           </div>
           <div style={{fontSize:16,color:LT.textDim,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.note}</div>
         </div>
@@ -38,33 +38,33 @@ function GaugeRow({d,open,toggle,lang}){
         <div style={{padding:"0 16px 16px",borderTop:`1px solid ${LT.border}`}}>
           {/* 의학비유 설명 */}
           <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:10,border:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:3}}>{t('bodyMetaphor',L)}: {d.t}</div>
+            <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:3}}>{t('bodyMetaphor',L)}: {d.t}</div>
             <div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{d.m}</div>
           </div>
           {SAT_EV[d.c]?<SatEvidencePanel data={SAT_EV[d.c]}/>:<>
           {/* 위성 교차검증 (기존) */}
           {sat?<div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:16,fontWeight:700,color:LT.sat,marginBottom:4}}>{t('satObsInfo',L)}</div>
+            <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t('satObsInfo',L)}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
               {[[t('satCol',L),SAT_META[d.c]?.sat],[t('satProg',L),SAT_META[d.c]?.orbit],[t('satCycle',L),SAT_META[d.c]?.freq],[t('satBand',L),SAT_META[d.c]?.band]].map(([k,v])=>(
-                <div key={k} style={{fontSize:16}}><span style={{color:LT.sat,fontWeight:700}}>{k}: </span><span style={{color:LT.textMid}}>{v}</span></div>
+                <div key={k} style={{fontSize:16}}><span style={{color:LT.text,fontWeight:700}}>{k}: </span><span style={{color:LT.textMid}}>{v}</span></div>
               ))}
             </div>
           </div>:<SatXrefBanner code={d.c} lang={L}/>}
           {/* 행동 시그널 */}
           <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:6}}>{t('investSignal',L)}</div>
+            <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:6}}>{t('investSignal',L)}</div>
             {d.act?.map((a,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:5}}>
                 <div style={{flex:1}}><div style={{fontSize:16,fontWeight:600,color:LT.text}}>{a.s}</div><div style={{fontSize:16,color:LT.textMid}}>{a.a}</div></div>
-                <span style={{fontSize:15,fontWeight:700,padding:"2px 6px",borderRadius:4,background:a.tg.includes(t('sigBuy',L))?LT.good+"18":a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?LT.danger+"18":LT.warn+"18",color:a.tg.includes(t('sigBuy',L))?LT.good:a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?LT.danger:LT.warn,whiteSpace:"nowrap"}}>{a.tg}</span>
+                <span style={{fontSize:15,fontWeight:700,padding:"2px 6px",borderRadius:4,background:LT.bg2,color:a.tg.includes(t('sigBuy',L))?LT.good:a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?LT.danger:LT.warn,border:`1px solid ${LT.border}`,whiteSpace:"nowrap"}}>{a.tg}</span>
               </div>
             ))}
           </div>
           {/* 사각지대 */}
           <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:16,fontWeight:700,color:LT.accent,marginBottom:4}}>{t('blindSpot',L)}</div>
-            <div style={{fontSize:16,color:LT.accent,marginBottom:4}}>{d.bs?.d}</div>
+            <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t('blindSpot',L)}</div>
+            <div style={{fontSize:16,color:LT.textMid,marginBottom:4}}>{d.bs?.d}</div>
             {d.bs?.o?.map((o,i)=>(<div key={i} style={{fontSize:15,color:LT.textDim,marginBottom:2}}>✕ {o}</div>))}
           </div>
           </>}
@@ -88,8 +88,8 @@ function SystemSection({sysKey,sys,expanded,toggle,lang}){
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:20}}>{sys.icon}</span>
             <span style={{fontSize:16,fontWeight:800,color:LT.text}}>{sysN(sysKey,L)}</span>
-            <span style={{fontSize:16,color:sys.color,fontWeight:600}}>({sysB(sysKey,L)})</span>
-            {satCount>0&&<span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:10,background:`${LT.sat}15`,color:LT.sat,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
+            <span style={{fontSize:16,color:'#777',fontWeight:600}}>({sysB(sysKey,L)})</span>
+            {satCount>0&&<span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:10,background:LT.bg2,color:LT.textMid,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
           </div>
           <div style={{fontSize:16,color:LT.textDim,marginTop:4}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>
         </div>

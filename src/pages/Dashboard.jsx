@@ -69,20 +69,20 @@ function DashboardPage({user,onNav,lang}){
       </div>
       {/* Key Actions */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:12}}>{t('keyActions',L)}</div>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t('keyActions',L)}</div>
         {(t('actions',L)||[]).map((txt,i)=>(<div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}><span style={{width:22,height:22,borderRadius:11,background:i===4?LT.danger:i===0?LT.good:LT.warn,color:"#fff",fontSize:16,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</span><span style={{fontSize:15,color:LT.text,lineHeight:1.6}}>{txt}</span></div>))}
       </div>
       {/* Verdict */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:10}}>{t('verdictTitle',L)}</div>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>{t('verdictTitle',L)}</div>
         <div style={{fontSize:15,color:LT.textMid,lineHeight:2}}>{t('verdictText',L)}</div>
       </div>
       {/* Satellite summary */}
       <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.sat,marginBottom:10}}>{t('satTimeline',L)}</div>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>{t('satTimeline',L)}</div>
         <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
         </div>
       </div>
       {/* 9 Systems */}
