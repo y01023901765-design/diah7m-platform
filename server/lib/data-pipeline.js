@@ -118,7 +118,7 @@ const GAUGE_MAP = {
 
   // ── A7: 생산·산업 (근골격계) ──
   O1: { source:'ECOS', stat:'901Y033', item:'A00', cycle:'M', name:'산업생산', unit:'2020=100' },
-  O2: { source:'ECOS', stat:'901Y034', item:'I31A', cycle:'M', name:'제조업출하(PMI대체)', unit:'2020=100', note:'제조업 출하지수 — PMI 대체' },
+  O2: { source:'FRED', series:'KORPROINDMISMEI', fallback:['KPROMANMEI'], cycle:'M', name:'산업생산(PMI대체)', unit:'2015=100', note:'FRED 한국 산업생산지수 — PMI 대체' },
   O3: { source:'ECOS', stat:'901Y033', item:'AD00', cycle:'M', name:'건설업생산', unit:'2020=100' },
   O4: { source:'ECOS', stat:'901Y033', item:'AB00', cycle:'M', name:'광공업생산', unit:'2020=100' },
   O5: { source:'ECOS', stat:'901Y033', item:'AC00', cycle:'M', name:'서비스업생산', unit:'2020=100' },
