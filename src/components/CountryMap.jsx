@@ -2,7 +2,84 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as d3 from "d3";
 import { t } from "../i18n";
 
-const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e'};
+const T={bg0:'#04060e',accent:'#00d4ff',good:'#00e5a0',warn:'#f0b429',danger:'#ff5c5c',text:'#e8ecf4',textMid:'#8b95a8',textDim:'#7a8a9e',border:'#1e2a42',surface:'#151c2e',sat:'#8b5cf6'};
+
+// ═══ 주요 주식종목 시설 좌표 ═══
+const STOCK_FAC={
+  KOR:[
+    {t:'005930',n:'Samsung',fn:'평택 캠퍼스',lat:36.99,lon:127.11},
+    {t:'005930',n:'Samsung',fn:'화성 캠퍼스',lat:37.23,lon:126.98},
+    {t:'000660',n:'SK Hynix',fn:'이천 캠퍼스',lat:37.28,lon:127.43},
+    {t:'000660',n:'SK Hynix',fn:'청주 캠퍼스',lat:36.73,lon:127.45},
+    {t:'005380',n:'Hyundai',fn:'울산 공장',lat:35.51,lon:129.37},
+    {t:'005380',n:'Hyundai',fn:'아산 공장',lat:36.80,lon:127.00},
+    {t:'051910',n:'LG Chem',fn:'대산 공장',lat:36.99,lon:126.37},
+    {t:'373220',n:'LG Energy',fn:'오창 공장',lat:36.71,lon:127.46},
+    {t:'006400',n:'Samsung SDI',fn:'천안 공장',lat:36.81,lon:127.15},
+    {t:'035420',n:'NAVER',fn:'춘천 데이터센터',lat:37.84,lon:127.72},
+  ],
+  USA:[
+    {t:'TSLA',n:'Tesla',fn:'Giga Texas',lat:30.22,lon:-97.62},
+    {t:'TSLA',n:'Tesla',fn:'Fremont',lat:37.49,lon:-121.94},
+    {t:'TSLA',n:'Tesla',fn:'Giga Nevada',lat:39.54,lon:-118.45},
+    {t:'AAPL',n:'Apple',fn:'Apple Park',lat:37.33,lon:-122.01},
+    {t:'NVDA',n:'NVIDIA',fn:'Santa Clara HQ',lat:37.37,lon:-121.96},
+    {t:'INTC',n:'Intel',fn:'Oregon Fab',lat:45.54,lon:-122.97},
+    {t:'INTC',n:'Intel',fn:'Arizona Fab',lat:33.41,lon:-111.91},
+    {t:'AMZN',n:'Amazon',fn:'AWS Virginia',lat:39.04,lon:-77.49},
+    {t:'MSFT',n:'Microsoft',fn:'Quincy DC',lat:47.23,lon:-119.85},
+    {t:'XOM',n:'Exxon',fn:'Baytown Refinery',lat:29.75,lon:-95.01},
+    {t:'CVX',n:'Chevron',fn:'Richmond Refinery',lat:37.93,lon:-122.37},
+  ],
+  JPN:[
+    {t:'TM',n:'Toyota',fn:'Toyota City',lat:35.05,lon:137.15},
+    {t:'TM',n:'Toyota',fn:'Tahara Plant',lat:34.65,lon:137.07},
+    {t:'6758',n:'Sony Semi',fn:'Kumamoto Fab',lat:32.78,lon:130.74},
+    {t:'6861',n:'Keyence',fn:'Osaka HQ',lat:34.77,lon:135.49},
+  ],
+  DEU:[
+    {t:'VOW3',n:'VW',fn:'Wolfsburg',lat:52.43,lon:10.79},
+    {t:'BMW',n:'BMW',fn:'Munich Plant',lat:48.18,lon:11.56},
+    {t:'SIE',n:'Siemens',fn:'Amberg Factory',lat:49.44,lon:11.85},
+    {t:'BAS',n:'BASF',fn:'Ludwigshafen',lat:49.49,lon:8.43},
+  ],
+  GBR:[
+    {t:'SHEL',n:'Shell',fn:'Shell Centre',lat:51.50,lon:-0.12},
+  ],
+  CHN:[
+    {t:'BYD',n:'BYD',fn:'Shenzhen HQ',lat:22.65,lon:114.03},
+    {t:'BYD',n:'BYD',fn:'Changsha',lat:28.29,lon:113.01},
+    {t:'CATL',n:'CATL',fn:'Ningde',lat:26.66,lon:119.55},
+    {t:'CATL',n:'CATL',fn:'Liyang',lat:31.43,lon:119.48},
+    {t:'BABA',n:'Alibaba',fn:'Hangzhou HQ',lat:30.27,lon:120.03},
+  ],
+  TWN:[
+    {t:'TSM',n:'TSMC',fn:'Fab 18 Tainan',lat:23.06,lon:120.30},
+    {t:'TSM',n:'TSMC',fn:'Fab 15 Taichung',lat:24.21,lon:120.62},
+    {t:'2317',n:'Foxconn',fn:'Zhengzhou',lat:34.72,lon:113.86},
+  ],
+  IND:[
+    {t:'TCS',n:'TCS',fn:'Mumbai HQ',lat:19.03,lon:72.86},
+    {t:'INFY',n:'Infosys',fn:'Bangalore',lat:12.84,lon:77.66},
+  ],
+  AUS:[
+    {t:'BHP',n:'BHP',fn:'Olympic Dam',lat:-30.44,lon:136.89},
+    {t:'RIO',n:'Rio Tinto',fn:'Pilbara',lat:-22.72,lon:118.28},
+  ],
+  FRA:[
+    {t:'AIR',n:'Airbus',fn:'Toulouse HQ',lat:43.63,lon:1.37},
+    {t:'TTE',n:'TotalEnergies',fn:'Donges Refinery',lat:47.30,lon:-2.07},
+  ],
+  NLD:[
+    {t:'ASML',n:'ASML',fn:'Veldhoven HQ',lat:51.41,lon:5.49},
+  ],
+  BRA:[
+    {t:'VALE',n:'Vale',fn:'Carajás Mine',lat:-6.08,lon:-50.15},
+    {t:'VALE',n:'Vale',fn:'Itabira',lat:-19.62,lon:-43.23},
+  ],
+};
+// ISO3→ISO2 매핑 (시설 데이터는 ISO2)
+const ISO3_TO_2={KOR:'KOR',USA:'USA',JPN:'JPN',DEU:'DEU',GBR:'GBR',CHN:'CHN',TWN:'TWN',IND:'IND',AUS:'AUS',FRA:'FRA',NLD:'NLD',BRA:'BRA',ESP:'ESP',ITA:'ITA',CAN:'CAN',CHE:'CHE',SWE:'SWE',NOR:'NOR',SGP:'SGP',HKG:'HKG',MEX:'MEX',TUR:'TUR'};
 
 // ═══ 주요 행정도시 데이터 (야간광 밝기 = 경제활동 프록시) ═══
 const CITY_DATA={
@@ -263,13 +340,71 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
       // 도시 라벨 (상위 5개만)
       const topCities=[...cities].sort((a,b)=>b.light-a.light).slice(0,5);
       topCities.forEach(c=>{
-        if(hov&&hov.en===c.en) return; // 호버 중이면 스킵 (이미 표시)
+        if(hov&&hov.en===c.en) return;
         const p=proj([c.lon,c.lat]);if(!p)return;
         if(p[0]<20||p[0]>w-20||p[1]<20||p[1]>h-20)return;
         ctx.font="10px 'Pretendard',sans-serif";
         ctx.fillStyle="rgba(200,220,240,0.5)";ctx.textAlign="center";
         ctx.fillText(cityName(c),p[0],p[1]+Math.max(8,c.light/6)+10);
       });
+
+      // ═══ 주식종목 시설 마커 ═══
+      const facs=STOCK_FAC[country.iso]||[];
+      facs.forEach((f,i)=>{
+        const p=proj([f.lon,f.lat]);if(!p)return;
+        if(p[0]<-20||p[0]>w+20||p[1]<-20||p[1]>h+20)return;
+        const phase=now*0.8+i*2.1;
+        const pulse=0.6+Math.sin(phase)*0.2;
+
+        // 보라색 다이아몬드 마커
+        ctx.save();ctx.translate(p[0],p[1]);ctx.rotate(Math.PI/4);
+        ctx.fillStyle=`rgba(139,92,246,${pulse*0.7})`;
+        ctx.fillRect(-4,-4,8,8);
+        ctx.strokeStyle=`rgba(139,92,246,${pulse})`;ctx.lineWidth=1;
+        ctx.strokeRect(-4,-4,8,8);
+        ctx.restore();
+
+        // 펄스 링
+        const pr=8+Math.sin(phase*1.5)*3;
+        ctx.strokeStyle=`rgba(139,92,246,${0.15+Math.sin(phase)*0.1})`;
+        ctx.lineWidth=0.7;ctx.beginPath();ctx.arc(p[0],p[1],pr,0,Math.PI*2);ctx.stroke();
+
+        // 티커 라벨
+        ctx.font="bold 10px 'JetBrains Mono',monospace";
+        ctx.fillStyle=`rgba(139,92,246,${0.7+pulse*0.3})`;ctx.textAlign="center";
+        ctx.fillText(f.t,p[0],p[1]-12);
+
+        // 호버 상세
+        if(hov&&hov.fn===f.fn){
+          ctx.font="bold 12px 'Pretendard',sans-serif";
+          ctx.fillStyle="#fff";ctx.shadowColor="rgba(0,0,0,0.9)";ctx.shadowBlur=8;
+          ctx.fillText(f.fn,p[0],p[1]-22);
+          ctx.font="10px 'Pretendard',sans-serif";
+          ctx.fillStyle=T.sat;
+          ctx.fillText(f.n+' · '+f.t,p[0],p[1]+20);
+          ctx.shadowBlur=0;
+        }
+      });
+
+      // ═══ 위성 빔 (상단 중앙에서) ═══
+      const beamX=w/2,beamY=0;
+      const beamSpread=w*0.6;
+      ctx.globalCompositeOperation="screen";
+      const bg=ctx.createLinearGradient(beamX,beamY,beamX,h*0.7);
+      bg.addColorStop(0,`rgba(0,212,255,${0.08+Math.sin(now*0.5)*0.03})`);
+      bg.addColorStop(0.1,`rgba(0,212,255,${0.03+Math.sin(now*0.5)*0.01})`);
+      bg.addColorStop(0.4,"rgba(0,212,255,0.005)");
+      bg.addColorStop(1,"rgba(0,212,255,0)");
+      ctx.fillStyle=bg;
+      ctx.beginPath();ctx.moveTo(beamX,beamY);ctx.lineTo(beamX-beamSpread/2,h*0.7);ctx.lineTo(beamX+beamSpread/2,h*0.7);ctx.closePath();ctx.fill();
+      // 내부 밝은 빔
+      const bg2=ctx.createLinearGradient(beamX,beamY,beamX,h*0.5);
+      bg2.addColorStop(0,`rgba(0,212,255,${0.15+Math.sin(now*0.7)*0.05})`);
+      bg2.addColorStop(0.15,`rgba(0,212,255,0.02)`);
+      bg2.addColorStop(1,"rgba(0,212,255,0)");
+      ctx.fillStyle=bg2;
+      ctx.beginPath();ctx.moveTo(beamX,beamY);ctx.lineTo(beamX-beamSpread/6,h*0.5);ctx.lineTo(beamX+beamSpread/6,h*0.5);ctx.closePath();ctx.fill();
+      ctx.globalCompositeOperation="source-over";
 
       frameRef.current=requestAnimationFrame(animate);
     };
@@ -288,9 +423,18 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
       .scale(w*(country.iso==='USA'||country.iso==='CHN'||country.iso==='AUS'||country.iso==='CAN'||country.iso==='IND'?1.2:country.iso==='RUS'?0.8:4))
       .translate([w/2,h/2]);
     let found=null;
-    for(const c of cities){
-      const p=proj([c.lon,c.lat]);if(!p)continue;
-      if(Math.sqrt((mx-p[0])**2+(my-p[1])**2)<18){found=c;break}
+    // 시설 먼저 (더 작은 타겟이므로 우선)
+    const facs=STOCK_FAC[country.iso]||[];
+    for(const f of facs){
+      const p=proj([f.lon,f.lat]);if(!p)continue;
+      if(Math.sqrt((mx-p[0])**2+(my-p[1])**2)<14){found=f;break}
+    }
+    // 도시
+    if(!found){
+      for(const c of cities){
+        const p=proj([c.lon,c.lat]);if(!p)continue;
+        if(Math.sqrt((mx-p[0])**2+(my-p[1])**2)<18){found=c;break}
+      }
     }
     setHovCity(found);
     canvas.style.cursor=found?"pointer":"default";
@@ -300,6 +444,7 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
 
   return(
     <div style={{background:T.bg0,borderRadius:16,overflow:"hidden",border:`1px solid ${T.border}`}}>
+      <style>{`@keyframes satFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-4px)}}`}</style>
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px",borderBottom:`1px solid ${T.border}`}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -313,22 +458,54 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
         </div>
       </div>
 
-      {/* Canvas */}
-      <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovCity(null)} style={{display:"block",width:"100%"}}/>
+      {/* Satellite + Beam overlay */}
+      <div style={{position:"relative"}}>
+        {/* Satellite icon */}
+        <div style={{position:"absolute",top:2,left:"50%",transform:"translateX(-50%)",zIndex:10,animation:"satFloat 7s ease-in-out infinite",filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 12px ${T.accent}40)`}}>
+          <div style={{fontSize:28}}>🛰️</div>
+        </div>
+        {/* Beam SVG */}
+        <div style={{position:"absolute",top:30,left:"50%",transform:"translateX(-50%)",zIndex:3,pointerEvents:"none"}}>
+          <svg width="1200" height="400" viewBox="-600 0 1200 400" style={{display:"block"}}>
+            <defs>
+              <linearGradient id="cmBeam" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={T.accent} stopOpacity="0.3"/>
+                <stop offset="3%" stopColor={T.accent} stopOpacity="0.08"/>
+                <stop offset="15%" stopColor={T.accent} stopOpacity="0.02"/>
+                <stop offset="50%" stopColor={T.accent} stopOpacity="0.005"/>
+                <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            <polygon points="0,0 -500,400 500,400" fill="url(#cmBeam)">
+              <animate attributeName="opacity" values="0.7;1;0.7" dur="5s" repeatCount="indefinite"/>
+            </polygon>
+          </svg>
+        </div>
+        <canvas ref={canvasRef} onMouseMove={handleMouse} onMouseLeave={()=>setHovCity(null)} style={{display:"block",width:"100%"}}/>
+      </div>
 
-      {/* Legend + City stats */}
+      {/* Legend + City stats + Stock facilities */}
       <div style={{padding:"12px 20px",borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-        <div style={{display:"flex",gap:12,alignItems:"center"}}>
-          <span style={{fontSize:12,color:T.textDim}}>💡 Nightlight Intensity</span>
+        <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
           <div style={{display:"flex",gap:4,alignItems:"center"}}>
-            {[30,50,70,90].map(v=>(<div key={v} style={{width:8,height:8,borderRadius:4,background:`rgba(${v>70?'255,240,180':v>50?'160,210,255':'120,160,200'},${v/100})`,border:'1px solid rgba(255,255,255,0.1)'}}/>))}
-            <span style={{fontSize:11,color:T.textDim,marginLeft:2}}>Low → High</span>
+            <span style={{fontSize:12,color:T.textDim}}>💡</span>
+            {[30,50,70,90].map(v=>(<div key={v} style={{width:7,height:7,borderRadius:4,background:`rgba(${v>70?'255,240,180':v>50?'160,210,255':'120,160,200'},${v/100})`,border:'1px solid rgba(255,255,255,0.1)'}}/>))}
+            <span style={{fontSize:11,color:T.textDim}}>Nightlight</span>
+          </div>
+          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+            <div style={{width:7,height:7,borderRadius:1,background:T.sat,transform:"rotate(45deg)"}}/>
+            <span style={{fontSize:11,color:T.sat}}>Stock Facilities ({(STOCK_FAC[country.iso]||[]).length})</span>
           </div>
         </div>
-        <div style={{display:"flex",gap:12}}>
-          {cities.sort((a,b)=>b.light-a.light).slice(0,4).map(c=>(
-            <span key={c.en} style={{fontSize:12,color:c.light>=80?T.accent:T.textDim,fontWeight:c.light>=80?600:400}}>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          {cities.sort((a,b)=>b.light-a.light).slice(0,3).map(c=>(
+            <span key={c.en} style={{fontSize:11,color:c.light>=80?T.accent:T.textDim}}>
               {cityName(c)} {c.light}%
+            </span>
+          ))}
+          {(STOCK_FAC[country.iso]||[]).slice(0,3).map(f=>(
+            <span key={f.fn} style={{fontSize:11,color:T.sat}}>
+              ◆ {f.t}
             </span>
           ))}
         </div>
