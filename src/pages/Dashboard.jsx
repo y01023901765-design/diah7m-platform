@@ -240,9 +240,9 @@ function DashboardPage({user,onNav,lang,country,city}){
         const reqTier=k==='A1'?'FREE':['A2','A3'].includes(k)?'BASIC':'PRO';
         return needsTier?
           <TierLock key={k} plan={demoUser?.plan} req={reqTier} lang={L}>
-            <SystemSection sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L}/>
+            <SystemSection sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData}/>
           </TierLock>:
-          <SystemSection key={k} sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L}/>;
+          <SystemSection key={k} sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData}/>;
       })}
     </>}
     {tab==='satellite'&&<>
