@@ -114,5 +114,8 @@ export default {
   svMarketTitle:'市場データ',svChartPlaceholder:'株価チャート (Yahoo Finance連動予定)',
   svMktCap:'時価総額',svMktPE:'PER',svMktVol:'出来高',svMkt52:'52週レンジ',
   lastUpdate:'最終収集:',satToStock:'株式銘柄 衛星監視へ移動',satToStockDesc:'100銘柄276施設の衛星データをリアルタイム比較',
+  tlFeatBasic:'アラート + 全9軸 + クロスシグナル',tlFeatPro:'59ゲージ + 衛星全部 + 株式監視',tlFeatEnt:'カスタムレポート + API + 専用サポート',
+  onboardTitle:'DIAH-7Mへようこそ',onboardDesc:'衛星で先に見る経済診断プラットフォーム。59指標を9つの人体システムにマッピングして経済の健康状態を診断します。',
+  onboardStep1:'9軸総合診断',onboardStep2:'衛星クロス検証',onboardStep3:'株式衛星監視',
   cnt_KOR:'韓国',cnt_USA:'アメリカ',cnt_JPN:'日本',cnt_DEU:'ドイツ',cnt_GBR:'イギリス',cnt_FRA:'フランス',cnt_CAN:'カナダ',cnt_AUS:'オーストラリア',cnt_ITA:'イタリア',cnt_ESP:'スペイン',cnt_NLD:'オランダ',cnt_CHE:'スイス',cnt_SWE:'スウェーデン',cnt_NOR:'ノルウェー',cnt_DNK:'デンマーク',cnt_FIN:'フィンランド',cnt_AUT:'オーストリア',cnt_BEL:'ベルギー',cnt_IRL:'アイルランド',cnt_PRT:'ポルトガル',cnt_GRC:'ギリシャ',cnt_CZE:'チェコ',cnt_POL:'ポーランド',cnt_HUN:'ハンガリー',cnt_SVK:'スロバキア',cnt_SVN:'スロベニア',cnt_EST:'エストニア',cnt_LVA:'ラトビア',cnt_LTU:'リトアニア',cnt_ISL:'アイスランド',cnt_LUX:'ルクセンブルク',cnt_NZL:'ニュージーランド',cnt_ISR:'イスラエル',cnt_TUR:'トルコ',cnt_MEX:'メキシコ',cnt_CHL:'チリ',cnt_COL:'コロンビア',cnt_CRI:'コスタリカ',cnt_SGP:'シンガポール',cnt_HKG:'香港',cnt_TWN:'台湾',cnt_IND:'インド',cnt_CHN:'中国',
 };

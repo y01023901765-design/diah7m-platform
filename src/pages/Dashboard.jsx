@@ -37,6 +37,8 @@ function DashboardPage({user,onNav,lang,country}){
   const [liveData,setLiveData]=useState(null); // API에서 가져온 실데이터
   const [dataInfo,setDataInfo]=useState(null); // 수집 현황 정보
   const [countryInfo,setCountryInfo]=useState(null); // 글로벌 국가 데이터
+  const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
+  const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{}};
   const toggle=k=>setExpanded(p=>({...p,[k]:!p[k]}));
 
   // 국가코드 (null이면 한국)
@@ -121,6 +123,21 @@ function DashboardPage({user,onNav,lang,country}){
         <span style={{fontSize:13,color:apiStatus==='live'?LT.good:LT.warn,fontWeight:600}}>{apiStatus==='live'?'● LIVE':'● DEMO'}</span>
       </div>
     </div>
+    {/* Onboarding Banner */}
+    {showOnboard&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:16,position:"relative"}}>
+      <button onClick={dismissOnboard} style={{position:"absolute",top:10,right:12,border:"none",background:"transparent",color:LT.textDim,fontSize:18,cursor:"pointer",padding:4}}>✕</button>
+      <div style={{fontSize:17,fontWeight:800,color:LT.text,marginBottom:8}}>👋 {t('onboardTitle',L)}</div>
+      <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7,marginBottom:12}}>{t('onboardDesc',L)}</div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {[
+          {icon:'📊',label:t('onboardStep1',L)},
+          {icon:'🛰️',label:t('onboardStep2',L)},
+          {icon:'📈',label:t('onboardStep3',L)},
+        ].map((s,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
+          <span>{s.icon}</span><span style={{fontSize:14,color:LT.text,fontWeight:600}}>{s.label}</span>
+        </div>))}
+      </div>
+    </div>}
     {/* Level 1: Content Tabs */}
     <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`}}>
       {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{t.label}</button>))}
