@@ -325,5 +325,9 @@ export default {
   tlFeatBasic:'Alerts + All 9 axes + Cross signals',tlFeatPro:'59 gauges + Full satellite + Stock monitor',tlFeatEnt:'Custom reports + API + Dedicated support',
   onboardTitle:'Welcome to DIAH-7M',onboardDesc:'A satellite-powered economic diagnostic platform. 59 indicators mapped to 9 body systems to diagnose economic health.',
   onboardStep1:'9-Axis Diagnosis',onboardStep2:'Satellite Cross-check',onboardStep3:'Stock Satellite Monitor',
+  landHeroCopy:'Brokerages wait for earnings reports. News relies on insider sources. DIAH-7M sees the factory lights first — from space.',
+  landStat1:'Economic Indicators',landStat2:'Free Satellites',landStat3:'Countries',landStat4:'Weeks Lead Time',
+  landOld:'The Old Way',landOldDesc:'Reports after earnings. News-dependent. Opinion-based analysis. Lagging. Subjective.',
+  alertsDetected:' alerts detected',landNewDesc:'Observes factory operations before earnings. Physics-based data. Leading indicators. Objective. Measurement, not opinion.',
   cnt_KOR:'South Korea',cnt_USA:'United States',cnt_JPN:'Japan',cnt_DEU:'Germany',cnt_GBR:'United Kingdom',cnt_FRA:'France',cnt_CAN:'Canada',cnt_AUS:'Australia',cnt_ITA:'Italy',cnt_ESP:'Spain',cnt_NLD:'Netherlands',cnt_CHE:'Switzerland',cnt_SWE:'Sweden',cnt_NOR:'Norway',cnt_DNK:'Denmark',cnt_FIN:'Finland',cnt_AUT:'Austria',cnt_BEL:'Belgium',cnt_IRL:'Ireland',cnt_PRT:'Portugal',cnt_GRC:'Greece',cnt_CZE:'Czechia',cnt_POL:'Poland',cnt_HUN:'Hungary',cnt_SVK:'Slovakia',cnt_SVN:'Slovenia',cnt_EST:'Estonia',cnt_LVA:'Latvia',cnt_LTU:'Lithuania',cnt_ISL:'Iceland',cnt_LUX:'Luxembourg',cnt_NZL:'New Zealand',cnt_ISR:'Israel',cnt_TUR:'Türkiye',cnt_MEX:'Mexico',cnt_CHL:'Chile',cnt_COL:'Colombia',cnt_CRI:'Costa Rica',cnt_SGP:'Singapore',cnt_HKG:'Hong Kong',cnt_TWN:'Taiwan',cnt_IND:'India',cnt_CHN:'China',
 };

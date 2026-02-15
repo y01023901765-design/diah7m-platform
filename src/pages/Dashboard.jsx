@@ -201,7 +201,13 @@ function DashboardPage({user,onNav,lang,country}){
       {/* 9 Systems */}
       <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("nineSystems",L)}</div>
       <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-        {Object.entries(SYS).map(([k,s])=>{const col=gc(s.g);return(<div key={k} style={{background:LT.surface,boxShadow:'0 1px 2px rgba(0,0,0,.05)',borderRadius:8,padding:"12px 10px",border:`1px solid ${LT.border}`}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:16}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:col}}>{s.sc}</div></div></div><div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:4}}>{sysN(k,L)}</div><div style={{fontSize:15,color:LT.textDim}}>{sysB(k,L)} · {s.keys.length} {t('gaugesLabel',L)}</div></div>);})}
+        {Object.entries(SYS).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:'0 1px 2px rgba(0,0,0,.05)',borderRadius:8,padding:"12px 10px",border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.1)'} onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 2px rgba(0,0,0,.05)'}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:16}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:col}}>{s.sc}</div></div></div>
+          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:4}}>{sysN(k,L)}</div>
+          <div style={{fontSize:14,color:LT.textDim}}>{sysB(k,L)} · {s.keys.length} {t('gaugesLabel',L)}</div>
+          {alertKeys.length>0&&<div style={{fontSize:13,color:LT.danger,fontWeight:600,marginTop:4}}>⚠ {alertKeys.length}{t('alertsDetected',L)}</div>}
+        </div>);})}
       </div>
     </>}
     {tab==='report'&&<>

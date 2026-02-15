@@ -323,6 +323,10 @@ export default
   tlFeatBasic:'경보 알림 + 9축 전체 + 교차신호',tlFeatPro:'59게이지 + 위성 전체 + 주식감시',tlFeatEnt:'커스터마이징 + API + 전용 보고서',
   onboardTitle:'DIAH-7M에 오신 것을 환영합니다',onboardDesc:'위성이 먼저 보는 경제 진단 플랫폼입니다. 59개 지표를 9개 인체 시스템에 매핑하여 경제 건강 상태를 진단합니다.',
   onboardStep1:'9축 종합 진단',onboardStep2:'위성 교차검증',onboardStep3:'주식 위성감시',
+  landHeroCopy:'증권사는 실적 발표를 기다립니다. 뉴스는 내부자 소스에 의존합니다. DIAH-7M은 위성으로 공장 불빛을 먼저 봅니다.',
+  landStat1:'경제 지표',landStat2:'무료 위성',landStat3:'진단 국가',landStat4:'주 선행',
+  landOld:'기존 방식',landOldDesc:'실적 발표 후 리포트. 뉴스 의존. 의견 기반 분석. 후행적. 주관적.',
+  alertsDetected:'건 이상 감지',landNewDesc:'실적 발표 전 공장 가동 직접 관측. 물리 데이터 기반. 선행적. 객관적. 측정이지 의견이 아닙니다.',
   cnt_KOR:'대한민국',cnt_USA:'미국',cnt_JPN:'일본',cnt_DEU:'독일',cnt_GBR:'영국',cnt_FRA:'프랑스',cnt_CAN:'캐나다',cnt_AUS:'호주',cnt_ITA:'이탈리아',cnt_ESP:'스페인',cnt_NLD:'네덜란드',cnt_CHE:'스위스',cnt_SWE:'스웨덴',cnt_NOR:'노르웨이',cnt_DNK:'덴마크',cnt_FIN:'핀란드',cnt_AUT:'오스트리아',cnt_BEL:'벨기에',cnt_IRL:'아일랜드',cnt_PRT:'포르투갈',cnt_GRC:'그리스',cnt_CZE:'체코',cnt_POL:'폴란드',cnt_HUN:'헝가리',cnt_SVK:'슬로바키아',cnt_SVN:'슬로베니아',cnt_EST:'에스토니아',cnt_LVA:'라트비아',cnt_LTU:'리투아니아',cnt_ISL:'아이슬란드',cnt_LUX:'룩셈부르크',cnt_NZL:'뉴질랜드',cnt_ISR:'이스라엘',cnt_TUR:'튀르키예',cnt_MEX:'멕시코',cnt_CHL:'칠레',cnt_COL:'콜롬비아',cnt_CRI:'코스타리카',cnt_SGP:'싱가포르',cnt_HKG:'홍콩',cnt_TWN:'대만',cnt_IND:'인도',cnt_CHN:'중국',
 };
 // 위 닫는 }; 앞에 추가해야 하므로 sed 사용

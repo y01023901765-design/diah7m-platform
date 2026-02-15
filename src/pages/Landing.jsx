@@ -49,6 +49,38 @@ function LandingPage({onNavigate,lang,setLang}){
       </nav>
       <GlobeHero lang={L} onNav={onNavigate}/>
 
+      {/* ═══ KILLER NUMBERS — Social Proof ═══ */}
+      <div style={{maxWidth:900,margin:"0 auto",padding:"60px 24px 20px"}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{fontSize:15,color:T.textMid,lineHeight:2,maxWidth:600,margin:"0 auto"}}>{t('landHeroCopy',L)}</div>
+        </div>
+        <div className="grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+          {[
+            {v:'59',label:t('landStat1',L),color:T.accent},
+            {v:'4',label:t('landStat2',L),color:T.sat},
+            {v:'43',label:t('landStat3',L),color:T.good},
+            {v:'2~4',label:t('landStat4',L),color:T.warn},
+          ].map((s,i)=>(<div key={i} style={{textAlign:"center",padding:20}}>
+            <div style={{fontSize:36,fontWeight:900,color:s.color,fontFamily:"'JetBrains Mono',monospace"}}>{s.v}</div>
+            <div style={{fontSize:14,color:T.textMid,marginTop:4}}>{s.label}</div>
+          </div>))}
+        </div>
+      </div>
+
+      {/* ═══ VALUE PROPOSITION — Killer Copy ═══ */}
+      <div style={{maxWidth:900,margin:"0 auto",padding:"20px 24px 60px"}}>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div style={{background:T.surface,borderRadius:T.cardRadius,padding:28,border:`1px solid ${T.border}`}}>
+            <div style={{fontSize:14,fontWeight:700,color:T.danger,marginBottom:8}}>✕ {t('landOld',L)}</div>
+            <div style={{fontSize:15,color:T.textDim,lineHeight:1.8}}>{t('landOldDesc',L)}</div>
+          </div>
+          <div style={{background:`${T.accent}06`,borderRadius:T.cardRadius,padding:28,border:`1px solid ${T.accent}20`}}>
+            <div style={{fontSize:14,fontWeight:700,color:T.accent,marginBottom:8}}>● DIAH-7M</div>
+            <div style={{fontSize:15,color:T.text,lineHeight:1.8}}>{t('landNewDesc',L)}</div>
+          </div>
+        </div>
+      </div>
+
       {/* ═══ FEATURES ═══ */}
       <div id="features" style={sectionStyle}>
         <div style={{textAlign:"center",marginBottom:48}}>
@@ -176,9 +208,13 @@ function LandingPage({onNavigate,lang,setLang}){
 
       {/* ═══ FOOTER ═══ */}
       <footer style={{borderTop:`1px solid ${T.border}`,padding:"40px 24px"}}>
-        <div style={{maxWidth:900,margin:"0 auto",textAlign:"center"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:12}}><span>🛰️</span><span style={{fontWeight:800}}>DIAH-7M</span></div>
-          <div style={{fontSize:13,color:T.textDim}}>© 2026 DIAH-7M · Human Body National Economics · NASA VIIRS · Copernicus Sentinel-1/5P · Landsat-9</div>
+        <div style={{maxWidth:900,margin:"0 auto"}}>
+          <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:20}}>
+            <div><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}><span>🛰️</span><span style={{fontWeight:800}}>DIAH-7M</span></div><div style={{fontSize:13,color:T.textDim,lineHeight:1.7}}>Human Body National Economics<br/>인체국가경제론 · 윤종원</div></div>
+            <div><div style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:8}}>Data Sources</div><div style={{fontSize:13,color:T.textDim,lineHeight:1.7}}>NASA VIIRS · Copernicus Sentinel-1/5P<br/>Landsat-9 · ECOS · FRED · World Bank</div></div>
+            <div><div style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:8}}>Legal</div><div style={{fontSize:13,color:T.textDim,lineHeight:1.7}}>ISBN 978-89-01-29340-3<br/>Observation only · Not investment advice</div></div>
+          </div>
+          <div style={{borderTop:`1px solid ${T.border}`,paddingTop:12,fontSize:12,color:T.textDim,textAlign:"center"}}>© 2026 DIAH-7M · All rights reserved</div>
         </div>
       </footer>
     </div>
