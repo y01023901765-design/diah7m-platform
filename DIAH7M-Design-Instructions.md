@@ -1,7 +1,7 @@
 # DIAH-7M 디자인 작업 지침서
 > 이 문서는 새 채팅 세션에 반드시 첨부한다.
 > Claude는 작업 시작 전 이 문서를 전부 읽고 숙지한 상태에서 작업한다.
-> 최종 업데이트: 2026-02-15 (라이트모드+프리미엄 단색 디자인 반영)
+> 최종 업데이트: 2026-02-15 (라이트모드+프리미엄 단색 디자인 반영, 전체 전수검사 완료)
 
 ---
 
@@ -503,3 +503,30 @@ good: #00e5a0, warn: #f0b429, danger: #ff5c5c
 ## 17. 보관 버전
 
 - `v0.1-dark-theme`: 라이트 모드 추가 전 상태. `git checkout v0.1-dark-theme`으로 복원 가능.
+
+---
+
+## 18. 현재 완료 상태 (2026-02-15 기준)
+
+### 전수 검사 결과
+- 12px 미만 폰트: **0개** (전체 사이트)
+- 서브페이지 다크(T.) 참조: **0개** (11개 파일 전부 LT)
+- LLT/LLLT 오타: **0개**
+- App.jsx 배경 분기: ✅ 다크/라이트 자동 전환
+- Auth에서 GlobalNav: ✅ 숨김 처리
+- 프리미엄 단색: ✅ accent=#111111, 탭=밑줄, 버튼=검정/회색
+
+### 라이트 모드 적용 완료 파일 (LT)
+Dashboard.jsx, MyPage.jsx, Admin.jsx, Stock.jsx, ProductMgmt.jsx,
+GlobalNav.jsx, Charts.jsx, Gauges.jsx, TierLock.jsx, Chatbot.jsx,
+satellite.js, i18n.js
+
+### 다크 유지 파일 (T)
+Landing.jsx, Auth.jsx, GlobeHero.jsx, LangSelector.jsx, Satellite.jsx
+
+### 내일 개발+디자인 병렬 작업 계획
+- Day 1 AM: Backend API + DB + auth 개발 / PM: Auth + Dashboard 디자인 마무리
+- Day 2 AM: Stripe + 데이터 수집 완료 / PM: Pricing + 보고서 뷰어 디자인
+- Day 3 AM: 엔진 연결 + 실데이터 / PM: 전체 디자인 폴리시 + 43개국 배포
+
+각 창마다 개발→디자인 한 세트로 진행. 지침서 첨부 필수.
