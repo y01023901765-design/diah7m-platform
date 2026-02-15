@@ -25,8 +25,8 @@ function MyPage({user,onNav,lang,setGlobalLang}){
   return(<div style={{maxWidth:680,margin:"0 auto",padding:"20px 16px"}}>
     {/* Toast */}
     {msg&&<div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",padding:"10px 24px",borderRadius:10,background:LT.good,color:"#fff",fontSize:16,fontWeight:700,zIndex:300,boxShadow:"0 4px 20px rgba(0,0,0,.3)",animation:"fadeIn .3s ease"}}>{msg}</div>}
-    <div style={{display:"flex",gap:4,marginBottom:20}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer"}}>{t.label}</button>))}
+    <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`}}>
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",marginBottom:-1}}>{t.label}</button>))}
     </div>
     {tab==='profile'&&<div>
       <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:20}}>{t('profile',L)}</h2>

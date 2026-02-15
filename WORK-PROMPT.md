@@ -256,11 +256,41 @@ Landing:
 
 ---
 
-## 9. NAV 규칙
+## 9. 네비게이션 위계 규칙
 
 ```
+전체 위계 (3단계):
+
+Level 0 — GlobalNav (사이트 전체 이동)
+  위치: 최상단 sticky
+  항목: 🛰️ DIAH-7M | 📊 대시보드 | 📈 주식 | 👤 마이페이지 | ⚙️ 관리자
+  스타일: fontSize:14, 간결, 배경 blur
+  역할: "어느 페이지에 있는가"
+
+Level 1 — 콘텐츠 탭 (페이지 내 섹션 이동)
+  위치: 페이지 최상단
+  스타일: fontSize:16, borderBottom 1px solid, 활성=bold+2px underline
+  패딩: 12px 20px
+  gap: 0 (빈틈 없이)
+  역할: "이 페이지에서 무엇을 보는가"
+  ⚠️ 모든 서브페이지 동일한 탭 스타일 필수:
+    Dashboard: 종합진단 | 59게이지 | 위성 | 경보
+    MyPage: 프로필 | 구독 | 마일리지 | 설정
+    Admin: KPI | 회원 | 상품 | 파이프라인 | 결제 | 엔진 | 감사 | 설정
+
+Level 2 — 유틸리티 (보조 도구)
+  위치: 콘텐츠 탭 아래
+  스타일: fontSize:14, textDim, 배경 없음, 최대한 눈에 안 띄게
+  항목: DEMO 스위처, LIVE/DEMO 상태 표시
+  역할: "개발/관리용 보조"
+
+규칙:
+  - Level 숫자가 낮을수록 시각적으로 강하게 (0>1>2)
+  - Level 0과 Level 1이 경쟁하면 안 됨 — 크기/스타일 확실히 다르게
+  - Level 2는 사용자가 무시해도 되는 수준으로 작게
+  - 같은 Level의 요소는 모든 페이지에서 동일한 스타일
+
 Landing: NAV는 Landing.jsx 안에 1개만. 컴포넌트(GlobeHero 등)에 자체 NAV ❌
-서브페이지: GlobalNav.jsx (라이트 테마)
 Auth: GlobalNav 숨김 + Footer 숨김. Auth.jsx 자체 다크 레이아웃.
 ```
 

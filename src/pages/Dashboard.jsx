@@ -27,22 +27,20 @@ function DashboardPage({user,onNav,lang}){
   const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)}];
   const demoUser={...user,plan:demoPlan};
   return(<div style={{maxWidth:780,margin:"0 auto",padding:"20px 16px"}}>
-    {/* Connection Status */}
-    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-      <span style={{fontSize:15,fontWeight:600,padding:"2px 8px",borderRadius:10,
-        background:LT.bg2,
-        color:apiStatus==='live'?LT.good:apiStatus==='demo'?LT.warn:LT.textDim}}>
+    {/* Level 1: Content Tabs — 주 네비게이션 */}
+    <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`}}>
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{t.label}</button>))}
+    </div>
+    {/* Level 2: Utility — DEMO 스위처 + 상태 (작고 눈에 안 띄게) */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:4}}>
+        <span style={{fontSize:14,color:LT.textDim}}>DEMO</span>
+        {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"2px 8px",borderRadius:4,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:14,fontWeight:demoPlan===p?700:400,
+          background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
+      </div>
+      <span style={{fontSize:14,color:apiStatus==='live'?LT.good:apiStatus==='demo'?LT.warn:LT.textDim}}>
         {apiStatus==='live'?'● LIVE':apiStatus==='demo'?'● DEMO':'● ...'}
       </span>
-    </div>
-    {/* Demo Plan Switcher */}
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 10px",borderRadius:8,background:LT.bg2,border:`1px solid ${LT.border}`}}>
-      <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}>DEMO</span>
-      {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"4px 12px",borderRadius:6,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:16,fontWeight:demoPlan===p?700:600,
-        background:demoPlan===p?'#111111':`${LT.surface}`,color:demoPlan===p?"#fff":LT.text,cursor:"pointer"}}>{p}</button>))}
-    </div>
-    <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
     </div>
     {tab==='overview'&&<>
       {/* Score + State + Radar */}

@@ -26,9 +26,8 @@ function AdminPage({lang}){
   const filtered=members.filter(m=>!search||m.n.includes(search)||m.e.includes(search));
   const inputS={padding:"10px 14px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,fontSize:15,outline:"none",boxSizing:"border-box"};
   return(<div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px"}}>
-    <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:16}}>⚙️ 관리자 패널</h2>
-    <div style={{display:"flex",gap:4,marginBottom:20,overflowX:"auto"}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap"}}>{t.label}</button>))}
+    <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`,overflowX:"auto"}}>
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 20px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:16,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1}}>{t.label}</button>))}
     </div>
 
     {tab==='kpi'&&<>
