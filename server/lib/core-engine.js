@@ -40,9 +40,34 @@ const STATUS_MAP = { 1:'정상', 2:'관측', 3:'트리거', 4:'봉쇄', 5:'위�
 const GAUGE_STATUS = { 1:'양호', 2:'양호', 3:'주의', 4:'경보', 5:'경보' };
 
 // ── 심각도 계산 ──
-function severity(val, thresholds) {
-  if (!thresholds || val == null) return 2;
-  const { good, warn, danger } = thresholds;
+// ── RANGE 구간 포함 판정 (GPT 크로스리뷰 설계) ──
+const { GAUGE_META, THRESHOLDS_VERSION } = require('./gauge-meta');
+
+function inRange(val, r) {
+  if (val == null || !r) return false;
+  if (r.min != null && val < r.min) return false;
+  if (r.max != null && val >= r.max) return false;
+  return true;
+}
+
+function severity(val, legacyThresholds, gaugeId) {
+  if (val == null || Number.isNaN(val)) return 2;
+
+  // 1) RANGE 모드: gauge-meta가 있으면 구간 판정
+  const meta = gaugeId ? GAUGE_META[gaugeId] : null;
+  if (meta?.thresholds?.mode === 'RANGE') {
+    const t = meta.thresholds;
+    if (inRange(val, t.danger_low)) return 5;
+    if (inRange(val, t.warn_low))   return 3;
+    if (inRange(val, t.danger))     return 5;
+    if (inRange(val, t.warn))       return 3;
+    if (inRange(val, t.good))       return 1;
+    return 2; // out of defined ranges
+  }
+
+  // 2) 레거시 폴백 (gauge-meta 없는 경우)
+  if (!legacyThresholds) return 2;
+  const { good, warn, danger } = legacyThresholds;
   if (danger !== undefined && val >= danger) return 5;
   if (warn !== undefined && val >= warn) return 3;
   if (good !== undefined && val <= good) return 1;
@@ -139,11 +164,14 @@ function generateActions(systems, crossSignals, dualLockActive, causalStage, ove
     });
   }
 
-  // 10개 제한: context(면책)는 반드시 포함
+  // 10개 제한: 타입별 최소 보장 (observation, watch, context 각각 포함)
   if (actions.length > 10) {
-    const contexts = actions.filter(a => a.type === 'context');
-    const others = actions.filter(a => a.type !== 'context');
-    return [...others.slice(0, 10 - contexts.length), ...contexts].slice(0, 10);
+    const obs = actions.filter(a => a.type === 'observation');
+    const watches = actions.filter(a => a.type === 'watch');
+    const ctx = actions.filter(a => a.type === 'context');
+    const maxObs = Math.min(obs.length, Math.max(3, 10 - watches.slice(0,3).length - ctx.length));
+    const result = [...obs.slice(0, maxObs), ...watches.slice(0, Math.max(3, 10 - maxObs - ctx.length)), ...ctx];
+    return result.slice(0, 10);
   }
   return actions;
 }
@@ -171,7 +199,7 @@ function generateReport(gaugeData, options = {}) {
     let sum = 0, cnt = 0;
     for (const key of sys.keys) {
       if (gaugeData[key] !== undefined) {
-        sum += severity(gaugeData[key], thresholds[key]);
+        sum += severity(gaugeData[key], thresholds[key], key);
         cnt++;
       }
     }
@@ -195,7 +223,7 @@ function generateReport(gaugeData, options = {}) {
   // ── 게이지 배열 ──
   const gauges = [];
   for (const [key, val] of Object.entries(gaugeData)) {
-    const sev = severity(val, thresholds[key]);
+    const sev = severity(val, thresholds[key], key);
     gauges.push({
       gauge_id: key,
       name: key,
@@ -212,8 +240,8 @@ function generateReport(gaugeData, options = {}) {
   const crossSignals = [];
   for (const [a, b] of CROSS_SIGNALS) {
     if (gaugeData[a] !== undefined && gaugeData[b] !== undefined) {
-      const sevA = severity(gaugeData[a], thresholds[a]);
-      const sevB = severity(gaugeData[b], thresholds[b]);
+      const sevA = severity(gaugeData[a], thresholds[a], a);
+      const sevB = severity(gaugeData[b], thresholds[b], b);
       if (sevA >= 3 && sevB >= 3) {
         crossSignals.push({ pair: [a, b], severity: Math.max(sevA, sevB) });
       }
@@ -290,6 +318,7 @@ function generateReport(gaugeData, options = {}) {
       generated_at: now.toISOString(),
       engine_version: '1.1.0',
       schema_version: '1.1',
+      thresholds_version: THRESHOLDS_VERSION,
       data_freshness: dateStr,
       channel,
       language,

@@ -250,6 +250,7 @@
         "generated_at": { "type": "string", "format": "date-time" },
         "engine_version": { "type": "string" },
         "schema_version": { "type": "string", "const": "1.1" },
+        "thresholds_version": { "type": "string" },
         "data_freshness": { "type": "string", "format": "date" },
         "channel": { "type": "string", "enum": ["web", "pdf", "docx"] },
         "language": { "type": "string" },
