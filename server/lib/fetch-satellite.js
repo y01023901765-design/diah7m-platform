@@ -106,7 +106,7 @@ async function fetchVIIRS(regionCode, lookbackDays) {
     // 최신 단일 값
     collection.first().reduceRegion({
       reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
-    }).evaluate(function(err, latestStats) {
+    }).evaluate(function(latestStats, err) {
       if (err || !latestStats || !latestStats.avg_rad) {
         return resolve({
           gaugeId: 'S2', source: 'SATELLITE', name: '야간광량',
@@ -118,13 +118,13 @@ async function fetchVIIRS(regionCode, lookbackDays) {
       // 7일 평균
       sevenDayCol.mean().reduceRegion({
         reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
-      }).evaluate(function(err7, sevenStats) {
+      }).evaluate(function(sevenStats, err7) {
         var mean7d = (sevenStats && sevenStats.avg_rad) ? Math.round(sevenStats.avg_rad * 100) / 100 : null;
 
         // 60일 평균
         rollingCol.mean().reduceRegion({
           reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
-        }).evaluate(function(err60, rollingStats) {
+        }).evaluate(function(rollingStats, err60) {
           var mean60d = Math.round(((rollingStats && rollingStats.avg_rad) || latestStats.avg_rad) * 100) / 100;
 
           // 365일 baseline (GEE 원샷 — Cold Start 해결)
@@ -137,7 +137,7 @@ async function fetchVIIRS(regionCode, lookbackDays) {
 
           baselineCol.mean().reduceRegion({
             reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e9
-          }).evaluate(function(errBL, baselineStats) {
+          }).evaluate(function(baselineStats, errBL) {
             var baseline365 = (baselineStats && baselineStats.avg_rad) ? Math.round(baselineStats.avg_rad * 100) / 100 : null;
             var anomaly = (baseline365 && baseline365 > 0) ? Math.round(((mean60d - baseline365) / baseline365) * 10000) / 10000 : null;
 
@@ -189,7 +189,7 @@ async function fetchLandsat(regionCode, lookbackDays) {
   return new Promise(function(resolve) {
     collection.first().reduceRegion({
       reducer: ee.Reducer.mean(), geometry: geometry, scale: 100, maxPixels: 1e9
-    }).evaluate(function(err, stats) {
+    }).evaluate(function(stats, err) {
       if (err || !stats || !stats.ST_B10) {
         return resolve({
           gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬',
