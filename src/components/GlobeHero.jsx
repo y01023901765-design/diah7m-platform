@@ -288,19 +288,21 @@ export default function GlobeHero({lang='ko',onNav}){
       `}</style>
 
       <div style={{position:"relative",overflow:"hidden"}}>
-        {/* Satellite - realistic, centered */}
+        {/* Satellite + Beam — 하나의 컨테이너에서 함께 움직임 */}
         <div style={{
           position:"absolute",top:4,left:"50%",zIndex:10,
           animation:"satFloat 7s ease-in-out infinite",
-          filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 15px ${T.accent}50)`,
+          pointerEvents:"none",
         }}>
-          <RealisticSatellite/>
-        </div>
-
-        {/* 130° BEAM - covers entire map width */}
-        {/* tan(65°) ≈ 2.14, so at height 540, width = 2*540*2.14 = 2311px → well beyond 960 → full coverage */}
-        <div style={{position:"absolute",top:40,left:"50%",transform:"translateX(-50%)",zIndex:3,pointerEvents:"none"}}>
-          <svg width="2400" height="560" viewBox="-1200 0 2400 560" style={{display:"block"}}>
+          {/* Satellite */}
+          <div style={{
+            transform:"translateX(-50%)",
+            filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 15px ${T.accent}50)`,
+          }}>
+            <RealisticSatellite/>
+          </div>
+          {/* Beam — 위성 바로 아래, 함께 부유 */}
+          <svg width="2400" height="560" viewBox="-1200 0 2400 560" style={{display:"block",position:"absolute",top:36,left:"50%",transform:"translateX(-50%)"}}>
             <defs>
               <linearGradient id="bW" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={T.accent} stopOpacity="0.35"/>
@@ -316,9 +318,7 @@ export default function GlobeHero({lang='ko',onNav}){
                 <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
               </linearGradient>
             </defs>
-            {/* 130° wide fan: tan(65°)≈2.14 → half-width at 540 = 1155 */}
             <polygon points="0,0 -1155,540 1155,540" fill="url(#bW)" style={{animation:"beamPulse 6s ease-in-out infinite"}}/>
-            {/* Inner brighter cone ~60° */}
             <polygon points="0,0 -310,540 310,540" fill="url(#bC)" style={{animation:"beamPulse 6s ease-in-out infinite 1s"}}/>
           </svg>
         </div>

@@ -302,15 +302,7 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
         }
       });
 
-      // ═══ 위성 빔 ═══
-      const beamX=w/2;
-      ctx.globalCompositeOperation="screen";
-      const bg=ctx.createLinearGradient(beamX,0,beamX,h*0.6);
-      bg.addColorStop(0,`rgba(0,212,255,${0.06+Math.sin(now*0.5)*0.02})`);
-      bg.addColorStop(0.15,"rgba(0,212,255,0.015)");
-      bg.addColorStop(1,"rgba(0,0,0,0)");
-      ctx.fillStyle=bg;ctx.beginPath();ctx.moveTo(beamX,0);ctx.lineTo(beamX-w*0.35,h*0.6);ctx.lineTo(beamX+w*0.35,h*0.6);ctx.closePath();ctx.fill();
-      ctx.globalCompositeOperation="source-over";
+      // (빔은 HTML SVG에서 위성과 함께 렌더링 — Canvas 빔 제거)
 
       // ═══ LAYER: 도시 야간광 ═══
       if(layers.city){
@@ -506,10 +498,40 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
         ))}
       </div>
 
-      {/* Map with satellite overlay */}
-      <div style={{position:"relative"}}>
-        <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",zIndex:10,animation:"satFloat 7s ease-in-out infinite",filter:`drop-shadow(0 2px 6px rgba(0,0,0,0.8)) drop-shadow(0 0 10px ${T.accent}30)`}}>
-          <div style={{fontSize:24}}>🛰️</div>
+      {/* Map with satellite + beam overlay (unified container) */}
+      <div style={{position:"relative",overflow:"hidden"}}>
+        {/* Satellite + Beam — 하나의 컨테이너에서 함께 움직임 */}
+        <div style={{position:"absolute",top:0,left:"50%",zIndex:10,animation:"satFloat 7s ease-in-out infinite",pointerEvents:"none"}}>
+          {/* Satellite */}
+          <div style={{transform:"translateX(-50%)",filter:`drop-shadow(0 2px 6px rgba(0,0,0,0.8)) drop-shadow(0 0 10px ${T.accent}30)`}}>
+            <div style={{fontSize:24,textAlign:"center"}}>🛰️</div>
+          </div>
+          {/* Beam — 위성 바로 아래에서 시작, 함께 부유 */}
+          <svg width="800" height="500" viewBox="-400 0 800 500" style={{display:"block",position:"absolute",top:24,left:"50%",transform:"translateX(-50%)",pointerEvents:"none"}}>
+            <defs>
+              <linearGradient id="cmBeamW" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={T.accent} stopOpacity="0.25"/>
+                <stop offset="3%" stopColor={T.accent} stopOpacity="0.08"/>
+                <stop offset="12%" stopColor={T.accent} stopOpacity="0.02"/>
+                <stop offset="40%" stopColor={T.accent} stopOpacity="0.005"/>
+                <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
+              </linearGradient>
+              <linearGradient id="cmBeamC" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={T.accent} stopOpacity="0.4"/>
+                <stop offset="5%" stopColor={T.accent} stopOpacity="0.08"/>
+                <stop offset="25%" stopColor={T.accent} stopOpacity="0.01"/>
+                <stop offset="100%" stopColor={T.accent} stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            {/* Wide beam ~120° */}
+            <polygon points="0,0 -380,500 380,500" fill="url(#cmBeamW)">
+              <animate attributeName="opacity" values="0.7;1;0.7" dur="5s" repeatCount="indefinite"/>
+            </polygon>
+            {/* Inner bright beam ~40° */}
+            <polygon points="0,0 -100,500 100,500" fill="url(#cmBeamC)">
+              <animate attributeName="opacity" values="0.6;1;0.6" dur="5s" begin="1s" repeatCount="indefinite"/>
+            </polygon>
+          </svg>
         </div>
         <canvas ref={canvasRef} onMouseMove={handleMouse} onTouchStart={e=>{const touch=e.touches[0];if(touch)handleMouse({clientX:touch.clientX,clientY:touch.clientY})}} onMouseLeave={()=>setHovItem(null)} style={{display:"block",width:"100%"}}/>
       </div>
