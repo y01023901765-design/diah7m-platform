@@ -101,7 +101,7 @@ function MyPage({user,lang,setGlobalLang}){
       {/* Usage Stats */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginTop:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("usageStats",L)}</div>
-        <div className="grid-3" className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
           {[
             {v:'24',label:t('usReport',L),c:LT.accent},
             {v:'156',label:t('usGauge',L),c:LT.good},
