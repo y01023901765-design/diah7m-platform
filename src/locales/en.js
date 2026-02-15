@@ -83,7 +83,7 @@ export default {
   // ── DASHBOARD ──
   overview:'📊 Overall Diagnosis',
   gaugeTab:'📋 59 Gauges',
-  satS2Name:'Nighttime Light',satR6Name:'Urban Heat Island',satTab:'🛰️ Satellite',
+  satCrossTitle:'Satellite Cross-Verification',satCrossDesc:'Verifying correlation between economic indicators and satellite data',satCompareTitle:'Satellite Image Comparison',satS2Name:'Nighttime Light',satR6Name:'Urban Heat Island',satTab:'🛰️ Satellite',
   alertTab:'🔔 Alerts',
   good:'Good',
   caution:'Caution',

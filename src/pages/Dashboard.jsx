@@ -3,8 +3,9 @@ import T, { L as LT } from '../theme';
 import { t, gc } from '../i18n';
 import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
-import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN } from '../components/TierLock';
+import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN, SAT_XREF, TP } from '../components/TierLock';
 import { TIER_ACCESS } from '../data/gauges';
+import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
 import * as API from '../api';
 
 // ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
@@ -282,6 +283,24 @@ function DashboardPage({user,onNav,lang,country,city}){
         {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
+      {/* ═══ 위성 교차검증 — 경제지표↔위성 연결 ═══ */}
+      <div style={{marginTop:16,marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🔗 {t('satCrossTitle',L)||'위성 교차검증'}</div>
+        <div style={{fontSize:14,color:LT.textMid,marginBottom:12}}>{t('satCrossDesc',L)||'경제지표와 위성 데이터의 상관관계를 검증합니다'}</div>
+        {Object.values(gaugeData).filter(g=>!isSat(g.c)&&SAT_XREF[g.c]).slice(0,4).map(g=>(
+          <SatXrefBanner key={g.c} code={g.c} lang={L}/>
+        ))}
+      </div>
+      {/* ═══ 위성 Before/After 비교 ═══ */}
+      {satData&&satData.S2&&satData.S2.status==='OK'&&<div style={{marginTop:16,marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>📸 {t('satCompareTitle',L)||'위성 촬영 비교'}</div>
+        <SatCompare
+          before={{date:satData.S2.date?new Date(new Date(satData.S2.date).getTime()-30*86400000).toISOString().slice(0,10):'30일 전',val:satData.S2.baseline_365d||satData.S2.mean_60d||0}}
+          after={{date:satData.S2.date||'최신',val:satData.S2.value||0}}
+          sensor="VIIRS DNB" product={t('satS2Name',L)||'야간광량'}
+          coord="37.5°N 127.0°E" radius="50km" unit={satData.S2.unit||'nW/cm²/sr'}
+        />
+      </div>}
       {/* Stock 연결 */}
       <div onClick={()=>onNav('stock')} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}
         onMouseEnter={e=>e.currentTarget.style.background=LT.bg2} onMouseLeave={e=>e.currentTarget.style.background=LT.surface}>

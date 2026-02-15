@@ -84,7 +84,7 @@ export default
   // ── DASHBOARD ──
   overview:'📊 종합 진단',
   gaugeTab:'📋 59게이지',
-  satS2Name:'야간광량',satR6Name:'도시열섬',satTab:'🛰️ 위성',
+  satCrossTitle:'위성 교차검증',satCrossDesc:'경제지표와 위성 데이터의 상관관계를 검증합니다',satCompareTitle:'위성 촬영 비교',satS2Name:'야간광량',satR6Name:'도시열섬',satTab:'🛰️ 위성',
   alertTab:'🔔 경보',
   good:'양호',
   caution:'주의',
