@@ -16,7 +16,7 @@ function NotFound({onNav,lang,isDark}){
   </div>);
 }
 
-function ErrorBoundary({children,onNav,lang}){
+function ErrorBoundary({children}){
   // Simple error state (React Error Boundary requires class, this is functional fallback)
   return children;
 }

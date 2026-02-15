@@ -349,7 +349,7 @@ function generateReport(gaugeData, options = {}) {
     metadata: {
       generated_at: now.toISOString(),
       engine_version: '1.1.0',
-      schema_version: '1.1',
+      schema_version: '1.2',
       thresholds_version: THRESHOLDS_VERSION,
       data_freshness: dateStr,
       channel,

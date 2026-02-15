@@ -50,7 +50,7 @@ class ErrorBoundary extends Component {
           >
             Reload
           </button>
-          {process.env.NODE_ENV !== 'production' && this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <pre style={{
               marginTop: 24,
               padding: 16,

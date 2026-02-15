@@ -51,7 +51,7 @@ function SparkLine({data,c,w=140,h=32}){
     <circle cx={parseFloat(last[0])} cy={parseFloat(last[1])} r={2.5} fill={c||LT.textMid}/>
   </svg>);
 }
-function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,color:_color}){
+function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit}){
   return(<div style={{display:"flex",gap:10}}>
     {[{lb:bf.date,val:bf.val,ds:"30일 전",isCurrent:false},
       {lb:af.date,val:af.val,ds:"최신",isCurrent:true}].map((s,i)=>(

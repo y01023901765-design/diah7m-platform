@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import { SYS, sysN } from '../components/TierLock';
@@ -7,11 +7,11 @@ import * as API from '../api';
 
 function AdminPage({lang}){
   const L=lang||'ko';
-  const [liveKPI,setLiveKPI]=useState(null);
-
-  useEffect(()=>{
-    API.adminKPI().then(setLiveKPI).catch(()=>{});
-  },[]);
+  // liveKPI: Phase 2에서 관리자 KPI 연동 시 활성화
+  // const [liveKPI,setLiveKPI]=useState(null);
+  // useEffect(()=>{
+  //   API.adminKPI().then(setLiveKPI).catch(()=>{});
+  // },[]);
   const [tab,setTab]=useState('kpi');
   const [search,setSearch]=useState('');
   const tabs=[{id:'kpi',label:'📊 KPI'},{id:'members',label:'👥 회원'},{id:'products',label:'🛒 상품'},{id:'pipeline',label:'🔄 파이프라인'},{id:'billing',label:'💳 결제'},{id:'engine',label:'🔧 엔진'},{id:'audit',label:'📋 감사'},{id:'settings',label:'⚙️ 설정'}];
