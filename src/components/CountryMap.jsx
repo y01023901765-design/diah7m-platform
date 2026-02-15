@@ -525,7 +525,7 @@ export default function CountryMap({country,onBack,lang='ko',onNav}){
         <div style={{position:"absolute",top:0,left:"50%",zIndex:10,animation:"satFloat 7s ease-in-out infinite",pointerEvents:"none"}}>
           {/* Satellite */}
           <div style={{transform:"translateX(-50%)",filter:`drop-shadow(0 2px 6px rgba(0,0,0,0.8)) drop-shadow(0 0 10px ${T.accent}30)`}}>
-            <div style={{fontSize:24,textAlign:"center"}}>🛰️</div>
+            <div style={{fontSize:window.innerWidth<600?16:24,textAlign:"center"}}>🛰️</div>
           </div>
           {/* Beam — 위성 바로 아래에서 시작, 함께 부유 */}
           <svg width="800" height="500" viewBox="-400 0 800 500" style={{display:"block",position:"absolute",top:24,left:"50%",transform:"translateX(-50%)",pointerEvents:"none"}}>

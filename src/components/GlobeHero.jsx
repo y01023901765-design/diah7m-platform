@@ -296,7 +296,8 @@ export default function GlobeHero({lang='ko',onNav}){
         }}>
           {/* Satellite */}
           <div style={{
-            transform:"translateX(-50%)",
+            transform:`translateX(-50%) scale(${window.innerWidth<600?0.6:1})`,
+            transformOrigin:"center top",
             filter:`drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 15px ${T.accent}50)`,
           }}>
             <RealisticSatellite/>
