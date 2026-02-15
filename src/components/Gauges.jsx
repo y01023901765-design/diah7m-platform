@@ -57,7 +57,7 @@ function GaugeRow({d,open,toggle,lang}){
             {d.act?.map((a,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:5}}>
                 <div style={{flex:1}}><div style={{fontSize:16,fontWeight:600,color:LT.text}}>{a.s}</div><div style={{fontSize:16,color:LT.textMid}}>{a.a}</div></div>
-                <span style={{fontSize:15,fontWeight:700,padding:"2px 6px",borderRadius:4,background:LT.bg2,color:a.tg.includes(t('sigBuy',L))?LT.good:a.tg.includes(t('sigAvoid',L))||a.tg.includes(t('sigSell',L))?LT.danger:LT.warn,border:`1px solid ${LT.border}`,whiteSpace:"nowrap"}}>{a.tg}</span>
+                <span style={{fontSize:15,fontWeight:700,padding:"2px 6px",borderRadius:4,background:LT.bg2,color:LT.text,border:`1px solid ${LT.border}`,whiteSpace:"nowrap"}}>{a.tg}</span>
               </div>
             ))}
           </div>
