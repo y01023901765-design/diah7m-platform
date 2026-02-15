@@ -30,13 +30,13 @@ function DashboardPage({user,onNav,lang}){
     {/* Connection Status */}
     <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
       <span style={{fontSize:15,fontWeight:600,padding:"2px 8px",borderRadius:10,
-        background:apiStatus==='live'?`${LT.good}15`:apiStatus==='demo'?`${LT.warn}15`:`${LT.textDim}15`,
+        background:LT.bg2,
         color:apiStatus==='live'?LT.good:apiStatus==='demo'?LT.warn:LT.textDim}}>
         {apiStatus==='live'?'● LIVE':apiStatus==='demo'?'● DEMO':'● ...'}
       </span>
     </div>
     {/* Demo Plan Switcher */}
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 10px",borderRadius:8,background:`${LT.accent}08`,border:`1px solid ${LT.accent}15`}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"6px 10px",borderRadius:8,background:LT.bg2,border:`1px solid ${LT.border}`}}>
       <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}>DEMO</span>
       {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"4px 12px",borderRadius:6,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:16,fontWeight:demoPlan===p?700:600,
         background:demoPlan===p?'#111111':`${LT.surface}`,color:demoPlan===p?"#fff":LT.text,cursor:"pointer"}}>{p}</button>))}
@@ -78,11 +78,11 @@ function DashboardPage({user,onNav,lang}){
         <div style={{fontSize:15,color:LT.textMid,lineHeight:2}}>{t('verdictText',L)}</div>
       </div>
       {/* Satellite summary */}
-      <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.sat}25`}}>
+      <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.sat,marginBottom:10}}>{t('satTimeline',L)}</div>
         <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.good}15`}}><div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.warn}15`}}><div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
         </div>
       </div>
       {/* 9 Systems */}
@@ -107,14 +107,14 @@ function DashboardPage({user,onNav,lang}){
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("satStatus",L)}</div></div>
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-        {Object.values(D).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.sat}25`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.sat}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
+        {Object.values(D).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
     </>}
     {tab==='alerts'&&<>
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("alertCenter",L)}</div></div>
       <TierLock plan={demoUser?.plan} req="BASIC" lang={L}>
-      {[{t:t('alert',L),c:LT.danger,g:"D1",m:t('alertD1',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"D3",m:t('alertD3',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"L3",m:t('alertL3',L),d:"2026-01-12"},{t:t('caution',L),c:LT.warn,g:"R2",m:t('alertR2',L),d:"2026-01-10"},{t:t('caution',L),c:LT.warn,g:"C2",m:t('alertC2',L),d:"2026-01-08"},{t:t('stWatch',L),c:LT.info,g:"I4",m:t('alertI4',L),d:"2026-01-05"}].map((a,i)=>(<div key={i} style={{background:LT.surface,borderRadius:LT.smRadius,padding:"14px 16px",border:`1px solid ${a.c}20`,marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
+      {[{t:t('alert',L),c:LT.danger,g:"D1",m:t('alertD1',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"D3",m:t('alertD3',L),d:"2026-01-15"},{t:t('alert',L),c:LT.danger,g:"L3",m:t('alertL3',L),d:"2026-01-12"},{t:t('caution',L),c:LT.warn,g:"R2",m:t('alertR2',L),d:"2026-01-10"},{t:t('caution',L),c:LT.warn,g:"C2",m:t('alertC2',L),d:"2026-01-08"},{t:t('stWatch',L),c:LT.info,g:"I4",m:t('alertI4',L),d:"2026-01-05"}].map((a,i)=>(<div key={i} style={{background:LT.surface,borderRadius:LT.smRadius,padding:"14px 16px",border:`1px solid ${LT.border}`,marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
         <span style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:4,flexShrink:0}}/>
         <div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:16,fontWeight:700,color:a.c}}>{a.t} · {a.g}</span><span style={{fontSize:16,color:LT.textDim}}>{a.d}</span></div><div style={{fontSize:15,color:LT.text,lineHeight:1.5}}>{a.m}</div></div>
       </div>))}

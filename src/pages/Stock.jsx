@@ -115,7 +115,7 @@ function StockPage({user,lang}){
     )}
 
     {/* Video Funnel */}
-    <div style={{background:`${LT.accent}08`,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.accent}15`,marginTop:14}}>
+    <div style={{background:LT.bg2,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginTop:14}}>
       <div style={{fontSize:16,fontWeight:700,color:LT.accent,marginBottom:6}}>📺 YouTube {L==='ko'?'연동 콘텐츠':'Content'}</div>
       <div style={{fontSize:16,color:LT.textMid,lineHeight:1.6}}>{L==='ko'?
         '첫 영상: Tesla → TSMC → Samsung 순서로 공개. 위성이 본 공장 가동률 변화를 무료로 보여주고, 상세 시그널은 구독자 전용.':

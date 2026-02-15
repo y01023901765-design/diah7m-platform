@@ -14,15 +14,15 @@ function TierLock({plan,req,children,lang,compact}){
     <div style={{position:"relative",borderRadius:LT.cardRadius,overflow:"hidden"}}>
       <div style={{filter:"blur(6px)",opacity:.35,pointerEvents:"none",userSelect:"none"}}>{children}</div>
       <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-        background:`${LT.bg0}85`,backdropFilter:"blur(2px)",borderRadius:LT.cardRadius,border:`1px dashed ${LT.accent}40`,zIndex:10}}>
-        <div style={{width:48,height:48,borderRadius:24,background:`${LT.accent}15`,display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:22,marginBottom:12,border:`2px solid ${LT.accent}30`}}>🔒</div>
+        background:`${LT.bg0}85`,backdropFilter:"blur(2px)",borderRadius:LT.cardRadius,border:`1px dashed ${LT.border}`,zIndex:10}}>
+        <div style={{width:48,height:48,borderRadius:24,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:22,marginBottom:12,border:`2px solid ${LT.border}`}}>🔒</div>
         {!compact&&<div style={{fontSize:16,fontWeight:800,color:LT.text,marginBottom:4}}>{pct}% {t('locked',L)}</div>}
         {!compact&&<div style={{fontSize:16,color:LT.textMid,marginBottom:16,textAlign:"center",maxWidth:240,lineHeight:1.6}}>
           {t('upgradeHint',L).replace('{tier}',req)}</div>}
         <button style={{padding:compact?"8px 16px":"10px 24px",borderRadius:10,border:"none",
-          background:`linear-gradient(135deg,${LT.accent},#0099cc)`,color:"#fff",fontSize:compact?11:13,fontWeight:700,
-          cursor:"pointer",boxShadow:`0 4px 20px ${LT.accent}40`,animation:"tierPulse 2s ease infinite"}}>
+          background:'#111',color:"#fff",fontSize:compact?11:13,fontWeight:700,
+          cursor:"pointer",boxShadow:'0 4px 20px rgba(0,0,0,0.15)',animation:"tierPulse 2s ease infinite"}}>
           {t('upgradeBtn',L)}</button>
       </div>
     </div>

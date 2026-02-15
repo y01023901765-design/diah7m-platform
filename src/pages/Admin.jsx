@@ -90,9 +90,9 @@ function AdminPage({lang}){
 
     {tab==='pipeline'&&<>
       {/* 이상징후 경보 */}
-      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.danger}20`,marginBottom:16}}>
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginBottom:16}}>
         <div style={{fontSize:15,fontWeight:700,color:LT.danger,marginBottom:8}}>⚠️ 이상 징후 (2건)</div>
-        {[["KOSIS 실업률 수집 지연","예상 2/10 → 미수신 · 72시간 초과","2026-02-13"],["Sentinel-5P NO₂ 결측","구름 피복 92% · 한반도 전역","2026-02-12"]].map(([tt,d,ts])=>(<div key={tt} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${LT.danger}10`}}>
+        {[["KOSIS 실업률 수집 지연","예상 2/10 → 미수신 · 72시간 초과","2026-02-13"],["Sentinel-5P NO₂ 결측","구름 피복 92% · 한반도 전역","2026-02-12"]].map(([tt,d,ts])=>(<div key={tt} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${LT.border}`}}>
           <div><div style={{fontSize:16,fontWeight:600,color:LT.text}}>{tt}</div><div style={{fontSize:15,color:LT.textDim}}>{d}</div></div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}><span style={{fontSize:15,color:LT.textDim}}>{ts}</span>
             <button style={{padding:"4px 10px",borderRadius:6,border:"none",background:LT.warn,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>Hold</button></div>
@@ -116,8 +116,8 @@ function AdminPage({lang}){
       </div>
       {/* 재처리 */}
       <div style={{display:"flex",gap:8}}>
-        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.accent}30`,background:'transparent',color:LT.accent,fontSize:16,fontWeight:600,cursor:"pointer"}}>KOSIS 재수집</button>
-        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.warn}30`,background:`${LT.warn}08`,color:LT.warn,fontSize:16,fontWeight:600,cursor:"pointer"}}>2월 재계산</button>
+        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:'transparent',color:LT.accent,fontSize:16,fontWeight:600,cursor:"pointer"}}>KOSIS 재수집</button>
+        <button style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:'transparent',color:LT.warn,fontSize:16,fontWeight:600,cursor:"pointer"}}>2월 재계산</button>
       </div>
     </>}
 
@@ -126,12 +126,12 @@ function AdminPage({lang}){
         {[["MRR","₩18.5M",LT.good],["활성구독","892",LT.accent],["결제실패","3건",LT.danger],["환불대기","1건",LT.warn]].map(([n,v,c])=>(<div key={n} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,color:LT.textDim}}>{n}</div><div style={{fontSize:20,fontWeight:800,color:c,marginTop:6,fontFamily:"monospace"}}>{v}</div></div>))}
       </div>
       {/* 결제실패 */}
-      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.danger}15`,marginBottom:12}}>
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <span style={{fontSize:15,fontWeight:700,color:LT.text}}>💳 결제 실패 플로우</span>
           <button style={{padding:"5px 12px",borderRadius:6,border:"none",background:LT.danger,color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>일괄 리마인드</button>
         </div>
-        {[{n:"박분석",p:"Basic",a:"₩19K",r:"카드만료",step:"1차 리마인드"},{n:"강데이터",p:"Pro",a:"₩49K",r:"잔액부족",step:"2차 리마인드"},{n:"오분석",p:"Basic",a:"₩19K",r:"카드분실",step:"다운그레이드 예정"}].map((x,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${LT.danger}10`,fontSize:16,alignItems:"center"}}>
+        {[{n:"박분석",p:"Basic",a:"₩19K",r:"카드만료",step:"1차 리마인드"},{n:"강데이터",p:"Pro",a:"₩49K",r:"잔액부족",step:"2차 리마인드"},{n:"오분석",p:"Basic",a:"₩19K",r:"카드분실",step:"다운그레이드 예정"}].map((x,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${LT.border}`,fontSize:16,alignItems:"center"}}>
           <span style={{fontWeight:600,color:LT.text}}>{x.n}</span><span style={{color:LT.accent}}>{x.p}</span><span style={{color:LT.danger,fontFamily:"monospace"}}>{x.a}</span><span style={{color:LT.textDim}}>{x.r}</span><span style={{color:LT.warn,fontWeight:600}}>{x.step}</span>
         </div>))}
       </div>

@@ -155,7 +155,7 @@ function ProductMgmt(){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <span style={{fontSize:16,fontWeight:700,color:LT.text}}>🏷️ 개별 상품 가격</span>
           <div style={{display:"flex",gap:6}}>
-            <button style={{padding:"4px 10px",borderRadius:4,border:`1px solid ${LT.warn}30`,background:`${LT.warn}08`,color:LT.warn,fontSize:15,fontWeight:600,cursor:"pointer"}}>일괄 할인</button>
+            <button style={{padding:"4px 10px",borderRadius:4,border:`1px solid ${LT.warn}30`,background:LT.bg2,color:LT.warn,fontSize:15,fontWeight:600,cursor:"pointer"}}>일괄 할인</button>
             <button style={{padding:"4px 10px",borderRadius:4,border:`1px solid ${LT.danger}30`,background:`${LT.danger}08`,color:LT.danger,fontSize:15,fontWeight:600,cursor:"pointer"}}>할인 해제</button>
           </div>
         </div>
@@ -204,7 +204,7 @@ function ProductMgmt(){
           <span style={{fontSize:15,padding:"2px 6px",borderRadius:4,background:`${cp.status==='활성'?LT.good:cp.status==='만료임박'?LT.warn:cp.status==='내부'?LT.sat:LT.textDim}15`,color:cp.status==='활성'?LT.good:cp.status==='만료임박'?LT.warn:cp.status==='내부'?LT.sat:LT.textDim,fontWeight:600}}>{cp.status}</span>
         </div>))}
       </div>
-      <div style={{background:`${LT.warn}08`,borderRadius:LT.smRadius,padding:12,border:`1px solid ${LT.warn}15`,marginTop:10}}>
+      <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:12,border:`1px solid ${LT.border}`,marginTop:10}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.warn}}>🔍 남용 감지 정책</div>
         <div style={{fontSize:15,color:LT.textDim,marginTop:4,lineHeight:1.6}}>동일 카드 3회 이상 · 동일 이메일 도메인 5회 이상 · VPN/프록시 차단 · 가입 24시간 내 쿠폰 사용 제한</div>
       </div>

@@ -48,7 +48,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
     </div>}
     {tab==='subscription'&&<div>
       <h2 style={{fontSize:18,fontWeight:800,color:LT.text,marginBottom:20}}>{t("subscription",L)}</h2>
-      {confirmCancel?<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:32,border:`1px solid ${LT.danger}30`,textAlign:"center"}}>
+      {confirmCancel?<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:32,border:`1px solid ${LT.border}`,textAlign:"center"}}>
         <div style={{fontSize:28,marginBottom:12}}>⚠️</div>
         <div style={{fontSize:16,fontWeight:700,color:LT.danger,marginBottom:8}}>{t("confirmCancelSub",L)}</div>
         <div style={{fontSize:15,color:LT.textMid,lineHeight:1.8,marginBottom:20}}>{t("cancelInfo",L)}</div>
@@ -56,7 +56,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
           <button onClick={()=>{setConfirmCancel(false);flash(t('subCancelled',L));}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:LT.danger,color:"#fff",fontWeight:700,cursor:"pointer"}}>{t("confirmCancelBtn",L)}</button>
           <button onClick={()=>setConfirmCancel(false)} style={{padding:"10px 24px",borderRadius:8,border:`1px solid ${LT.border}`,background:"transparent",color:LT.text,fontWeight:600,cursor:"pointer"}}>{t("goBack",L)}</button>
         </div>
-      </div>:<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.accent}30`}}>
+      </div>:<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.border}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div><div style={{fontSize:16,color:LT.textDim}}>{t("curPlan",L)}</div><div style={{fontSize:24,fontWeight:900,color:LT.accent,marginTop:4}}>🛰️ Pro</div><div style={{fontSize:16,color:LT.text,marginTop:2}}>₩49,000{t('perMonth',L)}</div></div>
           <span style={{padding:"6px 14px",borderRadius:20,background:`${LT.good}15`,color:LT.good,fontSize:15,fontWeight:700}}>{t("active",L)}</span>
@@ -67,7 +67,7 @@ function MyPage({user,onNav,lang,setGlobalLang}){
         <div style={{display:"flex",gap:8,marginTop:16}}>
           <button onClick={()=>flash(t('paymentPending',L))} style={{padding:"10px 16px",borderRadius:8,border:"none",background:'#111',color:'#fff',fontWeight:600,cursor:"pointer"}}>{t("changePlan",L)}</button>
           <button onClick={()=>flash(t('paymentPending',L))} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textMid,fontWeight:600,cursor:"pointer"}}>{t("changePayment",L)}</button>
-          <button onClick={()=>setConfirmCancel(true)} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.danger}30`,background:`${LT.danger}08`,color:LT.danger,fontWeight:600,cursor:"pointer"}}>{t("cancelSub",L)}</button>
+          <button onClick={()=>setConfirmCancel(true)} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:`${LT.danger}08`,color:LT.danger,fontWeight:600,cursor:"pointer"}}>{t("cancelSub",L)}</button>
         </div>
       </div>}
     </div>}
@@ -94,14 +94,14 @@ function MyPage({user,onNav,lang,setGlobalLang}){
           {LANG_LIST.map((l,i)=>(<button key={i} onClick={()=>{setSelectedLang(i);if(setGlobalLang)setGlobalLang(l.code);flash(`✅ ${l.flag} ${l.name}`);}} style={{padding:"8px 14px",borderRadius:8,border:`1px solid ${i===selectedLang?'#111':LT.border}`,background:i===selectedLang?'#F5F5F5':'transparent',color:i===selectedLang?'#111':LT.textDim,fontSize:15,fontWeight:i===selectedLang?700:500,cursor:"pointer"}}>{l.flag} {l.name}</button>))}
         </div>
       </div>
-      {confirmDelete?<div style={{background:`${LT.danger}06`,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.danger}30`,marginTop:16}}>
+      {confirmDelete?<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.border}`,marginTop:16}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.danger,marginBottom:8}}>{t("confirmDeleteTitle",L)}</div>
         <div style={{fontSize:15,color:LT.textMid,lineHeight:1.8,marginBottom:16}}>{t("confirmDeleteDesc",L)}</div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{setConfirmDelete(false);flash(t('accountDeleted',L));}} style={{padding:"10px 20px",borderRadius:8,border:"none",background:LT.danger,color:"#fff",fontWeight:700,cursor:"pointer"}}>{t("permDelete",L)}</button>
           <button onClick={()=>setConfirmDelete(false)} style={{padding:"10px 20px",borderRadius:8,border:`1px solid ${LT.border}`,background:"transparent",color:LT.text,fontWeight:600,cursor:"pointer"}}>{t("cancel",L)}</button>
         </div>
-      </div>:<button onClick={()=>setConfirmDelete(true)} style={{marginTop:16,padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.danger}30`,background:"transparent",color:LT.danger,fontSize:15,fontWeight:600,cursor:"pointer"}}>{t("deleteAccount",L)}</button>}
+      </div>:<button onClick={()=>setConfirmDelete(true)} style={{marginTop:16,padding:"10px 16px",borderRadius:8,border:`1px solid ${LT.border}`,background:"transparent",color:LT.danger,fontSize:15,fontWeight:600,cursor:"pointer"}}>{t("deleteAccount",L)}</button>}
     </div>}
   </div>);
 }

@@ -13,8 +13,8 @@ function GaugeRow({d,open,toggle,lang}){
   const L=lang||'ko';
   const col=gc(d.g), sat=isSat(d.c);
   return(
-    <div style={{background:sat?`linear-gradient(135deg,${LT.sat}06,${LT.bg2})`:LT.surface,borderRadius:LT.smRadius,border:`1px solid ${sat?LT.sat+"25":LT.border}`,marginBottom:6,overflow:"hidden",cursor:"pointer",transition:"all .2s",position:"relative"}} onClick={toggle}>
-      {sat&&<div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:`linear-gradient(90deg,transparent,${LT.sat},transparent)`}}/>}
+    <div style={{background:LT.surface,borderRadius:LT.smRadius,border:`1px solid ${LT.border}`,marginBottom:6,overflow:"hidden",cursor:"pointer",transition:"all .2s",position:"relative"}} onClick={toggle}>
+      {sat&&<div style={{position:"absolute",top:0,left:0,width:"100%",height:2,background:LT.border}}/>}
       <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,position:"relative"}}>
         <span style={{fontSize:15,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:sat?LT.sat:LT.textMid,width:32,flexShrink:0}}>{d.c}</span>
         <div style={{flex:1,minWidth:0}}>
@@ -37,13 +37,13 @@ function GaugeRow({d,open,toggle,lang}){
       {open&&(
         <div style={{padding:"0 16px 16px",borderTop:`1px solid ${LT.border}`}}>
           {/* 의학비유 설명 */}
-          <div style={{background:`${LT.warn}06`,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:10,border:`1px solid ${LT.warn}15`}}>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:10,border:`1px solid ${LT.border}`}}>
             <div style={{fontSize:16,fontWeight:700,color:LT.warn,marginBottom:3}}>{t('bodyMetaphor',L)}: {d.t}</div>
             <div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{d.m}</div>
           </div>
           {SAT_EV[d.c]?<SatEvidencePanel data={SAT_EV[d.c]}/>:<>
           {/* 위성 교차검증 (기존) */}
-          {sat?<div style={{background:`${LT.sat}08`,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.sat}30`}}>
+          {sat?<div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
             <div style={{fontSize:16,fontWeight:700,color:LT.sat,marginBottom:4}}>{t('satObsInfo',L)}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
               {[[t('satCol',L),SAT_META[d.c]?.sat],[t('satProg',L),SAT_META[d.c]?.orbit],[t('satCycle',L),SAT_META[d.c]?.freq],[t('satBand',L),SAT_META[d.c]?.band]].map(([k,v])=>(
@@ -52,7 +52,7 @@ function GaugeRow({d,open,toggle,lang}){
             </div>
           </div>:<SatXrefBanner code={d.c} lang={L}/>}
           {/* 행동 시그널 */}
-          <div style={{background:`${LT.good}06`,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.good}15`}}>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
             <div style={{fontSize:16,fontWeight:700,color:LT.good,marginBottom:6}}>{t('investSignal',L)}</div>
             {d.act?.map((a,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:5}}>
@@ -62,7 +62,7 @@ function GaugeRow({d,open,toggle,lang}){
             ))}
           </div>
           {/* 사각지대 */}
-          <div style={{background:`${LT.accent}06`,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.accent}15`}}>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:"10px 14px",marginTop:8,border:`1px solid ${LT.border}`}}>
             <div style={{fontSize:16,fontWeight:700,color:LT.accent,marginBottom:4}}>{t('blindSpot',L)}</div>
             <div style={{fontSize:16,color:LT.accent,marginBottom:4}}>{d.bs?.d}</div>
             {d.bs?.o?.map((o,i)=>(<div key={i} style={{fontSize:15,color:LT.textDim,marginBottom:2}}>✕ {o}</div>))}
@@ -83,13 +83,13 @@ function SystemSection({sysKey,sys,expanded,toggle,lang}){
   const [open,setOpen]=useState(false);
   return(
     <div style={{marginBottom:12}}>
-      <div onClick={()=>setOpen(!open)} style={{background:`linear-gradient(135deg,${sys.color}12,${sys.color}06)`,borderRadius:LT.cardRadius,padding:"16px 20px",border:`1.5px solid ${sys.color}25`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all .2s"}}>
+      <div onClick={()=>setOpen(!open)} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:"16px 20px",border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all .2s"}}>
         <div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:20}}>{sys.icon}</span>
             <span style={{fontSize:16,fontWeight:800,color:LT.text}}>{sysN(sysKey,L)}</span>
             <span style={{fontSize:16,color:sys.color,fontWeight:600}}>({sysB(sysKey,L)})</span>
-            {satCount>0&&<span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:10,background:`${LT.sat}15`,color:LT.sat,border:`1px solid ${LT.sat}30`}}>🛰️ ×{satCount}</span>}
+            {satCount>0&&<span style={{fontSize:15,fontWeight:700,padding:"2px 8px",borderRadius:10,background:`${LT.sat}15`,color:LT.sat,border:`1px solid ${LT.border}`}}>🛰️ ×{satCount}</span>}
           </div>
           <div style={{fontSize:16,color:LT.textDim,marginTop:4}}>{sysM(sysKey,L)} · {gArr.length} {t('gaugesLabel',L)}</div>
         </div>

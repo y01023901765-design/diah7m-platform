@@ -11,7 +11,7 @@ function RadarChart({lang:RL}){
   return(<svg viewBox="0 0 240 240" style={{width:"100%",maxWidth:260}}>
     {grid.map(g=>(<polygon key={g} points={axes.map((_,i)=>getP(i,g).join(",")).join(" ")} fill="none" stroke={LT.border} strokeWidth={.5}/>))}
     {axes.map((_,i)=>{const[x,y]=getP(i,100);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={LT.border} strokeWidth={.5}/>;} )}
-    <polygon points={poly} fill={`${LT.accent}18`} stroke={LT.accent} strokeWidth={1.5}/>
+    <polygon points={poly} fill="#E0E0E0" stroke={LT.accent} strokeWidth={1.5}/>
     {axes.map((a,i)=>{const[px,py]=getP(i,a.sc);const[lx,ly]=getP(i,118);return(<g key={a.id}><circle cx={px} cy={py} r={3} fill={a.color}/><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fill={LT.textMid} fontSize={8} fontWeight={600}>{a.icon}{sysN(a.id,RL).slice(0,3)}</text></g>);})}
   </svg>);
 }
@@ -21,7 +21,7 @@ function DualLockIndicator({lang}){
   const L=lang||'ko';
   const dl={locked:true,input:{score:8,threshold:3,label:t('inputSeal',L)},output:{score:20,threshold:3,label:t('outputSeal',L)}};
   const barStyle=(v,max,col)=>({width:`${Math.min(v/max*100,100)}%`,height:6,borderRadius:3,background:col,transition:"width .8s"});
-  return(<div style={{background:`linear-gradient(135deg,${LT.orange}08,${LT.bg2})`,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.orangeDim}`}}>
+  return(<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}>
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
       <span style={{width:10,height:10,borderRadius:5,background:LT.orange,boxShadow:`0 0 8px ${LT.orange}`}}/>
       <span style={{fontSize:16,fontWeight:700,color:LT.orange}}>{t('dualLockActive',L)}</span>
