@@ -10,7 +10,7 @@ const fs = require('fs');
 
 // GEE 서비스 계정 인증
 const SERVICE_ACCOUNT = process.env.GEE_SERVICE_ACCOUNT || '';
-const KEY_FILE = './keys/make1-456808-be67c3bfb578.json';
+const KEY_FILE = process.env.GEE_KEY_FILE || '';
 
 let geeInitialized = false;
 

@@ -37,8 +37,9 @@ function DashboardPage({user,onNav,lang,country}){
   const [liveData,setLiveData]=useState(null); // API에서 가져온 실데이터
   const [dataInfo,setDataInfo]=useState(null); // 수집 현황 정보
   const [countryInfo,setCountryInfo]=useState(null); // 글로벌 국가 데이터
-  const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
-  const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{}};
+  const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch(e){return true}});
+  const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch(e){}};
+
   const toggle=k=>setExpanded(p=>({...p,[k]:!p[k]}));
 
   // 국가코드 (null이면 한국)

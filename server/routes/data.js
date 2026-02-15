@@ -29,9 +29,9 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
   // -- refresh (Header 인증 방식) --
   router.get('/trigger-refresh', async (req, res) => {
     const adminPw = process.env.ADMIN_PASSWORD;
-    const key = req.headers['x-admin-key'] || req.query.key;
+    const key = req.headers['x-admin-key'];
     if (!adminPw || key !== adminPw) {
-      return res.status(403).json({ error: 'Admin key required (x-admin-key header or ?key= param)' });
+      return res.status(403).json({ error: 'Admin key required (x-admin-key header)' });
     }
     if (!pipeline || !dataStore) return res.json({ error: 'Pipeline/Store unavailable' });
     if (dataStore.fetching) return res.json({ error: 'Already running, wait...' });

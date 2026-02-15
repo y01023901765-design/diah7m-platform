@@ -3,7 +3,7 @@ import T, { L as LT } from '../theme';
 import { t, gc } from '../i18n';
 import { SatBadge, SatXrefBanner, SatEvidencePanel, SparkLine } from './Satellite';
 import TierLock, { isSat, SAT_META, D, gN, sysN, sysB, sysM } from './TierLock';
-import { TIER_ACCESS, tierLevel } from '../data/gauges';
+import { TIER_ACCESS } from '../data/gauges';
 import { SAT_EV } from '../data/satellite';
 
 // Tier/label data for gauge badges
