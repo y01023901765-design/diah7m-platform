@@ -254,7 +254,7 @@ export async function getDataStatus() {
 /**
  * 한국 경제 진단 실행
  */
-export async function getDiagnosis(country = 'kr') {
+export async function runDiagnosis(country = 'kr') {
   return api(`/api/v1/diagnosis/${country}`);
 }
 
