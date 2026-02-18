@@ -66,7 +66,7 @@ function DashboardPage({user,onNav,lang,country,city}){
             try {
               const latest = await API.dataLatest();
               if (cancelled) return;
-              if (latest?.data) { setLiveData(latest.data); setApiStatus('live'); return; }
+              if (latest?.data?.gauges) { setLiveData(latest.data); setApiStatus('live'); return; }
             } catch(e) { console.log('Data fetch failed:', e.message); }
           }
         } else {
