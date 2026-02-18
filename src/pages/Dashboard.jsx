@@ -61,13 +61,24 @@ function DashboardPage({user,onNav,lang,country,city}){
           // 한국: 기존 59게이지 실데이터
           const status = await API.dataStatus();
           if (cancelled) return;
+          console.log('[Dashboard] status:', status);
           setDataInfo(status);
           if (status.available) {
             try {
               const latest = await API.dataLatest();
               if (cancelled) return;
-              if (latest?.data?.gauges) { setLiveData(latest.data); setApiStatus('live'); return; }
+              console.log('[Dashboard] latest:', latest);
+              if (latest?.data?.gauges && latest.data.gauges.length > 0) { 
+                console.log('[Dashboard] Setting live data with', latest.data.gauges.length, 'gauges');
+                setLiveData(latest.data); 
+                setApiStatus('live'); 
+                return; 
+              } else {
+                console.log('[Dashboard] No gauges in response');
+              }
             } catch(e) { console.log('Data fetch failed:', e.message); }
+          } else {
+            console.log('[Dashboard] status.available is false');
           }
         } else {
           // 글로벌: 20게이지 라이트 데이터
