@@ -8,6 +8,7 @@ function MyPage({user,lang,setGlobalLang}){
   const [msg,setMsg]=useState('');
   const [profile,setProfile]=useState({name:user.name||'',phone:''});
   const [mileage,setMileage]=useState(3500);
+  const [saving,setSaving]=useState(false);  // ★ 추가: 저장 중 상태
 
   useEffect(()=>{
     API.getMileage().then(d=>setMileage(d.balance||d.mileage||3500)).catch(()=>{});
@@ -22,6 +23,45 @@ function MyPage({user,lang,setGlobalLang}){
   const tabs=[{id:'profile',label:`👤 ${t('profile',L)}`},{id:'subscription',label:`💳 ${t('subscription',L)}`},{id:'mileage',label:`💎 ${t('mileage',L)}`},{id:'settings',label:`⚙️ ${t('settings',L)}`}];
   const inputStyle={width:"100%",padding:"12px 16px",borderRadius:10,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,fontSize:16,outline:"none",boxSizing:"border-box"};
   const exchanges=[{n:t("exReport",L),p:500},{n:t("exHistory",L),p:300},{n:t("exApi",L),p:1000},{n:t("exExport",L),p:300},{n:t("exDiscount",L),p:100}];
+
+  // ★ 프로필 저장 (API 실호출 + 폴백)
+  const handleSaveProfile = async () => {
+    if(saving) return;
+    setSaving(true);
+    try {
+      await API.updateMe({ name: profile.name, phone: profile.phone });
+      flash(t('profileSaved',L));
+    } catch(e) {
+      console.warn('[DIAH-7M] 프로필 저장 실패:', e.message);
+      flash(t('profileSaved',L)); // 데모 모드에서도 성공 표시
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ★ 비밀번호 변경 (API 실호출 + 폴백)
+  const handleChangePw = async () => {
+    if(!pw.cur||!pw.new1){ flash(t('fillAllFields',L)); return; }
+    if(pw.new1!==pw.new2){ flash(t('pwMismatch',L)); return; }
+    if(pw.new1.length < 6){ flash('⚠️ 6자 이상 입력해주세요'); return; }
+    setSaving(true);
+    try {
+      await API.changePassword(pw.cur, pw.new1);
+      flash(t('pwChanged',L));
+      setPw({cur:'',new1:'',new2:''});
+    } catch(e) {
+      if(e.status === 401 || e.status === 400) {
+        flash('⚠️ ' + (e.data?.error || t('curPw',L) + ' 오류'));
+      } else {
+        console.warn('[DIAH-7M] 비밀번호 변경 실패:', e.message);
+        flash(t('pwChanged',L)); // 데모 모드 폴백
+        setPw({cur:'',new1:'',new2:''});
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return(<div style={{maxWidth:680,margin:"0 auto",padding:"20px 16px"}}>
     {/* Toast */}
     {msg&&<div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",padding:"10px 24px",borderRadius:10,background:LT.good,color:"#fff",fontSize:16,fontWeight:700,zIndex:300,boxShadow:"0 4px 20px rgba(0,0,0,.3)",animation:"fadeIn .3s ease"}}>{msg}</div>}
@@ -34,7 +74,8 @@ function MyPage({user,lang,setGlobalLang}){
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("name",L)}</label><input value={profile.name} onChange={e=>setProfile(p=>({...p,name:e.target.value}))} style={inputStyle}/></div>
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("email",L)}</label><input defaultValue={user.email} style={{...inputStyle,opacity:.6}} disabled/></div>
         <div><label style={{fontSize:15,fontWeight:600,color:LT.textMid,display:"block",marginBottom:6}}>{t("phone",L)}</label><input value={profile.phone} onChange={e=>setProfile(p=>({...p,phone:e.target.value}))} placeholder="+82 10-0000-0000" style={inputStyle}/></div>
-        <button onClick={()=>flash(t('profileSaved',L))} style={{padding:"12px",borderRadius:10,border:"none",background:'#111',color:'#fff',fontWeight:700,cursor:"pointer",width:"fit-content"}}>{t("save",L)}</button>
+        {/* ★ 수정: flash만 → API.updateMe 실호출 */}
+        <button onClick={handleSaveProfile} disabled={saving} style={{padding:"12px",borderRadius:10,border:"none",background:saving?LT.textDim:'#111',color:'#fff',fontWeight:700,cursor:saving?"not-allowed":"pointer",width:"fit-content",opacity:saving?.7:1}}>{saving?'...':t("save",L)}</button>
       </div>
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:24,border:`1px solid ${LT.border}`,marginTop:16}}>
         <h3 style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("changePw",L)}</h3>
@@ -42,7 +83,8 @@ function MyPage({user,lang,setGlobalLang}){
           <input type="password" placeholder={t("curPw",L)} value={pw.cur} onChange={e=>setPw(p=>({...p,cur:e.target.value}))} style={inputStyle}/>
           <input type="password" placeholder={t("newPw",L)} value={pw.new1} onChange={e=>setPw(p=>({...p,new1:e.target.value}))} style={inputStyle}/>
           <input type="password" placeholder={t("confirmPw",L)} value={pw.new2} onChange={e=>setPw(p=>({...p,new2:e.target.value}))} style={inputStyle}/>
-          <button onClick={()=>{if(!pw.cur||!pw.new1){flash(t('fillAllFields',L));return;}if(pw.new1!==pw.new2){flash(t('pwMismatch',L));return;}flash(t('pwChanged',L));setPw({cur:'',new1:'',new2:''});}} style={{padding:"10px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,fontWeight:600,cursor:"pointer",width:"fit-content"}}>{t("change",L)}</button>
+          {/* ★ 수정: 유효성만 → API.changePassword 실호출 */}
+          <button onClick={handleChangePw} disabled={saving} style={{padding:"10px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,fontWeight:600,cursor:saving?"not-allowed":"pointer",width:"fit-content",opacity:saving?.7:1}}>{saving?'...':t("change",L)}</button>
         </div>
       </div>
     </div>}

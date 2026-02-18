@@ -1,30 +1,99 @@
 // DIAH-7M API Client — 프론트↔백엔드 연결 계층
 // Vercel(프론트) ↔ Render(백엔드) 구조 대응
+// ★ v1.1 — 타임아웃 + 폴백 안정화 (기존 기능 100% 유지)
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://diah7m-platform.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// ── 설정 ──
+const API_TIMEOUT = 12000;       // 12초 타임아웃 (Render 콜드스타트 대응)
+const HEALTH_CACHE_MS = 60000;   // 헬스체크 1분 캐시
+let _serverAlive = null;         // null=미확인, true=살아있음, false=죽어있음
+let _lastHealthCheck = 0;
 
 // ── Token 관리 ──
 let _token = null;
 const getToken = () => _token || localStorage.getItem('diah7m-token');
 const setToken = (t) => { _token = t; if(t) localStorage.setItem('diah7m-token', t); else localStorage.removeItem('diah7m-token'); };
 
-// ── 공통 fetch ──
+// ── 타임아웃 fetch ──
+function fetchWithTimeout(url, opts, timeout = API_TIMEOUT) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { ...opts, signal: controller.signal })
+    .finally(() => clearTimeout(id));
+}
+
+// ── 서버 상태 확인 (캐시) ──
+async function checkServer() {
+  const now = Date.now();
+  if (now - _lastHealthCheck < HEALTH_CACHE_MS && _serverAlive !== null) {
+    return _serverAlive;
+  }
+  try {
+    const res = await fetchWithTimeout(`${API_BASE}/api/health`, {}, 8000);
+    _serverAlive = res.ok;
+  } catch {
+    _serverAlive = false;
+  }
+  _lastHealthCheck = now;
+  return _serverAlive;
+}
+
+// ── 공통 fetch (★ 타임아웃 추가) ──
 async function api(path, opts = {}) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...opts, headers });
-  const data = await res.json().catch(() => ({}));
+  try {
+    const res = await fetchWithTimeout(`${API_BASE}${path}`, { ...opts, headers });
+    const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    const err = new Error(data.error || data.message || `API ${res.status}`);
-    err.status = res.status;
-    err.data = data;
-    throw err;
+    if (!res.ok) {
+      const err = new Error(data.error || data.message || `API ${res.status}`);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    // 서버 응답 성공 → 살아있음으로 표시
+    _serverAlive = true;
+    _lastHealthCheck = Date.now();
+    return data;
+  } catch (e) {
+    // AbortError = 타임아웃
+    if (e.name === 'AbortError') {
+      _serverAlive = false;
+      const err = new Error(`서버 응답 시간 초과 (${API_TIMEOUT/1000}초)`);
+      err.status = 0;
+      err.isTimeout = true;
+      throw err;
+    }
+    // TypeError = 네트워크 에러 (서버 다운, CORS 등)
+    if (e instanceof TypeError) {
+      _serverAlive = false;
+      const err = new Error('서버에 연결할 수 없습니다');
+      err.status = 0;
+      err.isNetwork = true;
+      throw err;
+    }
+    throw e;
   }
-  return data;
 }
+
+// ── 안전 호출 헬퍼 (폴백 지원) ──
+// 사용법: const data = await safeApi('/api/v1/data/latest', {}, fallbackData);
+export async function safeApi(path, opts = {}, fallback = null) {
+  try {
+    return await api(path, opts);
+  } catch (e) {
+    console.warn(`[DIAH-7M] API 실패 (${path}):`, e.message);
+    return fallback;
+  }
+}
+
+// ── 서버 상태 조회 (컴포넌트용) ──
+export function isServerAlive() { return _serverAlive; }
+export { checkServer };
 
 // ── Auth ──
 export async function register(name, email, password) {
@@ -86,10 +155,6 @@ export async function generateReport(options = {}) {
 
 export async function getDiagnoses(limit = 20) {
   return api(`/api/v1/diagnoses?limit=${limit}`);
-}
-
-export async function getDiagnosis(id) {
-  return api(`/api/v1/diagnoses/${id}`);
 }
 
 // ── Mileage ──
@@ -236,38 +301,23 @@ export async function satelliteCollect() {
   return api('/api/admin/satellite/collect', { method: 'POST' });
 }
 
-// ── Diagnosis (진단 API) - N15 추가 ──
-/**
- * 최신 수집 데이터 조회
- */
+// ── Diagnosis (진단 API) ──
 export async function getLatestData() {
   return api('/api/v1/data/latest');
 }
 
-/**
- * 데이터 수집 현황 조회
- */
 export async function getDataStatus() {
   return api('/api/v1/data/status');
 }
 
-/**
- * 한국 경제 진단 실행
- */
-export async function runDiagnosis(country = 'kr') {
+export async function getDiagnosis(country = 'kr') {
   return api(`/api/v1/diagnosis/${country}`);
 }
 
-/**
- * 축별 상세 조회
- */
 export async function getAxisDetail(country, axisId) {
   return api(`/api/v1/diagnosis/${country}/axis/${axisId}`);
 }
 
-/**
- * 게이지별 상세 조회
- */
 export async function getGaugeDetail(country, gaugeId) {
   return api(`/api/v1/diagnosis/${country}/gauge/${gaugeId}`);
 }

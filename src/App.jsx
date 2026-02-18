@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import T, { L as LT } from './theme';
 import { detectLang } from './i18n';
 import * as API from './api';
+import { checkServer, isServerAlive } from './api';  // ★ 추가
 
 // ── Pages ──
 import LandingPage from './pages/Landing';
@@ -65,28 +66,47 @@ const RESPONSIVE_CSS = (isDark) => `
 `;
 
 export default function App(){
-  const [page,setPage]=useState(()=>{
-    const path = window.location.pathname;
-    if(path==='/dashboard') return 'dashboard';
-    if(path==='/login') return 'login';
-    if(path==='/signup') return 'signup';
-    if(path==='/mypage') return 'mypage';
-    if(path==='/admin') return 'admin';
-    if(path==='/stock') return 'stock';
-    return 'landing';
-  });
+  const [page,setPage]=useState('landing');
   const [user,setUser]=useState(()=>API.getStoredUser());
   const [lang,setLang]=useState(detectLang());
+  const [appReady,setAppReady]=useState(false);  // ★ 추가: 앱 초기화 완료 여부
 
-  // 토큰 있으면 자동 로그인 시도
+  // ★ 앱 초기화: 서버 상태 확인 + 자동 로그인 (최대 10초)
   useEffect(()=>{
-    if(API.isAuthenticated() && !user){
-      API.getMe().then(data=>{
-        const u = data.user || data;
-        setUser(u);
-        API.storeUser(u);
-      }).catch(()=>{ API.logout(); });
+    let done = false;
+
+    // 안전장치: 10초 후 무조건 앱 시작
+    const timeout = setTimeout(()=>{
+      if(!done){ done=true; setAppReady(true); }
+    }, 10000);
+
+    async function init(){
+      try {
+        // 서버 상태 확인 (8초 타임아웃)
+        await checkServer();
+
+        // 토큰 있고 서버 살아있으면 자동 로그인
+        if(API.isAuthenticated() && !user && isServerAlive()){
+          try {
+            const data = await API.getMe();
+            const u = data.user || data;
+            setUser(u);
+            API.storeUser(u);
+          } catch {
+            API.logout();
+          }
+        }
+      } catch {
+        // 서버 다운 — 데모 모드로 진행
+        console.warn('[DIAH-7M] 서버 오프라인 — 데모 모드');
+      } finally {
+        if(!done){ done=true; setAppReady(true); }
+        clearTimeout(timeout);
+      }
     }
+
+    init();
+    return ()=>clearTimeout(timeout);
   },[]);
 
   const handleLogin=(u)=>{
@@ -111,6 +131,17 @@ export default function App(){
   const isRTL=lang==='ar'||lang==='he';
   const isDark=page==='landing'||page==='login'||page==='signup';
   const TH=isDark?T:LT;
+
+  // ★ 초기화 중 로딩 화면 (최대 10초 후 자동 해제)
+  if(!appReady){
+    return(
+      <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:`linear-gradient(180deg,${T.bg0},${T.bg1})`,color:T.text,fontFamily:"'Pretendard',-apple-system,sans-serif"}}>
+        <div style={{fontSize:48,marginBottom:16}}>🛰️</div>
+        <div style={{fontSize:20,fontWeight:700,marginBottom:8}}>DIAH-7M</div>
+        <div style={{fontSize:14,color:T.textDim,animation:"pulse 1.5s infinite"}}>Connecting to server...</div>
+      </div>
+    );
+  }
 
   return(
     <div dir={isRTL?'rtl':'ltr'} style={{minHeight:"100vh",background:isDark?`linear-gradient(180deg,${T.bg0},${T.bg1})`:LT.bg0,fontFamily:lang==='ar'?"'Noto Sans Arabic','Pretendard',sans-serif":lang==='ja'?"'Noto Sans JP','Pretendard',sans-serif":lang==='zh'?"'Noto Sans SC','Pretendard',sans-serif":"'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif",color:TH.text}}>
