@@ -483,7 +483,17 @@ const GAUGE_MAP = {
   },
 
   E5_BALTIC: {
-    id: 'E5_BALTIC', source: 'FRED', series: 'DBDI', cycle: 'D', name: '발틱건화물지수(BDI)', unit: 'pt',
+    id: 'E5_BALTIC',
+    source: 'YAHOO',
+    symbol: '^BDI',
+    transform: (data) => {
+      const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+      if (!quotes?.close || quotes.close.length < 2) return null;
+      const closes = quotes.close.filter(v => v !== null);
+      return closes[closes.length - 1];
+    },
+    name: '발틱건화물지수(BDI)',
+    unit: 'pt',
   },
 
   // L축 (5개)
@@ -650,9 +660,12 @@ async function fetchGauge(gaugeId) {
         break;
       case 'SATELLITE':
         if (gauge.api === 'fetchVIIRS') {
-          rawData = await fetchVIIRS(gauge.params);
+          // fetchVIIRS(regionCode, lookbackDays) — params.region='KOR'→'KR' 변환
+          const viirRegion = gauge.params?.region === 'KOR' ? 'KR' : (gauge.params?.region || 'KR');
+          rawData = await fetchVIIRS(viirRegion);
         } else if (gauge.api === 'fetchLandsat') {
-          rawData = await fetchLandsat(gauge.params);
+          const lstRegion = gauge.params?.region === 'KOR' ? 'KR' : (gauge.params?.region || 'KR');
+          rawData = await fetchLandsat(lstRegion);
         }
         break;
       case 'DERIVED':
