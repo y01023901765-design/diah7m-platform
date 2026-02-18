@@ -236,6 +236,42 @@ export async function satelliteCollect() {
   return api('/api/admin/satellite/collect', { method: 'POST' });
 }
 
+// ── Diagnosis (진단 API) - N15 추가 ──
+/**
+ * 최신 수집 데이터 조회
+ */
+export async function getLatestData() {
+  return api('/api/v1/data/latest');
+}
+
+/**
+ * 데이터 수집 현황 조회
+ */
+export async function getDataStatus() {
+  return api('/api/v1/data/status');
+}
+
+/**
+ * 한국 경제 진단 실행
+ */
+export async function getDiagnosis(country = 'kr') {
+  return api(`/api/v1/diagnosis/${country}`);
+}
+
+/**
+ * 축별 상세 조회
+ */
+export async function getAxisDetail(country, axisId) {
+  return api(`/api/v1/diagnosis/${country}/axis/${axisId}`);
+}
+
+/**
+ * 게이지별 상세 조회
+ */
+export async function getGaugeDetail(country, gaugeId) {
+  return api(`/api/v1/diagnosis/${country}/gauge/${gaugeId}`);
+}
+
 export function getStoredUser() {
   try {
     const u = localStorage.getItem('diah7m-user');
