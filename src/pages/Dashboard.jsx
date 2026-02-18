@@ -13,8 +13,8 @@ function mergeGaugeData(demoD, liveResults) {
   if (!liveResults || !Array.isArray(liveResults)) return demoD;
   const merged = { ...demoD };
   for (const r of liveResults) {
-    if (!r?.gaugeId || r.status === 'PENDING' || r.value == null) continue;
-    const key = r.gaugeId;
+    if (!r?.id || r.status === 'PENDING' || r.value == null) continue;
+    const key = r.id;
     if (merged[key]) {
       merged[key] = {
         ...merged[key],
@@ -105,7 +105,7 @@ function DashboardPage({user,onNav,lang,country,city}){
   },[iso3, isKorea]);
 
   // 실데이터 있으면 머지, 없으면 데모 그대로
-  const gaugeData = liveData ? mergeGaugeData(D, liveData) : D;
+  const gaugeData = liveData?.gauges ? mergeGaugeData(D, liveData.gauges) : D;
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
   // 종합 점수: 양호=100, 주의=50, 경보=0 → 가중 평균
