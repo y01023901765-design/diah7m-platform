@@ -324,6 +324,27 @@ async function start() {
 
     // DataStore 초기화
     await initDataStore();
+    
+    // 첫 시작 시 데이터 수집 (Demo 방지)
+    if (pipeline && dataStore) {
+      try {
+        console.log('  📊 Initial data collection...');
+        const results = await pipeline.fetchAll();
+        if (results && results.gauges) {
+          const gaugeMap = results.gauges.reduce((acc, g) => {
+            acc[g.id] = g;
+            return acc;
+          }, {});
+          await dataStore.store(gaugeMap);
+          if (results.summary) {
+            dataStore.setLastRun(results.summary);
+          }
+          console.log(`  ✅ Initial collection: ${results.summary?.success || 0}/${results.summary?.total || 0} OK`);
+        }
+      } catch (e) {
+        console.log('  ⚠️  Initial collection failed:', e.message);
+      }
+    }
 
     // 라우트 마운트 (dataStore 초기화 후)
     const deps = { db, auth, engine, pipeline, dataStore, state };
