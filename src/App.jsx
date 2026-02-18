@@ -65,7 +65,16 @@ const RESPONSIVE_CSS = (isDark) => `
 `;
 
 export default function App(){
-  const [page,setPage]=useState('landing');
+  const [page,setPage]=useState(()=>{
+    const path = window.location.pathname;
+    if(path==='/dashboard') return 'dashboard';
+    if(path==='/login') return 'login';
+    if(path==='/signup') return 'signup';
+    if(path==='/mypage') return 'mypage';
+    if(path==='/admin') return 'admin';
+    if(path==='/stock') return 'stock';
+    return 'landing';
+  });
   const [user,setUser]=useState(()=>API.getStoredUser());
   const [lang,setLang]=useState(detectLang());
 
