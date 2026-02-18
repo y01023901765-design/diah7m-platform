@@ -1,148 +1,254 @@
 /**
- * DIAH-7M Report Renderer v1.0
- * 3채널: Web(JSON) / PDF / Word
- * tierMask 적용 — guest→최소, enterprise→전부
+ * DIAH-7M Report Renderer
+ * 
+ * GPT 피드백 반영 (2026-02-16):
+ * - PDFKit 사용 (Puppeteer 금지)
+ * - Standard 디자인 (텍스트 + 표)
+ * - Stream 전송 (파일 저장 X)
  */
-const TIER_ORDER = ['guest', 'free', 'pay_per_report', 'standard', 'professional', 'enterprise'];
-const SECTION_TIERS = {
-  header: 'guest', systems: 'pay_per_report', gauges: 'standard',
-  summary: 'standard', action_signals: 'professional', satellite: 'professional',
-  causal_analysis: 'enterprise',
-};
 
-function tierIndex(tier) { return Math.max(0, TIER_ORDER.indexOf(tier)); }
+const PDFDocument = require('pdfkit');
 
-function applyTierMask(report, userTier) {
-  const userIdx = tierIndex(userTier || 'guest');
-  const filtered = {};
-  for (const [section, minTier] of Object.entries(SECTION_TIERS)) {
-    if (userIdx >= tierIndex(minTier)) {
-      filtered[section] = report[section];
-    } else {
-      filtered[section] = { locked: true, required_tier: minTier, preview: `Upgrade to ${minTier} to unlock` };
-    }
-  }
-  filtered.report_id = report.report_id;
-  filtered.product_type = report.product_type;
-  filtered.frequency = report.frequency;
-  filtered.context = report.context;
-  filtered.metadata = report.metadata;
-  filtered.overall = report.overall;
-  return filtered;
-}
-
-function renderWeb(report, userTier) {
-  return { channel: 'web', content_type: 'application/json', data: applyTierMask(report, userTier) };
-}
-
-function renderPDF(report, userTier) {
-  const masked = applyTierMask(report, userTier);
-  return {
-    channel: 'pdf', content_type: 'application/pdf',
-    sections: Object.entries(masked).filter(([,v]) => v && !v.locked).map(([k,v]) => ({ section: k, content: v })),
-    metadata: { generated_at: new Date().toISOString(), tier: userTier, page_estimate: estimatePages(masked) },
-  };
-}
+// ==========================================
+// N10: PDF 렌더링 (GPT 피드백)
+// ==========================================
 
 /**
- * 실제 PDF 파일 Buffer 생성 (pdfkit)
- * renderPDF()의 JSON 구조를 받아 PDF로 변환
- * @returns {Promise<Buffer>}
+ * PDF 보고서 생성 (Standard 디자인)
+ * 
+ * @param {Object} diagnosis - 진단 결과
+ * @param {Stream} outputStream - 출력 스트림 (res 또는 파일)
  */
-async function renderPDFBuffer(report, userTier) {
-  let PDFDocument;
-  try { PDFDocument = require('pdfkit'); } catch(e) { throw new Error('pdfkit not installed'); }
-
-  const masked = applyTierMask(report, userTier);
-  const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
-  const chunks = [];
-
+async function renderPDF(diagnosis, outputStream) {
   return new Promise((resolve, reject) => {
-    doc.on('data', c => chunks.push(c));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    // ── Header ──
-    doc.fontSize(24).font('Helvetica-Bold').text('DIAH-7M', { align: 'center' });
-    doc.fontSize(12).font('Helvetica').text('Economic Diagnosis Report', { align: 'center' });
-    doc.moveDown(0.5);
-    const ctx = report.context || {};
-    doc.fontSize(10).fillColor('#666')
-       .text(`${ctx.country_name || 'Korea'} · ${ctx.period_label || ctx.date || ''} · Tier: ${userTier}`, { align: 'center' });
-    doc.moveDown(1);
-
-    // ── Overall Score ──
-    const ov = report.overall || {};
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('Overall Status');
-    doc.fontSize(11).font('Helvetica').fillColor('#333')
-       .text(`Score: ${ov.score || '-'}/5 · Level: ${ov.level || '-'} · Stage: ${ov.causal_stage || '-'}`)
-       .moveDown(1);
-
-    // ── Systems ──
-    if (masked.systems && !masked.systems.locked) {
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('9 Systems Diagnosis');
-      doc.moveDown(0.3);
-      const sys = report.systems || {};
-      for (const [key, s] of Object.entries(sys)) {
-        const sevColor = s.severity <= 2 ? '#059669' : s.severity <= 3 ? '#D97706' : '#DC2626';
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(sevColor)
-           .text(`${s.name || key}: severity ${s.severity}/5`, { continued: false });
-      }
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      });
+      
+      // Stream 연결
+      doc.pipe(outputStream);
+      
+      // 1. 헤더
+      doc.fontSize(24)
+         .font('Helvetica-Bold')
+         .text('DIAH-7M 경제 진단 보고서', { align: 'center' });
+      
+      doc.moveDown();
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text(`생성일시: ${diagnosis.metadata.generated_at}`, { align: 'center' });
+      
+      doc.moveDown(2);
+      
+      // 2. 종합 요약 박스
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .text('종합 점수');
+      
+      doc.moveDown(0.5);
+      
+      doc.fontSize(14)
+         .font('Helvetica')
+         .text(`점수: ${diagnosis.overall.score}/100`)
+         .text(`등급: ${diagnosis.overall.grade}`)
+         .text(`추세: ${diagnosis.overall.trend}`);
+      
+      doc.moveDown(2);
+      
+      // 3. 9축 진단 표
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .text('9축 진단 결과');
+      
       doc.moveDown(1);
-    }
-
-    // ── Actions ──
-    if (masked.action_signals && !masked.action_signals.locked && report.actions?.length) {
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#111').text('Action Signals');
-      doc.moveDown(0.3);
-      for (const a of report.actions) {
-        const prefix = a.type === 'observation' ? '📍' : a.type === 'watch' ? '👁' : 'ℹ';
-        doc.fontSize(9).font('Helvetica').fillColor('#333')
-           .text(`${prefix} [${a.type}] ${a.text}`, { indent: 10 });
+      
+      // 표 헤더
+      const tableTop = doc.y;
+      const colWidths = [60, 200, 80, 80, 80];
+      
+      doc.fontSize(10).font('Helvetica-Bold');
+      doc.text('축', 50, tableTop, { width: colWidths[0] });
+      doc.text('이름', 50 + colWidths[0], tableTop, { width: colWidths[1] });
+      doc.text('점수', 50 + colWidths[0] + colWidths[1], tableTop, { width: colWidths[2] });
+      doc.text('Severity', 50 + colWidths[0] + colWidths[1] + colWidths[2], tableTop, { width: colWidths[3] });
+      doc.text('추세', 50 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], tableTop, { width: colWidths[4] });
+      
+      doc.moveDown(0.5);
+      
+      // 표 데이터
+      doc.font('Helvetica');
+      diagnosis.systems.forEach((system, index) => {
+        const y = doc.y;
+        doc.text(system.axis_id, 50, y, { width: colWidths[0] });
+        doc.text(system.name, 50 + colWidths[0], y, { width: colWidths[1] });
+        doc.text(system.score !== null ? system.score.toString() : 'N/A', 50 + colWidths[0] + colWidths[1], y, { width: colWidths[2] });
+        doc.text(system.severity !== null ? system.severity.toString() : 'N/A', 50 + colWidths[0] + colWidths[1] + colWidths[2], y, { width: colWidths[3] });
+        doc.text(system.trend || 'N/A', 50 + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3], y, { width: colWidths[4] });
+        doc.moveDown(0.3);
+      });
+      
+      doc.moveDown(2);
+      
+      // 4. 교차신호 (있으면)
+      if (diagnosis.crossSignals && diagnosis.crossSignals.length > 0) {
+        doc.fontSize(16).font('Helvetica-Bold')
+           .text('교차신호 (상위 3개)');
+        
+        doc.moveDown(1);
+        
+        diagnosis.crossSignals.slice(0, 3).forEach((signal, index) => {
+          doc.fontSize(10).font('Helvetica')
+             .text(`${index + 1}. ${signal.description} (Severity: ${signal.severity})`);
+          doc.moveDown(0.5);
+        });
+        
+        doc.moveDown(1);
       }
-      doc.moveDown(1);
-    }
-
-    // ── Locked sections ──
-    for (const [section, val] of Object.entries(masked)) {
-      if (val?.locked) {
-        doc.fontSize(9).fillColor('#999').text(`[${section}] — Requires ${val.required_tier} tier to unlock`);
+      
+      // 5. 이중봉쇄 (있으면)
+      if (diagnosis.dualLocks && diagnosis.dualLocks.length > 0) {
+        doc.fontSize(16).font('Helvetica-Bold')
+           .text('이중봉쇄 감지');
+        
+        doc.moveDown(1);
+        
+        diagnosis.dualLocks.forEach((lock, index) => {
+          doc.fontSize(10).font('Helvetica')
+             .text(`⚠️  ${lock.description} (Severity: ${lock.severity})`);
+          doc.moveDown(0.5);
+        });
+        
+        doc.moveDown(1);
       }
+      
+      // 6. 행동시그널 (관찰 언어)
+      if (diagnosis.actionSignals && diagnosis.actionSignals.length > 0) {
+        doc.fontSize(16).font('Helvetica-Bold')
+           .text('관찰 시그널');
+        
+        doc.moveDown(1);
+        
+        diagnosis.actionSignals.slice(0, 10).forEach((signal, index) => {
+          doc.fontSize(10).font('Helvetica')
+             .text(`• ${signal.description}`);
+          if (signal.detail) {
+            doc.fontSize(9).font('Helvetica').fillColor('#666666')
+               .text(`  ${signal.detail}`);
+            doc.fillColor('#000000');
+          }
+          doc.moveDown(0.3);
+        });
+      }
+      
+      // 7. 푸터
+      doc.moveDown(2);
+      doc.fontSize(8).font('Helvetica').fillColor('#999999')
+         .text('본 보고서는 DIAH-7M 진단 엔진에 의해 자동 생성되었습니다.', { align: 'center' })
+         .text('관찰 시그널은 사실 기반 현상 설명이며, 투자 조언이 아닙니다.', { align: 'center' });
+      
+      // 완료
+      doc.end();
+      
+      doc.on('end', () => {
+        console.log('✅ PDF generated successfully');
+        resolve();
+      });
+      
+      doc.on('error', (error) => {
+        console.error('❌ PDF generation error:', error);
+        reject(error);
+      });
+      
+    } catch (error) {
+      reject(error);
     }
-
-    // ── Footer ──
-    doc.moveDown(2);
-    doc.fontSize(8).fillColor('#aaa')
-       .text('DIAH-7M provides observation-based measurement, not prediction.', { align: 'center' })
-       .text(`Generated: ${new Date().toISOString()} · Engine v1.1`, { align: 'center' });
-
-    doc.end();
   });
 }
 
-function renderWord(report, userTier) {
-  const masked = applyTierMask(report, userTier);
-  return {
-    channel: 'word', content_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    sections: Object.entries(masked).filter(([,v]) => v && !v.locked).map(([k,v]) => ({ section: k, content: v })),
-    metadata: { generated_at: new Date().toISOString(), tier: userTier },
-  };
+/**
+ * JSON 렌더링 (간단)
+ */
+function renderJSON(diagnosis) {
+  return JSON.stringify(diagnosis, null, 2);
 }
 
-function estimatePages(report) {
-  let p = 1; // header
-  if (report.systems && !report.systems.locked) p += 1;
-  if (report.gauges && !report.gauges.locked) p += 2;
-  if (report.summary && !report.summary.locked) p += 1;
-  if (report.action_signals && !report.action_signals.locked) p += 1;
-  if (report.satellite && !report.satellite.locked) p += 1;
-  if (report.causal_analysis && !report.causal_analysis.locked) p += 2;
-  return p;
+/**
+ * HTML 렌더링 (선택)
+ */
+function renderHTML(diagnosis) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DIAH-7M 진단 보고서</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>DIAH-7M 경제 진단 보고서</h1>
+  <p>생성일시: ${diagnosis.metadata.generated_at}</p>
+  
+  <h2>종합 점수</h2>
+  <p>점수: ${diagnosis.overall.score}/100</p>
+  <p>등급: ${diagnosis.overall.grade}</p>
+  
+  <h2>9축 진단</h2>
+  <table>
+    <tr>
+      <th>축</th>
+      <th>이름</th>
+      <th>점수</th>
+      <th>Severity</th>
+      <th>추세</th>
+    </tr>
+    ${diagnosis.systems.map(s => `
+      <tr>
+        <td>${s.axis_id}</td>
+        <td>${s.name}</td>
+        <td>${s.score !== null ? s.score : 'N/A'}</td>
+        <td>${s.severity !== null ? s.severity : 'N/A'}</td>
+        <td>${s.trend || 'N/A'}</td>
+      </tr>
+    `).join('')}
+  </table>
+  
+  ${diagnosis.crossSignals && diagnosis.crossSignals.length > 0 ? `
+    <h2>교차신호</h2>
+    <ul>
+      ${diagnosis.crossSignals.slice(0, 3).map(s => `
+        <li>${s.description} (Severity: ${s.severity})</li>
+      `).join('')}
+    </ul>
+  ` : ''}
+  
+  ${diagnosis.actionSignals && diagnosis.actionSignals.length > 0 ? `
+    <h2>관찰 시그널</h2>
+    <ul>
+      ${diagnosis.actionSignals.slice(0, 10).map(s => `
+        <li>${s.description}</li>
+      `).join('')}
+    </ul>
+  ` : ''}
+  
+  <p style="color: #999; font-size: 12px; margin-top: 40px;">
+    본 보고서는 DIAH-7M 진단 엔진에 의해 자동 생성되었습니다.<br>
+    관찰 시그널은 사실 기반 현상 설명이며, 투자 조언이 아닙니다.
+  </p>
+</body>
+</html>
+  `;
 }
 
-function render(report, userTier, channel = 'web') {
-  const renderers = { web: renderWeb, pdf: renderPDF, word: renderWord };
-  return (renderers[channel] || renderers.web)(report, userTier);
-}
-
-module.exports = { render, renderWeb, renderPDF, renderPDFBuffer, renderWord, applyTierMask, TIER_ORDER, SECTION_TIERS };
+module.exports = {
+  renderPDF,
+  renderJSON,
+  renderHTML,
+};
