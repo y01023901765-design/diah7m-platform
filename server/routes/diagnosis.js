@@ -342,7 +342,15 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
     const gaugeData = dataStore.toGaugeData();
     const prevData = dataStore.toPrevData();
     if (Object.keys(gaugeData).length === 0) {
-      return res.status(404).json({ error: 'No cached data. Call POST /api/v1/data/refresh first', hint: 'Set ECOS_API_KEY and KOSIS_API_KEY then refresh' });
+      // GPT 피드백: 404 대신 200 OK + demo 데이터
+      const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+      return res.status(200).json({
+        success: true,
+        data: DEMO_DIAGNOSIS,
+        demo: true,
+        stale: true,
+        warnings: ['NO_DATA_USING_DEMO', 'Call POST /api/v1/data/refresh to collect real data']
+      });
     }
 
     const report = engine.generateReport(gaugeData, {
@@ -376,7 +384,14 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   router.get('/diagnoses/:id', requireAuth, async (req, res) => {
     try {
       const row = await db.get('SELECT * FROM diagnoses WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-      if (!row) return res.status(404).json({ error: 'Not found' });
+      if (!row) {
+        // GPT 피드백: 404 대신 200 OK
+        return res.status(200).json({
+          success: true,
+          data: null,
+          warnings: ['DIAGNOSIS_NOT_FOUND']
+        });
+      }
       row.systems = JSON.parse(row.systems_json || '{}');
       row.crossSignals = JSON.parse(row.cross_signals_json || '[]');
       res.json(row);
