@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import api from '../utils/api';
+import * as api from '../api';
 
 /**
  * 진단 데이터 Hook

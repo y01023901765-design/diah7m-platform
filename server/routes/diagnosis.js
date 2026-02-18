@@ -39,16 +39,14 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
    */
   router.get('/data/status', async (req, res) => {
     try {
-      // TODO: 실제 DataStore에서 수집 현황 가져오기
-      // const status = await dataStore.getCollectionStatus();
-      
-      // 현재: 하드코딩 (문서 기준 56/59)
-      const status = {
-        collected: 56,
+      // DataStore에서 실제 수집 현황 가져오기
+      const status = dataStore ? dataStore.getStatus() : {
+        available: false,
         total: 59,
-        percentage: 94.9,
-        missing: ["O2_PMI", "S2_NIGHTLIGHT", "R6_THERMAL"],
-        lastUpdated: new Date().toISOString()
+        ok: 0,
+        stale: 0,
+        expired: true,
+        lastFetch: null,
       };
       
       res.json({
@@ -81,24 +79,52 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
    */
   router.get('/data/latest', async (req, res) => {
     try {
-      // TODO: 실제 DataStore에서 최신 데이터 가져오기
-      // const latest = await dataStore.getLatest();
+      // DataStore에서 최신 데이터 가져오기
+      if (!dataStore) {
+        return res.status(503).json({
+          success: false,
+          code: 'DATASTORE_UNAVAILABLE',
+          message: 'DataStore not initialized',
+          data: null
+        });
+      }
       
-      // 현재: 데모 데이터 반환
-      const latest = {
-        gauges: [
-          { id: 'O1_EXPORT', value: 520.3, score: 82, trend: 'up', severity: 1 },
-          { id: 'O2_PMI', value: null, score: null, trend: null, severity: null },
-          { id: 'F1_KOSPI', value: 2850, score: 75, trend: 'stable', severity: 2 }
-          // ... 나머지 56개 게이지
-        ],
-        timestamp: new Date().toISOString(),
-        source: 'demo_data'
-      };
+      const gaugeData = dataStore.toGaugeData();
+      const status = dataStore.getStatus();
+      
+      // 데이터 없으면 Demo 반환
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        return res.json({
+          success: true,
+          data: {
+            gauges: Object.entries(DEMO_DIAGNOSIS.systems || {}).flatMap(([axis, sys]) => 
+              (sys.gauges || []).map(g => ({ id: g.id, value: g.value, axis }))
+            ),
+            timestamp: new Date().toISOString(),
+            source: 'demo_data'
+          },
+          demo: true,
+          stale: true,
+          warnings: ['NO_DATA_USING_DEMO']
+        });
+      }
+      
+      // 실제 데이터 반환
+      const gauges = Object.entries(gaugeData).map(([id, value]) => ({
+        id,
+        value,
+        ...dataStore.get(id)
+      }));
       
       res.json({
         success: true,
-        data: latest
+        data: {
+          gauges,
+          timestamp: status.lastFetch || new Date().toISOString(),
+          source: 'datastore',
+          stale: status.expired
+        }
       });
     } catch (error) {
       console.error('Error fetching latest data:', error);
@@ -120,16 +146,38 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
    */
   router.post('/data/refresh', requireAuth, async (req, res) => {
     try {
-      // TODO: data-pipeline.js의 fetchAll() 호출
+      const pipeline = require('../lib/data-pipeline');
+      const jobStore = require('../lib/job-store');
       
       const { gauges } = req.body;
+      
+      // Job 생성 (백그라운드 실행)
+      const job = jobStore.createJob(async (updateProgress) => {
+        updateProgress(10);
+        
+        // fetchAll 실행
+        const results = await pipeline.fetchAll();
+        updateProgress(80);
+        
+        // DataStore에 저장
+        if (dataStore) {
+          await dataStore.store(results.gauges.reduce((acc, g) => {
+            acc[g.id] = g;
+            return acc;
+          }, {}));
+        }
+        updateProgress(100);
+        
+        return results;
+      });
       
       res.json({
         success: true,
         data: {
-          jobId: `refresh_${Date.now()}`,
-          status: 'pending',
-          message: '데이터 수집이 시작되었습니다'
+          jobId: job.id,
+          status: job.status,
+          message: '데이터 수집이 시작되었습니다',
+          pollUrl: `/api/v1/data/job/${job.id}`
         }
       });
     } catch (error) {
@@ -141,6 +189,25 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         data: null
       });
     }
+  });
+  
+  // Job 상태 조회
+  router.get('/data/job/:jobId', (req, res) => {
+    const jobStore = require('../lib/job-store');
+    const job = jobStore.getJob(req.params.jobId);
+    
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        code: 'JOB_NOT_FOUND',
+        message: 'Job not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: job
+    });
   });
 
   // ==========================================
@@ -164,25 +231,58 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
    */
   router.get('/diagnosis/kr', async (req, res) => {
     try {
-      // TODO: core-engine.js의 diagnose() 호출
+      if (!engine) {
+        return res.status(503).json({
+          success: false,
+          code: 'ENGINE_UNAVAILABLE',
+          message: 'Diagnosis engine not initialized',
+          data: null
+        });
+      }
+      
+      if (!dataStore) {
+        return res.status(503).json({
+          success: false,
+          code: 'DATASTORE_UNAVAILABLE',
+          message: 'DataStore not initialized',
+          data: null
+        });
+      }
+      
+      // DataStore에서 최신 데이터 가져오기
+      const gaugeData = dataStore.toGaugeData();
+      const prevData = dataStore.toPrevData();
+      
+      // 데이터 없으면 Demo 반환
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        return res.json({
+          success: true,
+          data: DEMO_DIAGNOSIS,
+          demo: true,
+          stale: true,
+          warnings: ['NO_DATA_USING_DEMO', 'Call POST /api/v1/data/refresh to collect real data']
+        });
+      }
+      
+      // core-engine으로 진단 실행
+      const diagnosis = engine.diagnose(gaugeData, { prevData });
       
       res.json({
         success: true,
-        data: {
-          overall: { score: 72, grade: "B", trend: "stable" },
-          systems: [],
-          crossSignals: [],
-          dualLocks: [],
-          message: '진단 엔진 연동 예정 (N07-N10)'
-        }
+        data: diagnosis
       });
     } catch (error) {
       console.error('Error running diagnosis:', error);
-      res.status(500).json({
-        success: false,
-        code: 'DIAGNOSIS_ERROR',
-        message: error.message,
-        data: null
+      
+      // 에러 시 Demo 폴백
+      const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+      res.json({
+        success: true,
+        data: DEMO_DIAGNOSIS,
+        demo: true,
+        degraded: true,
+        warnings: ['DIAGNOSIS_ERROR', error.message]
       });
     }
   });
@@ -208,17 +308,45 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         });
       }
       
-      // TODO: core-engine.js에서 축별 상세 데이터 가져오기
+      if (!engine || !dataStore) {
+        return res.status(503).json({
+          success: false,
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Engine or DataStore not initialized',
+          data: null
+        });
+      }
+      
+      // 전체 진단 실행
+      const gaugeData = dataStore.toGaugeData();
+      
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        const demoAxis = DEMO_DIAGNOSIS.systems.find(s => s.axis_id === id);
+        return res.json({
+          success: true,
+          data: demoAxis || { axis_id: id, score: 0, gauges: [] },
+          demo: true
+        });
+      }
+      
+      const diagnosis = engine.diagnose(gaugeData, { prevData: dataStore.toPrevData() });
+      
+      // 해당 축만 추출
+      const axisData = diagnosis.systems.find(s => s.axis_id === id);
+      
+      if (!axisData) {
+        return res.status(404).json({
+          success: false,
+          code: 'AXIS_NOT_FOUND',
+          message: `Axis ${id} not found in diagnosis result`,
+          data: null
+        });
+      }
       
       res.json({
         success: true,
-        data: {
-          axis_id: id,
-          score: 82,
-          severity: 1,
-          gauges: [],
-          message: '축별 상세 구현 예정 (N13)'
-        }
+        data: axisData
       });
     } catch (error) {
       console.error('Error fetching axis detail:', error);
@@ -241,18 +369,51 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
     try {
       const { id } = req.params;
       
-      // TODO: data-pipeline.js의 GAUGE_MAP에서 게이지 정보 확인
-      // TODO: DataStore에서 해당 게이지 히스토리 조회
+      if (!dataStore) {
+        return res.status(503).json({
+          success: false,
+          code: 'DATASTORE_UNAVAILABLE',
+          message: 'DataStore not initialized',
+          data: null
+        });
+      }
+      
+      // GAUGE_MAP에서 게이지 정보 확인
+      const pipeline = require('../lib/data-pipeline');
+      const gaugeInfo = pipeline.GAUGE_MAP[id];
+      
+      if (!gaugeInfo) {
+        return res.status(404).json({
+          success: false,
+          code: 'GAUGE_NOT_FOUND',
+          message: `Gauge ${id} not found in GAUGE_MAP`,
+          data: null
+        });
+      }
+      
+      // DataStore에서 현재 값과 이력 조회
+      const current = dataStore.get(id);
+      
+      // 이력 데이터 (향후 확장)
+      const history = [];
       
       res.json({
         success: true,
         data: {
           gauge_id: id,
-          value: null,
-          score: null,
-          trend: null,
-          history: [],
-          message: '게이지별 상세 구현 예정 (N14)'
+          name: gaugeInfo.name || gaugeInfo.id,
+          value: current?.value || null,
+          prevValue: current?.prevValue || null,
+          unit: current?.unit || gaugeInfo.unit || '',
+          source: current?.source || gaugeInfo.source || 'unknown',
+          date: current?.date || null,
+          status: current?.status || 'UNKNOWN',
+          stale: current?.stale || false,
+          history,
+          metadata: {
+            api: gaugeInfo.api || null,
+            params: gaugeInfo.params || null
+          }
         }
       });
     } catch (error) {
