@@ -8,23 +8,52 @@ import { TIER_ACCESS } from '../data/gauges';
 import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
 import * as API from '../api';
 
+// ── 서버 새ID → 프론트 구ID 매핑 ──
+const SERVER_TO_FRONT = {
+  // O축 → 기존 A7(O/M)
+  O1_EXPORT:'E1', O2_PMI:'O2', O3_IP:'O1', O4_CAPACITY:'M1', O5_INVENTORY:'M2_G', O6_SHIPMENT:'E4', O7_ORDER:'M3_G',
+  // F축 → 기존 A5(F) + A1(I)
+  F1_KOSPI:'F3', F2_KOSDAQ:'F7', F3_KOSPI_VOL:'F3', F4_EXCHANGE:'I4', F5_INTEREST:'I1', F6_M2:'I5', F7_KOSDAQ_VOL:'F7', F8_FOREIGN:'F3',
+  // S축 → 기존 A4(S) + A3(C)
+  S1_BSI:'S1', S2_CSI:'C2', S3_NIGHTLIGHT:'S2', S4_CREDIT:'F1', S5_EMPLOY:'L1', S6_RETAIL:'C1', S7_HOUSING:'R2',
+  // P축 → 기존 A6(P)
+  P1_CPI:'P1', P2_PPI:'P2', P3_OIL:'E5', P4_COMMODITY:'I2', P5_IMPORT:'E2', P6_EXPORT_PRICE:'E4',
+  // R축 → 기존 A7/A9
+  R1_ELECTRICITY:'O4', R2_WATER:'O5', R3_GAS:'O4', R4_COAL:'O4', R6_UHI:'R6', R7_WASTE:'O5', R8_FOREST:'O1',
+  // I축 → 기존 A7(O)
+  I1_CONSTRUCTION:'O3', I2_CEMENT:'O3', I3_STEEL:'O4', I4_VEHICLE:'O4', I5_CARGO:'P3', I6_AIRPORT:'E4', I7_RAILROAD:'O5',
+  // T축 → 기존 A2(E) + A1(I)
+  T1_TRADE_BALANCE:'E3', T2_CURRENT_ACCOUNT:'I2', T3_FDI:'G1', T4_RESERVES:'I3', T5_SHIPPING:'P3', T6_CONTAINER:'E4',
+  // E축 → 기존 A4(S) + A5(F)
+  E1_CHINA_PMI:'O2', E2_US_PMI:'S5', E3_VIX:'F4', E4_DOLLAR_INDEX:'I4', E5_BALTIC:'E4',
+  // L축 → 기존 A8(L/D)
+  L1_UNEMPLOYMENT:'L2', L2_PARTICIPATION:'L1', L3_WAGE:'L1', L4_HOURS:'L1', L5_YOUTH_UNEMP:'L2',
+};
+
 // ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
 function mergeGaugeData(demoD, liveResults) {
   if (!liveResults || !Array.isArray(liveResults)) return demoD;
   const merged = { ...demoD };
+  const applied = new Set();
   for (const r of liveResults) {
     if (!r?.id || r.status === 'PENDING' || r.value == null) continue;
-    const key = r.id;
-    if (merged[key]) {
-      merged[key] = {
-        ...merged[key],
-        v: r.value,
-        p: merged[key].v, // 기존 데모값을 이전값으로
-        ch: r.change || merged[key].ch,
-        note: r.note || merged[key].note,
-        _live: true, // 실데이터 표시
-      };
-    }
+    // 새ID로 직접 매칭 시도 → 실패하면 매핑 테이블 사용
+    let key = r.id;
+    if (!merged[key]) key = SERVER_TO_FRONT[r.id];
+    if (!key || !merged[key] || applied.has(key)) continue;
+    applied.add(key);
+    // 실데이터 기반 상태 재계산: 변화율 기반 판정
+    const absV = Math.abs(r.value);
+    const newG = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
+    merged[key] = {
+      ...merged[key],
+      v: r.value,
+      p: merged[key].v,
+      g: newG,
+      ch: r.change || (r.value >= 0 ? `+${r.value.toFixed(1)}` : r.value.toFixed(1)),
+      note: r.note || merged[key].note,
+      _live: true,
+    };
   }
   return merged;
 }
