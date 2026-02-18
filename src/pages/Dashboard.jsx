@@ -62,7 +62,7 @@ function DashboardPage({user,onNav,lang,country,city}){
           const status = await API.dataStatus();
           if (cancelled) return;
           setDataInfo(status);
-          if (status.available && status.lastUpdated) {
+          if (status.available) {
             try {
               const latest = await API.dataLatest();
               if (cancelled) return;
