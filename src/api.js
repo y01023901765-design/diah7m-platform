@@ -1,7 +1,7 @@
 // DIAH-7M API Client — 프론트↔백엔드 연결 계층
 // Vercel(프론트) ↔ Render(백엔드) 구조 대응
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://diah7m-platform.onrender.com';
 
 // ── Token 관리 ──
 let _token = null;
