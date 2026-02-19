@@ -225,33 +225,55 @@ const GLOBAL_GAUGES = {
 // 세계 경제 공통지표 (Global Shared Indicators)
 // ═══════════════════════════════════════════
 const GLOBAL_COMMODITIES = {
-  // ── 에너지 ──────────────────────────────────
-  OIL_WTI:    { name: 'WTI Crude Oil',         fredId: 'DCOILWTICO',     unit: '$/barrel' },
-  OIL_BRENT:  { name: 'Brent Crude Oil',       fredId: 'DCOILBRENTEU',   unit: '$/barrel' },
-  NATGAS:     { name: 'Natural Gas',            fredId: 'DHHNGSP',        unit: '$/MMBtu' },
+  // ── 에너지 (GL-E1~E4) ─────────────────────
+  OIL_WTI:    { name: 'WTI Crude Oil',         fredId: 'DCOILWTICO',     unit: '$/barrel',  glId: 'GL-E1' },
+  OIL_BRENT:  { name: 'Brent Crude Oil',       fredId: 'DCOILBRENTEU',   unit: '$/barrel',  glId: 'GL-E2' },
+  NATGAS:     { name: 'Natural Gas',            fredId: 'DHHNGSP',        unit: '$/MMBtu',   glId: 'GL-E3' },
+  COAL:       { name: 'Coal',                   fredId: 'PCOALAUUSDM',    unit: '$/mt',      glId: 'GL-E4' },
 
-  // ── 금속 ────────────────────────────────────
-  GOLD:       { name: 'Gold',                   source: 'datahub',        unit: '$/oz' },
-  COPPER:     { name: 'Copper',                 fredId: 'PCOPPUSDM',      unit: '$/mt' },
-  IRON_ORE:   { name: 'Iron Ore',              fredId: 'PIORECRUSDM',    unit: '$/mt' },
+  // ── 금속 (GL-M1~M4) ───────────────────────
+  GOLD:       { name: 'Gold',                   source: 'datahub',        unit: '$/oz',      glId: 'GL-M1' },
+  COPPER:     { name: 'Copper',                 fredId: 'PCOPPUSDM',      unit: '$/mt',      glId: 'GL-M2' },
+  IRON_ORE:   { name: 'Iron Ore',              fredId: 'PIORECRUSDM',    unit: '$/mt',      glId: 'GL-M3' },
+  ALUMINUM:   { name: 'Aluminum',               fredId: 'PALUMUSDM',      unit: '$/mt',      glId: 'GL-M4' },
 
-  // ── 곡물 (IMF Global Price via FRED) ───────
-  WHEAT:      { name: 'Wheat',                  fredId: 'PWHEAMTUSDM',    unit: '$/mt' },
-  CORN:       { name: 'Corn',                   fredId: 'PMAIZMTUSDM',    unit: '$/mt' },
-  SOYBEANS:   { name: 'Soybeans',               fredId: 'PSOYBUSDM',      unit: '$/mt' },
+  // ── 농산물 (GL-A1~A3) ─────────────────────
+  WHEAT:      { name: 'Wheat',                  fredId: 'PWHEAMTUSDM',    unit: '$/mt',      glId: 'GL-A1' },
+  CORN:       { name: 'Corn',                   fredId: 'PMAIZMTUSDM',    unit: '$/mt',      glId: 'GL-A2' },
+  SOYBEANS:   { name: 'Soybeans',               fredId: 'PSOYBUSDM',      unit: '$/mt',      glId: 'GL-A3' },
 
-  // ── 글로벌 금융 ────────────────────────────
-  VIX:        { name: 'VIX (Fear Index)',       fredId: 'VIXCLS',         unit: 'index' },
-  DXY:        { name: 'US Dollar Index',        fredId: 'DTWEXBGS',       unit: 'index' },
-  US10Y:      { name: 'US 10Y Treasury',        fredId: 'DGS10',          unit: '%' },
+  // ── 물류 (GL-L1~L2) ───────────────────────
+  BDI:        { name: 'Baltic Dry Index',       source: 'tradingeconomics', teSlug: 'commodity/baltic', unit: 'index', glId: 'GL-L1' },
+  CONTAINER:  { name: 'Container Freight',      source: 'tradingeconomics', teSlug: 'commodity/containerfreight', unit: 'index', glId: 'GL-L2' },
 
-  // ── 경기 선행/스트레스 지표 ─────────────────
-  YIELD_CURVE:  { name: 'Yield Curve (10Y-2Y)', fredId: 'T10Y2Y',         unit: '%' },
-  CREDIT_SPREAD:{ name: 'HY Credit Spread',     fredId: 'BAMLH0A0HYM2',  unit: '%' },
-  SOFR:         { name: 'SOFR Rate',             fredId: 'SOFR',           unit: '%' },
+  // ── 금융 (GL-F1~F5) ───────────────────────
+  VIX:        { name: 'VIX (Fear Index)',       fredId: 'VIXCLS',         unit: 'index',     glId: 'GL-F1' },
+  DXY:        { name: 'US Dollar Index',        fredId: 'DTWEXBGS',       unit: 'index',     glId: 'GL-F2' },
+  SP500:      { name: 'S&P 500',                source: 'yahoo',  symbol: '^GSPC',   unit: 'index',     glId: 'GL-F3' },
+  SOX:        { name: 'SOX Semiconductor',      source: 'yahoo',  symbol: '^SOX',    unit: 'index',     glId: 'GL-F4' },
+  CU_AU_RATIO:{ name: 'Copper/Gold Ratio',      source: 'derived', from: ['COPPER','GOLD'], unit: 'ratio', glId: 'GL-F5' },
 
-  // ── 물류 ────────────────────────────────────
-  BDI:        { name: 'Baltic Dry Index',       source: 'manual',         unit: 'index' },
+  // ── 채권 (GL-B1~B4) ───────────────────────
+  US10Y:      { name: 'US 10Y Treasury',        fredId: 'DGS10',          unit: '%',         glId: 'GL-B1' },
+  US2Y:       { name: 'US 2Y Treasury',          fredId: 'DGS2',           unit: '%',         glId: 'GL-B2' },
+  YIELD_CURVE:{ name: 'Yield Curve (10Y-2Y)',   fredId: 'T10Y2Y',         unit: '%',         glId: 'GL-B3' },
+  DE10Y:      { name: 'Germany 10Y Bund',        fredId: 'IRLTLT01DEM156N', unit: '%',        glId: 'GL-B4' },
+
+  // ── 통화 (GL-X1~X3) ───────────────────────
+  EURUSD:     { name: 'EUR/USD',                fredId: 'DEXUSEU',        unit: 'rate',      glId: 'GL-X1' },
+  USDJPY:     { name: 'USD/JPY',                fredId: 'DEXJPUS',        unit: 'rate',      glId: 'GL-X2' },
+  USDCNY:     { name: 'USD/CNY',                fredId: 'DEXCHUS',        unit: 'rate',      glId: 'GL-X3' },
+
+  // ── 선행 (GL-P1~P3) ───────────────────────
+  PMI_US:     { name: 'US Manufacturing PMI',    source: 'tradingeconomics', teSlug: 'united-states/business-confidence', unit: 'index', glId: 'GL-P1' },
+  PMI_EU:     { name: 'EU Manufacturing PMI',    source: 'tradingeconomics', teSlug: 'euro-area/manufacturing-pmi',       unit: 'index', glId: 'GL-P2' },
+  OECD_CLI:   { name: 'OECD CLI',               fredId: 'G7LOLITOAASTSAM', unit: 'index',  glId: 'GL-P3' },
+
+  // ── 스트레스 (GL-S1~S4) ────────────────────
+  GSCPI:      { name: 'Supply Chain Stress',     source: 'tradingeconomics', teSlug: 'world/supply-chain-pressure-index', unit: 'index', glId: 'GL-S1' },
+  CREDIT_SPREAD:{ name: 'HY Credit Spread',     fredId: 'BAMLH0A0HYM2',  unit: '%',         glId: 'GL-S2' },
+  SOFR:       { name: 'SOFR Rate',               fredId: 'SOFR',           unit: '%',         glId: 'GL-S3' },
+  STLFSI:     { name: 'Financial Stress Index',  fredId: 'STLFSI4',        unit: 'index',     glId: 'GL-S4' },
 };
 
 

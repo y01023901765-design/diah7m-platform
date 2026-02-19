@@ -436,45 +436,135 @@ async function fetchFRED(seriesId, fredApiKey) {
 }
 
 /**
- * 전체 원자재/글로벌 금융 수집
+ * Yahoo Finance에서 시세 수집 (글로벌 파이프라인용)
+ * 한국 파이프라인의 fetchYahoo와 동일 패턴이나 별도 인스턴스
+ */
+async function fetchYahooGlobal(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=3mo`;
+  const result = await safeFetch(url, `YAHOO:${symbol}`, 10000);
+
+  if (!result.ok) {
+    console.warn(`[Yahoo] ${symbol} failed: ${result.error}`);
+    return [];
+  }
+
+  try {
+    const json = await result.res.json();
+    const meta = json?.chart?.result?.[0]?.meta;
+    const timestamps = json?.chart?.result?.[0]?.timestamp || [];
+    const closes = json?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || [];
+
+    const data = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      if (closes[i] == null) continue;
+      const d = new Date(timestamps[i] * 1000);
+      data.push({
+        provider: 'Yahoo',
+        indicator: symbol,
+        country: 'GLOBAL',
+        date: d.toISOString().split('T')[0],
+        value: Math.round(closes[i] * 100) / 100,
+      });
+    }
+
+    // 최신순 정렬, 최대 60개
+    data.sort((a, b) => b.date.localeCompare(a.date));
+    return data.slice(0, 60);
+  } catch (e) {
+    console.warn(`[Yahoo] ${symbol} parse error: ${e.message}`);
+    return [];
+  }
+}
+
+/**
+ * TradingEconomics 스크래핑 (글로벌 파이프라인용)
+ * 기존 한국 파이프라인의 패턴과 동일: id="p" + meta description
+ */
+async function fetchTEGlobal(teSlug) {
+  const url = `https://tradingeconomics.com/${teSlug}`;
+  const result = await safeFetch(url, `TE:${teSlug}`, 10000);
+
+  if (!result.ok) {
+    console.warn(`[TE] ${teSlug} failed: ${result.error}`);
+    return [];
+  }
+
+  try {
+    const html = await result.res.text();
+    let value = null;
+
+    // Strategy 1: id="p" (commodity pages like /commodity/baltic)
+    const pMatch = html.match(/id="p"[^>]*>\s*([0-9.,]+)/);
+    if (pMatch) {
+      value = parseFloat(pMatch[1].replace(/,/g, ''));
+    }
+
+    // Strategy 2: meta description (indicator pages)
+    if (value === null || isNaN(value)) {
+      const metaMatch = html.match(/(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
+      if (metaMatch) {
+        value = parseFloat(metaMatch[1].replace(/,/g, ''));
+      }
+    }
+
+    if (value !== null && !isNaN(value)) {
+      return [{
+        provider: 'TradingEconomics',
+        indicator: teSlug,
+        country: 'GLOBAL',
+        date: new Date().toISOString().split('T')[0],
+        value,
+      }];
+    }
+
+    console.warn(`[TE] ${teSlug}: no value found in HTML`);
+    return [];
+  } catch (e) {
+    console.warn(`[TE] ${teSlug} parse error: ${e.message}`);
+    return [];
+  }
+}
+
+/**
+ * 전체 원자재/글로벌 금융 수집 (33개 세계 공통지표)
  */
 async function fetchAllCommodities(fredApiKey) {
   const results = {};
   const errors = [];
 
-  // FRED 기반 원자재 수집
+  // ── Phase A: FRED 기반 수집 ──
   for (const [id, commodity] of Object.entries(GLOBAL_COMMODITIES)) {
-    if (commodity.source === 'manual') continue;
-    if (commodity.source === 'datahub') continue; // 별도 처리
     if (!commodity.fredId) continue;
 
     try {
       const data = await fetchFRED(commodity.fredId, fredApiKey);
-      results[id] = {
-        id,
-        name: commodity.name,
-        unit: commodity.unit,
-        data,
-        fetchedAt: new Date().toISOString(),
-        count: data.length,
-      };
-
-      console.log(`[FRED] ${id} (${commodity.name}): ${data.length} records`);
+      if (data.length > 0) {
+        results[id] = {
+          id,
+          name: commodity.name,
+          unit: commodity.unit,
+          glId: commodity.glId,
+          data,
+          fetchedAt: new Date().toISOString(),
+          count: data.length,
+        };
+        console.log(`[FRED] ${id} (${commodity.name}): ${data.length} records`);
+      } else {
+        console.warn(`[FRED] ${id} (${commodity.name}): 0 records`);
+      }
       await sleep(500);
     } catch (e) {
       errors.push({ id, error: e.message });
     }
   }
 
-  // Gold: DataHub (GitHub-hosted World Bank commodity data, CSV)
-  // FRED discontinued LBMA gold price series in Jan 2022
+  // ── Phase B: Gold (DataHub — FRED discontinued) ──
   try {
     const goldUrl = 'https://raw.githubusercontent.com/datasets/gold-prices/main/data/monthly.csv';
     const goldResult = await safeFetch(goldUrl, 'GOLD_DATAHUB', 10000);
     if (goldResult.ok) {
       const csvText = await goldResult.res.text();
-      // CSV format: Date,Price (e.g. "1950-01,34.73")
-      const lines = csvText.trim().split('\n').slice(1); // skip header
+      const lines = csvText.trim().split('\n').slice(1);
       const goldData = lines
         .map(line => {
           const [date, price] = line.split(',');
@@ -496,6 +586,7 @@ async function fetchAllCommodities(fredApiKey) {
           id: 'GOLD',
           name: 'Gold',
           unit: '$/oz',
+          glId: 'GL-M1',
           data: goldData,
           fetchedAt: new Date().toISOString(),
           count: goldData.length,
@@ -508,6 +599,102 @@ async function fetchAllCommodities(fredApiKey) {
   } catch (e) {
     errors.push({ id: 'GOLD', error: `Gold fallback error: ${e.message}` });
   }
+
+  // ── Phase C: Yahoo Finance (S&P500, SOX) ──
+  for (const [id, commodity] of Object.entries(GLOBAL_COMMODITIES)) {
+    if (commodity.source !== 'yahoo') continue;
+
+    try {
+      const data = await fetchYahooGlobal(commodity.symbol);
+      if (data.length > 0) {
+        results[id] = {
+          id,
+          name: commodity.name,
+          unit: commodity.unit,
+          glId: commodity.glId,
+          data,
+          fetchedAt: new Date().toISOString(),
+          count: data.length,
+        };
+        console.log(`[Yahoo] ${id} (${commodity.symbol}): ${data.length} records`);
+      } else {
+        console.warn(`[Yahoo] ${id} (${commodity.symbol}): 0 records`);
+      }
+      await sleep(500);
+    } catch (e) {
+      errors.push({ id, error: e.message });
+    }
+  }
+
+  // ── Phase D: TradingEconomics scraping (BDI, Container Freight) ──
+  for (const [id, commodity] of Object.entries(GLOBAL_COMMODITIES)) {
+    if (commodity.source !== 'tradingeconomics') continue;
+
+    try {
+      const data = await fetchTEGlobal(commodity.teSlug);
+      if (data.length > 0) {
+        results[id] = {
+          id,
+          name: commodity.name,
+          unit: commodity.unit,
+          glId: commodity.glId,
+          data,
+          fetchedAt: new Date().toISOString(),
+          count: data.length,
+        };
+        console.log(`[TE] ${id} (${commodity.teSlug}): value=${data[0].value}`);
+      } else {
+        console.warn(`[TE] ${id} (${commodity.teSlug}): no data`);
+      }
+      await sleep(1000);
+    } catch (e) {
+      errors.push({ id, error: e.message });
+    }
+  }
+
+  // ── Phase E: Derived indicators (Copper/Gold ratio) ──
+  for (const [id, commodity] of Object.entries(GLOBAL_COMMODITIES)) {
+    if (commodity.source !== 'derived') continue;
+
+    try {
+      const [srcA, srcB] = commodity.from;
+      const dataA = results[srcA]?.data;
+      const dataB = results[srcB]?.data;
+
+      if (dataA?.length > 0 && dataB?.length > 0) {
+        const valA = dataA[0].value; // latest copper $/mt
+        const valB = dataB[0].value; // latest gold $/oz
+        if (valB > 0) {
+          const ratio = Math.round((valA / valB) * 10000) / 10000;
+          results[id] = {
+            id,
+            name: commodity.name,
+            unit: commodity.unit,
+            glId: commodity.glId,
+            data: [{
+              provider: 'DERIVED',
+              indicator: `${srcA}/${srcB}`,
+              country: 'GLOBAL',
+              date: dataA[0].date,
+              value: ratio,
+            }],
+            fetchedAt: new Date().toISOString(),
+            count: 1,
+          };
+          console.log(`[DERIVED] ${id}: ${valA}/${valB} = ${ratio}`);
+        }
+      } else {
+        console.warn(`[DERIVED] ${id}: missing source data (${srcA}=${!!dataA}, ${srcB}=${!!dataB})`);
+      }
+    } catch (e) {
+      errors.push({ id, error: e.message });
+    }
+  }
+
+  // Summary
+  const total = Object.keys(GLOBAL_COMMODITIES).length;
+  const ok = Object.keys(results).length;
+  console.log(`[Commodities] ${ok}/${total} collected, ${errors.length} errors`);
 
   return { results, errors };
 }
