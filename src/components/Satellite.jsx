@@ -172,7 +172,7 @@ function SatEvidencePanel({data:d}){
           background:i===0?LT.bg3:'transparent',color:i===0?LT.text:LT.textDim,fontSize:15,
           fontFamily:"monospace",cursor:"pointer",whiteSpace:"nowrap",fontWeight:i===0?700:400}}>{l}</button>))}
       </div>
-      <SatCompare before={d.before} after={d.after} sensor={d.sensor} product={d.product} coord={d.coord} radius={d.radius} unit={d.unit} color={d.color}/>
+      <SatCompare before={d.before} after={d.after} sensor={d.sensor} product={d.product} coord={d.coord} radius={d.radius} unit={d.unit} color={d.color} palette={d.palette} paletteLabels={d.paletteLabels}/>
       {d.coverage&&<div style={{marginTop:8,padding:"6px 10px",borderRadius:4,background:LT.surface,border:`1px solid ${LT.border}`}}>
         <span style={{fontSize:15,color:LT.textMid,fontFamily:"monospace"}}>⚠ 커버리지: {d.coverage}</span>
       </div>}

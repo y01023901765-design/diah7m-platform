@@ -6,19 +6,25 @@ import TierLock, { isSat, SAT_META, D, gN, sysN, sysB, sysM } from './TierLock';
 import { TIER_ACCESS } from '../data/gauges';
 import { SAT_EV } from '../data/satellite';
 
-// GEE 실데이터가 있으면 SAT_EV에 머지
+// GEE 실데이터가 있으면 SAT_EV에 머지 (이미지 URL + 팔레트 포함)
 function mergedSatEv(code, liveSat) {
   const base = SAT_EV[code];
   if (!base || !liveSat) return base;
   const merged = { ...base };
   if (code === 'S2' && liveSat.S2 && liveSat.S2.status === 'OK') {
     const s = liveSat.S2;
-    merged.after = { date: s.date || merged.after.date, val: String(s.value), raw: s.value };
-    if (s.baseline_365d) merged.before = { date: s.date ? new Date(new Date(s.date).getTime() - 30*86400000).toISOString().slice(0,10) : merged.before.date, val: String(s.baseline_365d), raw: s.baseline_365d };
+    merged.after = { date: s.date || merged.after.date, val: String(s.value), raw: s.value,
+      imageUrl: s.images?.after?.url };
+    if (s.baseline_365d) merged.before = { date: s.date ? new Date(new Date(s.date).getTime() - 30*86400000).toISOString().slice(0,10) : merged.before.date, val: String(s.baseline_365d), raw: s.baseline_365d,
+      imageUrl: s.images?.before?.url };
+    if (s.images?.palette) { merged.palette = s.images.palette; merged.paletteLabels = s.images.paletteLabels; }
   }
   if (code === 'R6' && liveSat.R6 && liveSat.R6.status === 'OK') {
     const r = liveSat.R6;
-    merged.after = { date: r.date || merged.after.date, val: String(r.value), raw: r.value };
+    merged.after = { date: r.date || merged.after.date, val: String(r.value), raw: r.value,
+      imageUrl: r.images?.after?.url };
+    if (r.images?.before) merged.before = { ...merged.before, imageUrl: r.images.before.url };
+    if (r.images?.palette) { merged.palette = r.images.palette; merged.paletteLabels = r.images.paletteLabels; }
   }
   return merged;
 }
