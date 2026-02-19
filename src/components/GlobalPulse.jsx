@@ -18,12 +18,12 @@ import { t } from '../i18n';
 // 대륙 메타 (아이콘 + 한/영 이름)
 // ═══════════════════════════════════
 const CONTINENT_META = {
-  ASIA: { icon: '🌏', ko: '아시아', en: 'Asia' },
-  EUR:  { icon: '🇪🇺', ko: '유럽',   en: 'Europe' },
-  NAM:  { icon: '🌎', ko: '북미',   en: 'N.America' },
-  SAM:  { icon: '🌎', ko: '남미',   en: 'S.America' },
-  MEA:  { icon: '🌍', ko: '중동/아프리카', en: 'MEA' },
-  OCE:  { icon: '🌏', ko: '오세아니아', en: 'Oceania' },
+  ASIA: { icon: '🌏', ko: '아시아', en: 'Asia', ja: 'アジア', zh: '亚洲' },
+  EUR:  { icon: '🇪🇺', ko: '유럽',   en: 'Europe', ja: 'ヨーロッパ', zh: '欧洲' },
+  NAM:  { icon: '🌎', ko: '북미',   en: 'N.America', ja: '北米', zh: '北美' },
+  SAM:  { icon: '🌎', ko: '남미',   en: 'S.America', ja: '南米', zh: '南美' },
+  MEA:  { icon: '🌍', ko: '중동/아프리카', en: 'MEA', ja: '中東/アフリカ', zh: '中东/非洲' },
+  OCE:  { icon: '🌏', ko: '오세아니아', en: 'Oceania', ja: 'オセアニア', zh: '大洋洲' },
 };
 
 // ═══════════════════════════════════
@@ -32,7 +32,7 @@ const CONTINENT_META = {
 // ═══════════════════════════════════
 const CATEGORIES = [
   {
-    id: 'energy', ko: '에너지', en: 'Energy', metaphor: '혈당',
+    id: 'energy', ko: '에너지', en: 'Energy', ja: 'エネルギー', zh: '能源', metaphor: '혈당',
     items: [
       { key: 'OIL_WTI',   label: 'WTI',   prefix: '$' },
       { key: 'OIL_BRENT', label: 'Brent', prefix: '$' },
@@ -40,21 +40,21 @@ const CATEGORIES = [
     ],
   },
   {
-    id: 'metals', ko: '금속', en: 'Metals', metaphor: '칼슘/철분',
+    id: 'metals', ko: '금속', en: 'Metals', ja: '金属', zh: '金属', metaphor: '칼슘/철분',
     items: [
       { key: 'GOLD',   label: 'Gold', prefix: '$', fmt: 'comma' },
       { key: 'COPPER', label: 'Cu',   prefix: '$', fmt: 'comma' },
     ],
   },
   {
-    id: 'logistics', ko: '물류', en: 'Logistics', metaphor: '혈류',
+    id: 'logistics', ko: '물류', en: 'Logistics', ja: '物流', zh: '物流', metaphor: '혈류',
     items: [
       { key: 'BDI',       label: 'BDI',       fmt: 'comma' },
       { key: 'CONTAINER', label: 'Container' },
     ],
   },
   {
-    id: 'finance', ko: '금융', en: 'Finance', metaphor: '심박/혈압',
+    id: 'finance', ko: '금융', en: 'Finance', ja: '金融', zh: '金融', metaphor: '심박/혈압',
     items: [
       { key: 'VIX',   label: 'VIX',   isInverse: true },
       { key: 'SP500', label: 'S&P',   fmt: 'comma' },
@@ -62,14 +62,14 @@ const CATEGORIES = [
     ],
   },
   {
-    id: 'bonds', ko: '채권', en: 'Bonds', metaphor: '체온/심전도',
+    id: 'bonds', ko: '채권', en: 'Bonds', ja: '債券', zh: '债券', metaphor: '체온/심전도',
     items: [
       { key: 'US10Y',       label: '10Y',  suffix: '%' },
       { key: 'YIELD_CURVE', label: '곡선',  suffix: '%' },
     ],
   },
   {
-    id: 'currency', ko: '통화', en: 'FX', metaphor: '삼투압',
+    id: 'currency', ko: '통화', en: 'FX', ja: '為替', zh: '汇率', metaphor: '삼투압',
     items: [
       { key: 'EURUSD', label: 'EUR' },
       { key: 'USDJPY', label: 'JPY' },
@@ -77,7 +77,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: 'leading', ko: '선행', en: 'Leading', metaphor: '반사신경',
+    id: 'leading', ko: '선행', en: 'Leading', ja: '先行', zh: '先行', metaphor: '반사신경',
     items: [
       { key: 'PMI_US',   label: 'PMI🇺🇸' },
       { key: 'PMI_EU',   label: 'PMI🇪🇺' },
@@ -85,7 +85,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: 'stress', ko: '스트레스', en: 'Stress', metaphor: '코르티솔',
+    id: 'stress', ko: '스트레스', en: 'Stress', ja: 'ストレス', zh: '压力', metaphor: '코르티솔',
     items: [
       { key: 'GSCPI',         label: 'GSCPI',  isInverse: true },
       { key: 'CREDIT_SPREAD', label: 'HY스프레드', suffix: '%', isInverse: true },

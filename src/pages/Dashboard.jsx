@@ -388,21 +388,21 @@ function DashboardPage({user,onNav,lang,country,city}){
       </div>
       {/* Verdict */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>{t('verdictTitle',L)}</div>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>{t('verdict',L)}</div>
         <div style={{fontSize:LT.fs.lg,color:LT.textMid,lineHeight:2}}>{t('verdictText',L)}</div>
       </div>
       {/* Satellite summary */}
       <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`}}>
         <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>{t('satTimeline',L)}</div>
         <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.lg}}>
-          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satVerify",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
-          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satPredict",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satVerify",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satPastVerify",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satPredict",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satFutureHint",L)}</div></div>
         </div>
       </div>
       {/* 9 Systems */}
       <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xl}}>{t("nineSystems",L)}</div>
       <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:LT.sp.md}}>
-        {Object.entries(activeSys).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');const sName=s.name?.[L]||s.name?.en||sysN(k,L);const sBrief=s.name?'':sysB(k,L);return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.smRadius,padding:`${LT.sp.xl}px ${LT.sp.lg}px`,border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
+        {Object.entries(activeSys).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');const sName=sysN(k,L)||s.name?.[L]||s.name?.en||k;const sBrief=sysB(k,L)||'';return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.smRadius,padding:`${LT.sp.xl}px ${LT.sp.lg}px`,border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
           onMouseEnter={e=>e.currentTarget.style.boxShadow=LT.cardShadowHover} onMouseLeave={e=>e.currentTarget.style.boxShadow=LT.cardShadow}>
           <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:LT.fs.xl}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:LT.fs.lg,fontWeight:LT.fw.extra,color:col}}>{s.sc}</div></div></div>
           <div style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text,marginTop:LT.sp.xs}}>{sName}</div>

@@ -11,7 +11,7 @@ function RadarChart({lang:RL,sysData}){
   const poly=axes.map((a,i)=>getP(i,a.sc).join(",")).join(" ");
   const grid=[25,50,75,100];
   // 라벨: name 있으면 사용, 없으면 sysN 폴백
-  const getLabel=(a)=>{const n=a.name?.[RL]||a.name?.en||sysN(a.id,RL);return n.slice(0,3);};
+  const getLabel=(a)=>{const n=sysN(a.id,RL)||a.name?.[RL]||a.name?.en||a.id;const isCJK=/[\u3000-\u9fff\uac00-\ud7af]/.test(n);return n.slice(0,isCJK?2:3);};
   return(<svg viewBox="0 0 240 240" style={{width:"100%",maxWidth:260}}>
     {grid.map(g=>(<polygon key={g} points={axes.map((_,i)=>getP(i,g).join(",")).join(" ")} fill="none" stroke={LT.border} strokeWidth={.5}/>))}
     {axes.map((_,i)=>{const[x,y]=getP(i,100);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={LT.border} strokeWidth={.5}/>;} )}

@@ -112,9 +112,9 @@ function SystemSection({sysKey,sys,expanded,toggle,lang,liveSat,gaugeData,isGlob
   const good=gArr.filter(g=>g.g==="양호").length,caution=gArr.filter(g=>g.g==="주의").length,alert=gArr.filter(g=>g.g==="경보").length;
   const satCount=isGlobal?0:gArr.filter(g=>isSat(g.c)).length;
   // 시스템 이름 폴백: 글로벌 축은 i18n 키가 없으므로
-  const sName = sys.name?.[L] || sys.name?.en || sysN(sysKey, L);
-  const sBrief = sys.name ? '' : sysB(sysKey, L);
-  const sDesc = sys.name ? '' : sysM(sysKey, L);
+  const sName = sysN(sysKey, L) || sys.name?.[L] || sys.name?.en || sysKey;
+  const sBrief = sysB(sysKey, L) || '';
+  const sDesc = sysM(sysKey, L) || '';
   const [open,setOpen]=useState(false);
   return(
     <div style={{marginBottom:12}}>
