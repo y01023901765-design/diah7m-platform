@@ -48,10 +48,15 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     console.warn('  ⚠️  stock-thresholds load failed:', e.message);
   }
 
-  // Auth middleware (optional)
-  const optAuth = auth?.authMiddleware
-    ? (req, res, next) => { auth.authMiddleware(req, res, () => next()); }
-    : (req, res, next) => next();
+  // Auth middleware (optional — 토큰 있으면 파싱, 없으면 통과)
+  const optAuth = (req, res, next) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token && auth?.authMiddleware) {
+      auth.authMiddleware(req, res, () => next());
+    } else {
+      next();
+    }
+  };
 
   // Admin auth (POST /refresh 용)
   const adminAuth = (req, res, next) => {
