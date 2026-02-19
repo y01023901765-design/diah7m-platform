@@ -180,29 +180,6 @@ app.get('/api/test/:id', debugAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── 임시: ECOS 항목 검색 (auth 없음 — 교정 완료 후 제거) ──
-app.get('/api/ecos-discover', async (req, res) => {
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  const stats = (req.query.stats || '901Y033').split(',');
-  const results = {};
-  for (const stat of stats) {
-    const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/500/${stat.trim()}`;
-    try {
-      const r = await new Promise((resolve, reject) => {
-        require('https').get(url, { timeout: 10000 }, (resp) => {
-          let d = ''; resp.on('data', c => d += c);
-          resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve(null); } });
-        }).on('error', reject);
-      });
-      results[stat.trim()] = (r?.StatisticItemList?.row || []).map(i => ({
-        code: i.ITEM_CODE, name: i.ITEM_NAME, cycle: i.CYCLE, start: i.START_TIME, end: i.END_TIME,
-      }));
-    } catch (e) { results[stat.trim()] = { error: e.message }; }
-  }
-  res.json(results);
-});
-
 app.get('/api/ecos-items/:stat', debugAuth, async (req, res) => {
   const ecosKey = process.env.ECOS_API_KEY;
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });

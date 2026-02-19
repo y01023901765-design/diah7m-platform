@@ -103,7 +103,7 @@ const GAUGE_MAP = {
   O5_INVENTORY: {
     id: 'O5_INVENTORY',
     source: 'ECOS',
-    params: { statisticCode: '901Y033', itemCode1: 'AA00', cycle: 'M' },
+    params: { statisticCode: '901Y034', itemCode1: 'I10E', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -115,7 +115,7 @@ const GAUGE_MAP = {
   O6_SHIPMENT: {
     id: 'O6_SHIPMENT',
     source: 'ECOS',
-    params: { statisticCode: '901Y033', itemCode1: 'BA00', cycle: 'M' },
+    params: { statisticCode: '901Y034', itemCode1: 'I10C', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -127,7 +127,7 @@ const GAUGE_MAP = {
   O7_ORDER: {
     id: 'O7_ORDER',
     source: 'ECOS',
-    params: { statisticCode: '901Y033', itemCode1: 'CA00', cycle: 'M' },
+    params: { statisticCode: '901Y034', itemCode1: 'I31AB', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -164,7 +164,7 @@ const GAUGE_MAP = {
   },
 
   F3_KOSPI_VOL: {
-    id: 'F3_KOSPI_VOL', source: 'ECOS', stat: '802Y001', item: '0001000', cycle: 'D', name: 'KOSPI', unit: 'pt',
+    id: 'F3_KOSPI_VOL', source: 'ECOS', stat: '802Y001', item: '0087000', cycle: 'D', name: 'KOSPI거래량', unit: '천주',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -210,7 +210,7 @@ const GAUGE_MAP = {
   },
 
   F7_KOSDAQ_VOL: {
-    id: 'F7_KOSDAQ_VOL', source: 'ECOS', stat: '802Y001', item: '0002000', cycle: 'D', name: 'KOSDAQ', unit: 'pt',
+    id: 'F7_KOSDAQ_VOL', source: 'ECOS', stat: '802Y001', item: '0090000', cycle: 'D', name: 'KOSDAQ거래량', unit: '천주',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -220,7 +220,7 @@ const GAUGE_MAP = {
   },
 
   F8_FOREIGN: {
-    id: 'F8_FOREIGN', source: 'ECOS', stat: '802Y001', item: '0001000', cycle: 'D', name: '외국인KOSPI순매수', unit: 'pt',
+    id: 'F8_FOREIGN', source: 'ECOS', stat: '802Y001', item: '0030000', cycle: 'D', name: '외국인순매수(유가증권)', unit: '백만원',
     transform: (data) => {
       if (!data || data.length === 0) return null;
       return parseFloat(data[0].DATA_VALUE);
@@ -231,7 +231,7 @@ const GAUGE_MAP = {
   S1_BSI: {
     id: 'S1_BSI',
     source: 'ECOS',
-    params: { statisticCode: '512Y006', itemCode1: 'FBB', cycle: 'M' },
+    params: { statisticCode: '901Y067', itemCode1: 'I16A', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length === 0) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -271,7 +271,7 @@ const GAUGE_MAP = {
   },
 
   S5_EMPLOY: {
-    id: 'S5_EMPLOY', source: 'ECOS', stat: '901Y065', item: 'I12A', cycle: 'M', name: '취업자수', unit: '천명',
+    id: 'S5_EMPLOY', source: 'ECOS', stat: '901Y027', item: 'I61BA', cycle: 'M', name: '취업자수', unit: '천명',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -293,7 +293,7 @@ const GAUGE_MAP = {
   },
 
   S7_HOUSING: {
-    id: 'S7_HOUSING', source: 'ECOS', stat: '901Y068', item: '1010', cycle: 'M', name: '건축허가', unit: '동',
+    id: 'S7_HOUSING', source: 'ECOS', stat: '901Y064', item: 'P65A', cycle: 'M', name: '주택매매가격지수(전국)', unit: '2021.06=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -371,7 +371,7 @@ const GAUGE_MAP = {
 
   // R축 (7개 - R5 없음)
   R1_ELECTRICITY: {
-    id: 'R1_ELECTRICITY', source: 'ECOS', stat: '901Y033', item: 'BD', cycle: 'M', name: '전기가스업생산', unit: '2020=100',
+    id: 'R1_ELECTRICITY', source: 'ECOS', stat: '901Y032', item: 'I11AD', cycle: 'M', name: '전기가스수도업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -381,7 +381,7 @@ const GAUGE_MAP = {
   },
 
   R2_WATER: {
-    id: 'R2_WATER', source: 'ECOS', stat: '901Y033', item: 'BE36', cycle: 'M', name: '수도업생산', unit: '2020=100',
+    id: 'R2_WATER', source: 'ECOS', stat: '901Y038', item: 'I51AAC', cycle: 'M', name: '수도업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -391,7 +391,7 @@ const GAUGE_MAP = {
   },
 
   R3_GAS: {
-    id: 'R3_GAS', source: 'ECOS', stat: '901Y033', item: 'BD35', cycle: 'M', name: '가스업생산', unit: '2020=100',
+    id: 'R3_GAS', source: 'ECOS', stat: '901Y032', item: 'I11ADA', cycle: 'M', name: '전기가스증기공급업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -401,7 +401,7 @@ const GAUGE_MAP = {
   },
 
   R4_COAL: {
-    id: 'R4_COAL', source: 'ECOS', stat: '901Y033', item: 'BB05', cycle: 'M', name: '석탄광업생산', unit: '2020=100',
+    id: 'R4_COAL', source: 'ECOS', stat: '901Y032', item: 'I11ABA', cycle: 'M', name: '석탄원유천연가스광업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -418,7 +418,7 @@ const GAUGE_MAP = {
   },
 
   R7_WASTE: {
-    id: 'R7_WASTE', source: 'ECOS', stat: '901Y033', item: 'BE37', cycle: 'M', name: '환경복원업생산', unit: '2020=100',
+    id: 'R7_WASTE', source: 'ECOS', stat: '901Y038', item: 'I51AAB', cycle: 'M', name: '폐기물수집운반처리업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -428,7 +428,7 @@ const GAUGE_MAP = {
   },
 
   R8_FOREST: {
-    id: 'R8_FOREST', source: 'ECOS', stat: '901Y033', item: 'BA', cycle: 'M', name: '농림어업생산', unit: '2020=100',
+    id: 'R8_FOREST', source: 'ECOS', stat: '901Y027', item: 'I61BAAA', cycle: 'M', name: '농림어업취업자', unit: '천명',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -439,7 +439,7 @@ const GAUGE_MAP = {
 
   // I축 (7개)
   I1_CONSTRUCTION: {
-    id: 'I1_CONSTRUCTION', source: 'ECOS', stat: '901Y033', item: 'BF', cycle: 'M', name: '건설업생산', unit: '2020=100',
+    id: 'I1_CONSTRUCTION', source: 'ECOS', stat: '901Y033', item: 'AD00', cycle: 'M', name: '건설업생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -449,7 +449,7 @@ const GAUGE_MAP = {
   },
 
   I2_CEMENT: {
-    id: 'I2_CEMENT', source: 'ECOS', stat: '901Y033', item: 'BC22', cycle: 'M', name: '시멘트생산', unit: '2020=100',
+    id: 'I2_CEMENT', source: 'ECOS', stat: '901Y032', item: 'I11ACN', cycle: 'M', name: '비금속광물제품생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -459,7 +459,7 @@ const GAUGE_MAP = {
   },
 
   I3_STEEL: {
-    id: 'I3_STEEL', source: 'ECOS', stat: '901Y033', item: 'BC24', cycle: 'M', name: '철강생산', unit: '2020=100',
+    id: 'I3_STEEL', source: 'ECOS', stat: '901Y032', item: 'I11ACO', cycle: 'M', name: '1차금속생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -469,7 +469,7 @@ const GAUGE_MAP = {
   },
 
   I4_VEHICLE: {
-    id: 'I4_VEHICLE', source: 'ECOS', stat: '901Y033', item: 'BC29', cycle: 'M', name: '자동차생산', unit: '2020=100',
+    id: 'I4_VEHICLE', source: 'ECOS', stat: '901Y032', item: 'I11ACU', cycle: 'M', name: '자동차및트레일러생산', unit: '2020=100',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -489,7 +489,7 @@ const GAUGE_MAP = {
   },
 
   I6_AIRPORT: {
-    id: 'I6_AIRPORT', source: 'ECOS', stat: '901Y033', item: 'BH49', cycle: 'M', name: '항공운송', unit: '2020=100',
+    id: 'I6_AIRPORT', source: 'ECOS', stat: '301Y014', item: 'SCB000', cycle: 'M', name: '항공운송수지', unit: '백만$',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -499,7 +499,7 @@ const GAUGE_MAP = {
   },
 
   I7_RAILROAD: {
-    id: 'I7_RAILROAD', source: 'ECOS', stat: '901Y033', item: 'BH', cycle: 'M', name: '운수업생산', unit: '2020=100',
+    id: 'I7_RAILROAD', source: 'ECOS', stat: '901Y027', item: 'I61BAAEB', cycle: 'M', name: '운수창고업취업자', unit: '천명',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -642,7 +642,7 @@ const GAUGE_MAP = {
   L1_UNEMPLOYMENT: {
     id: 'L1_UNEMPLOYMENT',
     source: 'ECOS',
-    params: { statisticCode: '200Y001', itemCode1: '1', cycle: 'M' },
+    params: { statisticCode: '901Y027', itemCode1: 'I61BC', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -654,7 +654,7 @@ const GAUGE_MAP = {
   L2_PARTICIPATION: {
     id: 'L2_PARTICIPATION',
     source: 'ECOS',
-    params: { statisticCode: '200Y001', itemCode1: '2', cycle: 'M' },
+    params: { statisticCode: '901Y027', itemCode1: 'I61D', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -666,7 +666,7 @@ const GAUGE_MAP = {
   L3_WAGE: {
     id: 'L3_WAGE',
     source: 'ECOS',
-    params: { statisticCode: '200Y023', itemCode1: '10', cycle: 'M' },
+    params: { statisticCode: '901Y027', itemCode1: 'I61BACB', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -678,7 +678,7 @@ const GAUGE_MAP = {
   L4_HOURS: {
     id: 'L4_HOURS',
     source: 'ECOS',
-    params: { statisticCode: '200Y023', itemCode1: '20', cycle: 'M' },
+    params: { statisticCode: '901Y027', itemCode1: 'I61E', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -690,7 +690,7 @@ const GAUGE_MAP = {
   L5_YOUTH_UNEMP: {
     id: 'L5_YOUTH_UNEMP',
     source: 'ECOS',
-    params: { statisticCode: '200Y001', itemCode1: '3', cycle: 'M' },
+    params: { statisticCode: '901Y027', itemCode1: 'I61BB', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
