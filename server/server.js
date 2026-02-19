@@ -238,49 +238,6 @@ app.get('/api/ecos-probe', debugAuth, async (req, res) => {
   } catch (e) { res.json({ error: e.message }); }
 });
 
-// TEMP: unauthenticated ECOS probe for debugging (REMOVE after fix)
-app.get('/api/ecos-discover/:stat', async (req, res) => {
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  const { stat } = req.params;
-  const url = `https://ecos.bok.or.kr/api/StatisticItemList/${ecosKey}/json/kr/1/500/${stat}`;
-  try {
-    const r = await new Promise((resolve, reject) => {
-      require('https').get(url, { timeout: 8000 }, (resp) => {
-        let d = ''; resp.on('data', c => d += c);
-        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ parseError: d.slice(0,200) }); } });
-      }).on('error', reject);
-    });
-    const items = r?.StatisticItemList?.row || [];
-    res.json({ stat, total: items.length, items: items.map(i => ({
-      code: i.ITEM_CODE, name: i.ITEM_NAME, cycle: i.CYCLE, start: i.START_TIME, end: i.END_TIME,
-      grp: i.GROUP_NAME, p_code: i.P_ITEM_CODE,
-    }))});
-  } catch (e) { res.json({ error: e.message }); }
-});
-
-// TEMP: unauthenticated ECOS data probe (REMOVE after fix)
-app.get('/api/ecos-data-probe', async (req, res) => {
-  const ecosKey = process.env.ECOS_API_KEY;
-  if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
-  const { stat, item, cycle } = req.query;
-  if (!stat || !item) return res.json({ error: 'stat and item required' });
-  const cyc = cycle || 'M';
-  const end = new Date().toISOString().slice(0, 7).replace('-', '');
-  const start = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
-  const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/10/${stat}/${cyc}/${start}/${end}/${item}`;
-  try {
-    const r = await new Promise((resolve, reject) => {
-      require('https').get(url, { timeout: 8000 }, (resp) => {
-        let d = ''; resp.on('data', chunk => d += chunk);
-        resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ parseError: d.slice(0,200) }); } });
-      }).on('error', reject);
-    });
-    const rows = r?.StatisticSearch?.row || [];
-    res.json({ stat, item, cycle: cyc, len: rows.length, msg: r?.RESULT?.MESSAGE, rows: rows.slice(0, 5) });
-  } catch (e) { res.json({ error: e.message }); }
-});
-
 // 기존 /api/trigger-refresh 호환 (프록시)
 app.get('/api/trigger-refresh', (req, res) => {
   // routes/data.js의 /trigger-refresh로 전달
