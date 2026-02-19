@@ -9,6 +9,7 @@
  *   GET  /stock/aggregate?country=KR — 국가별 주식 건강도 평균+섹터 분해
  *   GET  /stock/:ticker           — 종목 상세 (+health)
  *   GET  /stock/:ticker/gauges    — 15게이지 값+등급 (GaugeRow 바인딩)
+ *   GET  /stock/:ticker/chart     — OHLCV 차트 데이터 (Yahoo Finance)
  *   GET  /stock/:ticker/facilities — 시설별 위성 메트릭
  *   GET  /stock/:ticker/delta     — 위성 vs 시장 Delta 분석
  *   GET  /stock/:ticker/flow      — 공급망 플로우
@@ -303,19 +304,108 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     }
   });
 
+  // ── 차트 데이터 (OHLCV) ──
+  router.get('/stock/:ticker/chart', async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    const profile = byTicker[ticker];
+    if (!profile) return res.status(404).json({ error: 'Stock not found' });
+    if (!stockPipeline || !stockPipeline.fetchYahooChart) {
+      return res.json({ ticker, candles: [], error: 'Pipeline unavailable' });
+    }
+    const range = req.query.range || '6mo'; // 1mo, 3mo, 6mo, 1y
+    try {
+      const yahooSym = stockPipeline.toYahooSymbol(ticker, profile.country);
+      const chart = await stockPipeline.fetchYahooChart(yahooSym, range);
+      if (!chart || !chart.indicators || !chart.indicators.quote) {
+        return res.json({ ticker, candles: [], currency: null });
+      }
+      const ts = chart.timestamp || [];
+      const q = chart.indicators.quote[0] || {};
+      const candles = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (q.close && q.close[i] != null) {
+          candles.push({
+            t: ts[i] * 1000, // ms
+            o: q.open ? q.open[i] : null,
+            h: q.high ? q.high[i] : null,
+            l: q.low ? q.low[i] : null,
+            c: q.close[i],
+            v: q.volume ? q.volume[i] : null,
+          });
+        }
+      }
+      const meta = chart.meta || {};
+      res.json({
+        ticker,
+        currency: meta.currency || 'USD',
+        prevClose: meta.chartPreviousClose || null,
+        candles,
+      });
+    } catch (e) {
+      res.json({ ticker, candles: [], error: e.message });
+    }
+  });
+
   // ── 시설별 위성 메트릭 (Tab1 진단) ──
   router.get('/stock/:ticker/facilities', optAuth, (req, res) => {
     const profile = byTicker[req.params.ticker.toUpperCase()];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
+    // supply-chain-monitor dry 분석에서 시설별 센서 데이터 추출
+    let flowData = null;
+    if (supplyChainMonitor) {
+      const health = getHealthFromCache(profile.ticker, profile);
+      const finDL = health && health.dualLock ? health.dualLock : { isDualLocked: false };
+      flowData = supplyChainMonitor.analyzeSupplyChainDry(profile, finDL);
+    }
+
+    // flow stages → 시설-센서 매핑 (evidence + facilityCount로 역매핑)
+    const stageEvidence = {};
+    if (flowData && flowData.stages) {
+      for (const stg of ['input', 'process', 'output']) {
+        const s = flowData.stages[stg];
+        if (s && s.evidence) {
+          s.evidence.forEach(e => { stageEvidence[e.nodeId] = e; });
+        }
+      }
+    }
+
     const facilities = (profile.facilities || []).map((f, i) => {
-      // seed 기반 결정적 메트릭 (GEE 실데이터 연결 전 fallback)
-      const seed = profile.ticker.charCodeAt(0) + i * 7;
-      const viirs = ((seed * 13) % 31) - 15;
-      const no2 = ((seed * 17) % 41) - 20;
-      const therm = ((seed * 11) % 21) - 10;
-      const status = f.underConstruction ? 'construction'
-        : viirs < -10 && no2 < -10 ? 'warning' : 'normal';
+      // supply-chain-monitor evidence 매칭
+      const ev = stageEvidence[f.name];
+
+      // 센서별 메트릭 추출 (선언된 센서 기반)
+      const metrics = {};
+      if (ev) {
+        // evidence에 있는 센서 데이터 사용
+        metrics[ev.sensor.toLowerCase()] = ev.value;
+      }
+      // evidence에 없는 센서는 dry seed로 보충
+      const sensors = f.sensors || ['NTL'];
+      for (const s of sensors) {
+        const key = s.toLowerCase();
+        if (metrics[key] == null) {
+          // 결정적 seed (이름 해시)
+          let hash = 0;
+          for (let c = 0; c < (f.name + s).length; c++) hash = ((hash << 5) - hash + (f.name + s).charCodeAt(c)) | 0;
+          const anom = ((hash % 40) - 20);
+          metrics[key] = s === 'THERMAL' ? Math.round(anom * 0.3 * 10) / 10 : Math.round(anom * 0.7 * 10) / 10;
+        }
+      }
+
+      // 상태 판정 (12줄 규칙 기반)
+      let status = 'normal';
+      if (f.underConstruction) {
+        status = 'construction';
+      } else {
+        const ntlVal = metrics.ntl;
+        const no2Val = metrics.no2;
+        const thermVal = metrics.thermal;
+        const hasAlarm = (ntlVal != null && ntlVal <= -15) || (no2Val != null && no2Val <= -15) || (thermVal != null && thermVal <= -5);
+        const hasWarn = (ntlVal != null && ntlVal <= -8) || (no2Val != null && no2Val <= -8) || (thermVal != null && thermVal <= -2);
+        status = hasAlarm ? 'alarm' : hasWarn ? 'warning' : 'normal';
+      }
+
       return {
         name: f.name,
         lat: f.lat,
@@ -326,9 +416,14 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
         radiusKm: f.radiusKm || null,
         note: f.note || null,
         underConstruction: f.underConstruction || false,
-        metrics: { viirs, no2, therm },
+        metrics: {
+          viirs: metrics.ntl != null ? metrics.ntl : null,
+          no2: metrics.no2 != null ? metrics.no2 : null,
+          therm: metrics.thermal != null ? metrics.thermal : null,
+          sar: metrics.sar != null ? metrics.sar : null,
+        },
         status,
-        lastObserved: '2026-01-15T06:00:00Z',
+        lastObserved: flowData ? flowData.updatedAt : new Date().toISOString(),
       };
     });
 
@@ -336,6 +431,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const byStage = { input: 0, process: 0, output: 0 };
     facilities.forEach(f => { if (f.stage && byStage[f.stage] != null) byStage[f.stage]++; });
 
+    const alarms = facilities.filter(f => f.status === 'alarm').length;
     const warnings = facilities.filter(f => f.status === 'warning').length;
     const normals = facilities.filter(f => f.status === 'normal').length;
 
@@ -343,7 +439,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       ticker: profile.ticker,
       name: profile.name,
       totalFacilities: facilities.length,
-      summary: { normal: normals, warning: warnings, byStage },
+      summary: { normal: normals, warning: warnings, alarm: alarms, byStage },
       facilities,
     });
   });

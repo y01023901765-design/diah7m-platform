@@ -292,7 +292,8 @@ async function fetchStockGauge(gaugeId, ticker, summaryData, chartData) {
 
 // ── 종목 전체 게이지 수집 ────────────────────────────
 
-async function fetchAllStockGauges(ticker) {
+async function fetchAllStockGauges(ticker, opts) {
+  opts = opts || {};
   var summaryData = await fetchYahooSummary(ticker);
   var chartData = await fetchYahooChart(ticker, '1y');
 
@@ -306,6 +307,23 @@ async function fetchAllStockGauges(ticker) {
     results[gId] = result;
     if (result.status === 'OK') ok++;
     else errors++;
+  }
+
+  // 위성 게이지 병합 (GEE 인증 가능 시)
+  if (opts.includeSatellite !== false) {
+    try {
+      var satGauges = await fetchSatelliteGauges(ticker);
+      if (satGauges.SG_S1 && satGauges.SG_S1.status === 'OK') {
+        results.SG_S1 = satGauges.SG_S1;
+        ok++; errors--; // NEEDS_SATELLITE → OK 전환
+      }
+      if (satGauges.SG_S2 && satGauges.SG_S2.status === 'OK') {
+        results.SG_S2 = satGauges.SG_S2;
+        ok++; errors--;
+      }
+    } catch (err) {
+      console.warn('[StockPipeline] satellite gauge merge skipped for', ticker, ':', err.message);
+    }
   }
 
   return {

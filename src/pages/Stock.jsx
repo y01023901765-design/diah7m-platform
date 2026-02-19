@@ -153,6 +153,8 @@ function StockView({stock:s,lang,onBack}){
   const toggleGauge=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
   const [liveFlow,setLiveFlow]=useState(null);
+  const [liveChart,setLiveChart]=useState(null);
+  const [chartRange,setChartRange]=useState('6mo');
 
   // API에서 시설/델타/게이지/건강도/가격/플로우 로드
   useEffect(()=>{
@@ -178,6 +180,15 @@ function StockView({stock:s,lang,onBack}){
     })();
     return()=>{c=true};
   },[s.sid]);
+
+  // 차트 데이터 로드 (range 변경 시)
+  useEffect(()=>{
+    let c=false;
+    API.stockChart(s.sid,chartRange).then(d=>{
+      if(!c&&d&&d.candles) setLiveChart(d);
+    }).catch(()=>{});
+    return()=>{c=true};
+  },[s.sid,chartRange]);
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
@@ -535,25 +546,107 @@ function StockView({stock:s,lang,onBack}){
     {/* ═══ TAB 5: 시장 ═══ */}
     {tab==='market'&&<>
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>💹 {t('svMarketTitle',L)}</div>
-        {/* Price chart placeholder */}
-        <div style={{background:LT.bg2,borderRadius:8,height:180,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${LT.border}`,marginBottom:12}}>
-          <span style={{fontSize:15,color:LT.textDim}}>{t('svChartPlaceholder',L)}</span>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>💹 {t('svMarketTitle',L)}</div>
+          <div style={{display:"flex",gap:4}}>
+            {['1mo','3mo','6mo','1y'].map(r=>(
+              <button key={r} onClick={()=>setChartRange(r)} style={{
+                padding:"3px 8px",borderRadius:4,fontSize:12,cursor:"pointer",
+                border:`1px solid ${chartRange===r?LT.primary:LT.border}`,
+                background:chartRange===r?LT.primary:'transparent',
+                color:chartRange===r?'#fff':LT.textDim,fontWeight:chartRange===r?700:400,
+              }}>{r.toUpperCase()}</button>
+            ))}
+          </div>
         </div>
-        {/* Key financials grid */}
-        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-          {[
-            {label:t('svMktCap',L),val:s.sid==='TSLA'?'$1.09T':'—'},
-            {label:t('svMktPE',L),val:s.sid==='TSLA'?'68.5':'—'},
-            {label:t('svMktVol',L),val:s.sid==='TSLA'?'124.3M':'—'},
-            {label:t('svMkt52',L),val:s.sid==='TSLA'?'$138~$489':'—'},
-          ].map((m,i)=>(
-            <div key={i} style={{background:LT.bg2,borderRadius:6,padding:12,border:`1px solid ${LT.border}`}}>
-              <div style={{fontSize:14,color:LT.textDim}}>{m.label}</div>
-              <div style={{fontSize:16,fontWeight:700,color:LT.text,fontFamily:"monospace",marginTop:4}}>{m.val}</div>
+        {/* Price chart (SVG line) */}
+        {(()=>{
+          const candles = liveChart?.candles || [];
+          if(candles.length<2) return (
+            <div style={{background:LT.bg2,borderRadius:8,height:180,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${LT.border}`,marginBottom:12}}>
+              <span style={{fontSize:15,color:LT.textDim}}>{candles.length===0?t('svChartPlaceholder',L):'Loading...'}</span>
             </div>
-          ))}
-        </div>
+          );
+          const W=360,H=160,PX=40,PY=16;
+          const closes=candles.map(c=>c.c);
+          const hi=Math.max(...closes),lo=Math.min(...closes);
+          const rng=hi-lo||1;
+          const toX=i=>PX+(i/(closes.length-1))*(W-PX*2);
+          const toY=v=>PY+((hi-v)/rng)*(H-PY*2);
+          const pts=closes.map((v,i)=>`${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+          const first=closes[0],last=closes[closes.length-1];
+          const lineCol=last>=first?LT.good:LT.danger;
+          const fillPts=pts+` ${toX(closes.length-1).toFixed(1)},${(H-PY).toFixed(1)} ${PX.toFixed(1)},${(H-PY).toFixed(1)}`;
+          // Y-axis labels
+          const yLabels=[lo,lo+rng*0.25,lo+rng*0.5,lo+rng*0.75,hi];
+          const cur=liveChart?.currency||'';
+          const fmtY=v=>v>=10000?Math.round(v).toLocaleString():v>=100?v.toFixed(0):v.toFixed(2);
+          return (
+            <div style={{background:LT.bg2,borderRadius:8,padding:"8px 4px",border:`1px solid ${LT.border}`,marginBottom:12,overflow:"hidden"}}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
+                <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lineCol} stopOpacity="0.2"/><stop offset="100%" stopColor={lineCol} stopOpacity="0"/></linearGradient></defs>
+                {yLabels.map((v,i)=>(
+                  <g key={i}>
+                    <line x1={PX} y1={toY(v)} x2={W-PX} y2={toY(v)} stroke={LT.border} strokeWidth="0.5" strokeDasharray="3,3"/>
+                    <text x={PX-4} y={toY(v)+3} textAnchor="end" fontSize="8" fill={LT.textDim}>{fmtY(v)}</text>
+                  </g>
+                ))}
+                <polygon points={fillPts} fill="url(#cg)"/>
+                <polyline points={pts} fill="none" stroke={lineCol} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx={toX(closes.length-1)} cy={toY(last)} r="3" fill={lineCol}/>
+                <text x={W-PX+4} y={toY(last)+3} fontSize="9" fontWeight="700" fill={lineCol}>{fmtY(last)}</text>
+              </svg>
+            </div>
+          );
+        })()}
+        {/* Key financials from gauge data */}
+        {(()=>{
+          const gMap={};
+          (liveGauges||[]).forEach(g=>{gMap[g.id]=g;});
+          const fmtV=(v,suf)=>v!=null?(typeof v==='number'?v.toFixed(1):String(v))+(suf||''):'—';
+          const fmtBig=v=>{
+            if(v==null)return '—';
+            if(Math.abs(v)>=1e12)return (v/1e12).toFixed(2)+'T';
+            if(Math.abs(v)>=1e9)return (v/1e9).toFixed(1)+'B';
+            if(Math.abs(v)>=1e6)return (v/1e6).toFixed(1)+'M';
+            return v.toLocaleString();
+          };
+          const pe=gMap.SG_V1?.value;
+          const pb=gMap.SG_V2?.value;
+          const evEbitda=gMap.SG_V3?.value;
+          const divYld=gMap.SG_V4?.value;
+          const roe=gMap.SG_Q1?.value;
+          const debtEq=gMap.SG_Q2?.value;
+          const rsi=gMap.SG_M1?.value;
+          const w52=gMap.SG_M2?.value;
+          const volTr=gMap.SG_M3?.value;
+          const revGr=gMap.SG_G1?.value;
+          const earnGr=gMap.SG_G2?.value;
+          const items=[
+            {label:t('svMktPE',L),val:fmtV(pe,'x'),grade:gMap.SG_V1?.grade},
+            {label:'PBR',val:fmtV(pb,'x'),grade:gMap.SG_V2?.grade},
+            {label:'EV/EBITDA',val:fmtV(evEbitda,'x'),grade:gMap.SG_V3?.grade},
+            {label:L==='ko'?'배당률':'Div Yield',val:fmtV(divYld,'%'),grade:gMap.SG_V4?.grade},
+            {label:'ROE',val:fmtV(roe,'%'),grade:gMap.SG_Q1?.grade},
+            {label:L==='ko'?'부채비율':'D/E',val:fmtV(debtEq,'%'),grade:gMap.SG_Q2?.grade},
+            {label:'RSI',val:fmtV(rsi),grade:gMap.SG_M1?.grade},
+            {label:t('svMkt52',L),val:fmtV(w52,'%'),grade:gMap.SG_M2?.grade},
+            {label:L==='ko'?'거래량추세':'Vol Trend',val:fmtV(volTr,'%'),grade:gMap.SG_M3?.grade},
+            {label:L==='ko'?'매출성장':'Rev Growth',val:fmtV(revGr,'%'),grade:gMap.SG_G1?.grade},
+            {label:L==='ko'?'이익성장':'Earn Growth',val:fmtV(earnGr,'%'),grade:gMap.SG_G2?.grade},
+          ];
+          const gradeCol=g=>g==='good'?LT.good:g==='alert'?LT.danger:LT.text;
+          return (
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+              {items.map((m,i)=>(
+                <div key={i} style={{background:LT.bg2,borderRadius:6,padding:"10px 12px",border:`1px solid ${LT.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:13,color:LT.textDim}}>{m.label}</div>
+                  <div style={{fontSize:15,fontWeight:700,color:gradeCol(m.grade),fontFamily:"monospace"}}>{m.val}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </>}
 
