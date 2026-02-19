@@ -165,6 +165,12 @@ const GAUGE_MAP = {
 
   F3_KOSPI_VOL: {
     id: 'F3_KOSPI_VOL', source: 'ECOS', stat: '802Y001', item: '0001000', cycle: 'D', name: 'KOSPI', unit: 'pt',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   F4_EXCHANGE: {
@@ -205,10 +211,20 @@ const GAUGE_MAP = {
 
   F7_KOSDAQ_VOL: {
     id: 'F7_KOSDAQ_VOL', source: 'ECOS', stat: '802Y001', item: '0002000', cycle: 'D', name: 'KOSDAQ', unit: 'pt',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   F8_FOREIGN: {
     id: 'F8_FOREIGN', source: 'ECOS', stat: '802Y001', item: '0001000', cycle: 'D', name: '외국인KOSPI순매수', unit: 'pt',
+    transform: (data) => {
+      if (!data || data.length === 0) return null;
+      return parseFloat(data[0].DATA_VALUE);
+    }
   },
 
   // S축 (7개)
@@ -256,6 +272,12 @@ const GAUGE_MAP = {
 
   S5_EMPLOY: {
     id: 'S5_EMPLOY', source: 'ECOS', stat: '901Y065', item: 'I12A', cycle: 'M', name: '취업자수', unit: '천명',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return latest - prev;
+    }
   },
 
   S6_RETAIL: {
@@ -272,6 +294,12 @@ const GAUGE_MAP = {
 
   S7_HOUSING: {
     id: 'S7_HOUSING', source: 'ECOS', stat: '901Y068', item: '1010', cycle: 'M', name: '건축허가', unit: '동',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   // P축 (6개)
@@ -313,31 +341,73 @@ const GAUGE_MAP = {
 
   P4_COMMODITY: {
     id: 'P4_COMMODITY', source: 'ECOS', stat: '301Y013', item: '100000', cycle: 'M', name: '상품수지', unit: '백만$',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   P5_IMPORT: {
     id: 'P5_IMPORT', source: 'ECOS', stat: '403Y003', item: '*AA', cycle: 'M', name: '수입물가지수', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 13) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const yearAgo = parseFloat(data[12].DATA_VALUE);
+      return ((latest - yearAgo) / yearAgo) * 100;
+    }
   },
 
   P6_EXPORT_PRICE: {
     id: 'P6_EXPORT_PRICE', source: 'ECOS', stat: '403Y001', item: '*AA', cycle: 'M', name: '수출물가지수', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 13) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const yearAgo = parseFloat(data[12].DATA_VALUE);
+      return ((latest - yearAgo) / yearAgo) * 100;
+    }
   },
 
   // R축 (7개 - R5 없음)
   R1_ELECTRICITY: {
     id: 'R1_ELECTRICITY', source: 'ECOS', stat: '901Y033', item: 'BD', cycle: 'M', name: '전기가스업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   R2_WATER: {
     id: 'R2_WATER', source: 'ECOS', stat: '901Y033', item: 'BE36', cycle: 'M', name: '수도업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   R3_GAS: {
     id: 'R3_GAS', source: 'ECOS', stat: '901Y033', item: 'BD35', cycle: 'M', name: '가스업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   R4_COAL: {
     id: 'R4_COAL', source: 'ECOS', stat: '901Y033', item: 'BB05', cycle: 'M', name: '석탄광업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   R6_UHI: {
@@ -349,39 +419,93 @@ const GAUGE_MAP = {
 
   R7_WASTE: {
     id: 'R7_WASTE', source: 'ECOS', stat: '901Y033', item: 'BE37', cycle: 'M', name: '환경복원업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   R8_FOREST: {
     id: 'R8_FOREST', source: 'ECOS', stat: '901Y033', item: 'BA', cycle: 'M', name: '농림어업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   // I축 (7개)
   I1_CONSTRUCTION: {
     id: 'I1_CONSTRUCTION', source: 'ECOS', stat: '901Y033', item: 'BF', cycle: 'M', name: '건설업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I2_CEMENT: {
     id: 'I2_CEMENT', source: 'ECOS', stat: '901Y033', item: 'BC22', cycle: 'M', name: '시멘트생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I3_STEEL: {
     id: 'I3_STEEL', source: 'ECOS', stat: '901Y033', item: 'BC24', cycle: 'M', name: '철강생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I4_VEHICLE: {
     id: 'I4_VEHICLE', source: 'ECOS', stat: '901Y033', item: 'BC29', cycle: 'M', name: '자동차생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I5_CARGO: {
     id: 'I5_CARGO', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '운송수지(화물)', unit: '백만$',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I6_AIRPORT: {
     id: 'I6_AIRPORT', source: 'ECOS', stat: '901Y033', item: 'BH49', cycle: 'M', name: '항공운송', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   I7_RAILROAD: {
     id: 'I7_RAILROAD', source: 'ECOS', stat: '901Y033', item: 'BH', cycle: 'M', name: '운수업생산', unit: '2020=100',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   // T축 (6개)
@@ -411,6 +535,12 @@ const GAUGE_MAP = {
 
   T3_FDI: {
     id: 'T3_FDI', source: 'ECOS', stat: '301Y014', item: 'S00000', cycle: 'M', name: '서비스수지(FDI대리)', unit: '백만$',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   T4_RESERVES: {
@@ -427,10 +557,22 @@ const GAUGE_MAP = {
 
   T5_SHIPPING: {
     id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '해운운송수지', unit: '백만$',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   T6_CONTAINER: {
     id: 'T6_CONTAINER', source: 'ECOS', stat: '301Y017', item: 'SA110', cycle: 'M', name: '해상수출(컨테이너대리)', unit: '백만$',
+    transform: (data) => {
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
+      return ((latest - prev) / prev) * 100;
+    }
   },
 
   // E축 (5개)
