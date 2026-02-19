@@ -103,7 +103,7 @@ const GAUGE_MAP = {
   O5_INVENTORY: {
     id: 'O5_INVENTORY',
     source: 'ECOS',
-    params: { statisticCode: '901Y034', itemCode1: 'I10E', cycle: 'M' },
+    params: { statisticCode: '901Y032', itemCode1: '5', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -115,7 +115,7 @@ const GAUGE_MAP = {
   O6_SHIPMENT: {
     id: 'O6_SHIPMENT',
     source: 'ECOS',
-    params: { statisticCode: '901Y034', itemCode1: 'I10C', cycle: 'M' },
+    params: { statisticCode: '901Y032', itemCode1: '3', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -127,7 +127,7 @@ const GAUGE_MAP = {
   O7_ORDER: {
     id: 'O7_ORDER',
     source: 'ECOS',
-    params: { statisticCode: '901Y034', itemCode1: 'I31AB', cycle: 'M' },
+    params: { statisticCode: '901Y032', itemCode1: 'I11AC', cycle: 'M' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
