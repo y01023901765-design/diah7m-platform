@@ -23,7 +23,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   let ARCHETYPES = {};
   try {
     const mod = require('../data/stock-profiles-100');
-    PROFILES = mod.STOCKS || mod.profiles || [];
+    PROFILES = mod.PROFILES || mod.STOCKS || mod.profiles || [];
     ARCHETYPES = mod.ARCHETYPES || {};
   } catch (e) {
     console.error('  ⚠️  stock-profiles-100 load failed:', e.message);
