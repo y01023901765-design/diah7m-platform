@@ -266,7 +266,7 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
       }
       
       // core-engine으로 진단 실행
-      const diagnosis = engine.diagnose(gaugeData, { prevData });
+      const diagnosis = await engine.diagnose(gaugeData, { prevData });
       
       res.json({
         success: true,
@@ -330,10 +330,10 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         });
       }
       
-      const diagnosis = engine.diagnose(gaugeData, { prevData: dataStore.toPrevData() });
+      const diagnosis = await engine.diagnose(gaugeData, { prevData: dataStore.toPrevData() });
       
       // 해당 축만 추출
-      const axisData = diagnosis.systems.find(s => s.axis_id === id);
+      const axisData = diagnosis.systems.find(s => s.system_id === id || s.axis_id === id);
       
       if (!axisData) {
         return res.status(404).json({
@@ -440,7 +440,7 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         return res.status(400).json({ error: 'Gauge data required' });
       }
 
-      const result = engine.diagnose(gauges, thresholds || {});
+      const result = await engine.diagnose(gauges, thresholds || {});
 
       if (db) {
         const saved = await db.run(
