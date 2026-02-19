@@ -186,11 +186,11 @@ function DashboardPage({user,onNav,lang,country,city}){
               const latest = await API.dataLatest();
               if (cancelled) return;
               console.log('[Dashboard] latest:', latest);
-              if (latest?.data?.gauges && latest.data.gauges.length > 0) { 
+              if (latest?.data?.gauges && latest.data.gauges.length > 0) {
                 console.log('[Dashboard] Setting live data with', latest.data.gauges.length, 'gauges');
-                setLiveData(latest.data); 
-                setApiStatus('live'); 
-                return; 
+                setLiveData(latest.data);
+                setApiStatus('live');
+                return;
               } else {
                 console.log('[Dashboard] No gauges in response');
               }
@@ -286,133 +286,133 @@ function DashboardPage({user,onNav,lang,country,city}){
   ];
   const curFlag=COUNTRIES.find(c=>c.iso===iso3)?.flag||'🌍';
   const [showCountryPicker,setShowCountryPicker]=useState(false);
-  return(<div style={{maxWidth:780,margin:"0 auto",padding:"20px 16px"}}>
+  return(<div style={{maxWidth:780,margin:"0 auto",padding:`${LT.sp['3xl']}px ${LT.sp['2xl']}px`}}>
     {/* Country Selector + Data Freshness */}
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.xl}}>
       <div style={{position:"relative"}}>
-        <button onClick={()=>setShowCountryPicker(p=>!p)} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.surface,cursor:"pointer",fontSize:15}}>
+        <button onClick={()=>setShowCountryPicker(p=>!p)} style={{display:"flex",alignItems:"center",gap:LT.sp.sm,padding:`${LT.sp.sm}px ${LT.sp.xl}px`,borderRadius:LT.sp.md,border:`1px solid ${LT.border}`,background:LT.surface,cursor:"pointer",fontSize:LT.fs.lg}}>
           <span>{curFlag}</span>
-          <span style={{fontWeight:700,color:LT.text}}>{t('cnt_'+iso3,L)||iso3}</span>
-          <span style={{color:LT.textDim,fontSize:12}}>▼</span>
+          <span style={{fontWeight:LT.fw.bold,color:LT.text}}>{t('cnt_'+iso3,L)||iso3}</span>
+          <span style={{color:LT.textDim,fontSize:LT.fs.sm}}>▼</span>
         </button>
-        {showCountryPicker&&<div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:LT.surface,border:`1px solid ${LT.border}`,borderRadius:10,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:100,maxHeight:320,overflowY:"auto",width:280,padding:8}}>
-          {COUNTRIES.map(c=>(<button key={c.iso} onClick={()=>{onNav('dashboard',{country:c.iso});setShowCountryPicker(false);}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 10px",borderRadius:6,border:"none",background:c.iso===iso3?LT.bg3:"transparent",color:LT.text,fontSize:14,cursor:"pointer",textAlign:"left"}}>
+        {showCountryPicker&&<div style={{position:"absolute",top:"100%",left:0,marginTop:LT.sp.xs,background:LT.surface,border:`1px solid ${LT.border}`,borderRadius:LT.sp.lg,boxShadow:"0 8px 24px rgba(0,0,0,.12)",zIndex:100,maxHeight:320,overflowY:"auto",width:280,padding:LT.sp.md}}>
+          {COUNTRIES.map(c=>(<button key={c.iso} onClick={()=>{onNav('dashboard',{country:c.iso});setShowCountryPicker(false);}} style={{display:"flex",alignItems:"center",gap:LT.sp.md,width:"100%",padding:`${LT.sp.md}px ${LT.sp.lg}px`,borderRadius:LT.sp.sm,border:"none",background:c.iso===iso3?LT.bg3:"transparent",color:LT.text,fontSize:LT.fs.md,cursor:"pointer",textAlign:"left"}}>
             <span>{c.flag}</span>
-            <span style={{fontWeight:c.iso===iso3?700:400}}>{t('cnt_'+c.iso,L)||c.iso}</span>
-            {c.iso===iso3&&<span style={{marginLeft:"auto",color:LT.good,fontWeight:700}}>✓</span>}
+            <span style={{fontWeight:c.iso===iso3?LT.fw.bold:LT.fw.normal}}>{t('cnt_'+c.iso,L)||c.iso}</span>
+            {c.iso===iso3&&<span style={{marginLeft:"auto",color:LT.good,fontWeight:LT.fw.bold}}>✓</span>}
           </button>))}
         </div>}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:13,color:LT.textDim}}>{t('lastUpdate',L)} {dataInfo?.lastUpdated?new Date(dataInfo.lastUpdated).toLocaleDateString():'2026.01.15'}</span>
-        <span style={{fontSize:13,color:apiStatus==='live'?LT.good:LT.warn,fontWeight:600}}>{apiStatus==='live'?'● LIVE':'● DEMO'}</span>
+      <div style={{display:"flex",alignItems:"center",gap:LT.sp.md}}>
+        <span style={{fontSize:LT.fs.sm,color:LT.textDim}}>{t('lastUpdate',L)} {dataInfo?.lastUpdated?new Date(dataInfo.lastUpdated).toLocaleDateString():'2026.01.15'}</span>
+        <span style={{fontSize:LT.fs.sm,color:apiStatus==='live'?LT.good:LT.warn,fontWeight:LT.fw.semi}}>{apiStatus==='live'?'● LIVE':'● DEMO'}</span>
       </div>
     </div>
     {/* Onboarding Banner */}
-    {showOnboard&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:16,position:"relative"}}>
-      <button onClick={dismissOnboard} style={{position:"absolute",top:10,right:12,border:"none",background:"transparent",color:LT.textDim,fontSize:18,cursor:"pointer",padding:4}}>✕</button>
-      <div style={{fontSize:17,fontWeight:800,color:LT.text,marginBottom:8}}>👋 {t('onboardTitle',L)}</div>
-      <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7,marginBottom:12}}>{t('onboardDesc',L)}</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+    {showOnboard&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`1px solid ${LT.border}`,marginBottom:LT.sp['2xl'],position:"relative"}}>
+      <button onClick={dismissOnboard} style={{position:"absolute",top:LT.sp.lg,right:LT.sp.xl,border:"none",background:"transparent",color:LT.textDim,fontSize:LT.fs['2xl'],cursor:"pointer",padding:LT.sp.xs}}>✕</button>
+      <div style={{fontSize:17,fontWeight:LT.fw.extra,color:LT.text,marginBottom:LT.sp.md}}>👋 {t('onboardTitle',L)}</div>
+      <div style={{fontSize:LT.fs.lg,color:LT.textMid,lineHeight:1.7,marginBottom:LT.sp.xl}}>{t('onboardDesc',L)}</div>
+      <div style={{display:"flex",gap:LT.sp.md,flexWrap:"wrap"}}>
         {[
           {icon:'📊',label:t('onboardStep1',L)},
           {icon:'🛰️',label:t('onboardStep2',L)},
           {icon:'📈',label:t('onboardStep3',L)},
-        ].map((s,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
-          <span>{s.icon}</span><span style={{fontSize:14,color:LT.text,fontWeight:600}}>{s.label}</span>
+        ].map((s,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:LT.sp.sm,padding:`${LT.sp.sm}px ${LT.sp.xl}px`,borderRadius:LT.sp.sm,background:LT.bg2,border:`1px solid ${LT.border}`}}>
+          <span>{s.icon}</span><span style={{fontSize:LT.fs.md,color:LT.text,fontWeight:LT.fw.semi}}>{s.label}</span>
         </div>))}
       </div>
     </div>}
     {/* Level 1: Content Tabs */}
-    <div className="tab-scroll" style={{display:"flex",gap:0,marginBottom:20,borderBottom:`1px solid ${LT.border}`,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"12px 16px",border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?'2px solid #111':'2px solid transparent',fontSize:15,fontWeight:tab===t.id?700:500,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1,flexShrink:0}}>{t.label}</button>))}
+    <div className="tab-scroll" style={{display:"flex",gap:0,marginBottom:LT.sp['3xl'],borderBottom:`1px solid ${LT.border}`,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+      {tabs.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{padding:`${LT.sp.xl}px ${LT.sp['2xl']}px`,border:"none",background:"transparent",color:tab===t.id?LT.text:LT.textDim,borderBottom:tab===t.id?`2px solid ${LT.accent}`:'2px solid transparent',fontSize:LT.fs.lg,fontWeight:tab===t.id?LT.fw.bold:LT.fw.medium,cursor:"pointer",whiteSpace:"nowrap",marginBottom:-1,flexShrink:0}}>{t.label}</button>))}
     </div>
     {/* Level 2: Utility — DEMO 스위처 (최소) */}
-    <div className="demo-switch" style={{display:"flex",alignItems:"center",gap:4,marginBottom:16,flexWrap:"wrap"}}>
-      <span style={{fontSize:13,color:LT.textDim}}>DEMO</span>
-      {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:"2px 8px",borderRadius:4,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:13,fontWeight:demoPlan===p?700:400,
-        background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
+    <div className="demo-switch" style={{display:"flex",alignItems:"center",gap:LT.sp.xs,marginBottom:LT.sp['2xl'],flexWrap:"wrap"}}>
+      <span style={{fontSize:LT.fs.sm,color:LT.textDim}}>DEMO</span>
+      {['FREE','BASIC','PRO','ENTERPRISE'].map(p=>(<button key={p} onClick={()=>setDemoPlan(p)} style={{padding:`2px ${LT.sp.md}px`,borderRadius:LT.sp.xs,border:demoPlan===p?"none":`1px solid ${LT.border}`,fontSize:LT.fs.sm,fontWeight:demoPlan===p?LT.fw.bold:LT.fw.normal,
+        background:demoPlan===p?LT.btnPrimary:`transparent`,color:demoPlan===p?LT.btnPrimaryText:LT.textDim,cursor:"pointer"}}>{p}</button>))}
     </div>
     {tab==='overview'&&<>
       {/* ── 세계경제 펄스 (공통지표 + 대륙 요약) ── */}
       <GlobalPulse worldData={worldData} commoditiesData={commoditiesData} lang={L}/>
       {/* 국가 헤더 — 글로벌 국가 선택 시 */}
-      {!isKorea&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"12px 16px",background:LT.surface,borderRadius:LT.cardRadius,border:`1px solid ${LT.border}`}}>
-        <span style={{fontSize:24}}>{countryInfo?.flag||'🌍'}</span>
+      {!isKorea&&<div style={{display:"flex",alignItems:"center",gap:LT.sp.lg,marginBottom:LT.sp['2xl'],padding:`${LT.sp.xl}px ${LT.sp['2xl']}px`,background:LT.surface,borderRadius:LT.cardRadius,border:`1px solid ${LT.border}`}}>
+        <span style={{fontSize:LT.sp['4xl']}}>  {countryInfo?.flag||'🌍'}</span>
         <div>
-          <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{countryInfo?.name?.[L]||countryInfo?.name?.en||iso3}</div>
-          <div style={{fontSize:13,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('gaugesLabel',L)} · {countryInfo?.coverageRate||''} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
+          <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{countryInfo?.name?.[L]||countryInfo?.name?.en||iso3}</div>
+          <div style={{fontSize:LT.fs.sm,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('gaugesLabel',L)} · {countryInfo?.coverageRate||''} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
         </div>
-        <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:12,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
+        <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:`${LT.sp.sm}px ${LT.sp.xl}px`,borderRadius:LT.sp.sm,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:LT.fs.sm,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
       </div>}
       {/* ★ 커버리지 배너 + 예비 판정 경고 */}
-      {isGlobalMode&&<div style={{background:isPreliminary?`${LT.warn}10`:LT.bg2,borderRadius:LT.smRadius,padding:"10px 16px",marginBottom:12,border:`1px solid ${isPreliminary?LT.warn+'30':LT.border}`,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-        <span style={{fontSize:14}}>🌍</span>
-        <span style={{fontSize:13,color:LT.textMid,fontWeight:600}}>{countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('globalCoverage',L)||'데이터 커버리지'} · {countryInfo?.coverageRate||'0%'}</span>
-        {isPreliminary&&<span style={{fontSize:12,color:LT.warn,fontWeight:700,marginLeft:"auto"}}>⚠ {coveragePct}% {t('globalCoverage',L)||'커버리지'} — 예비 판정</span>}
+      {isGlobalMode&&<div style={{background:isPreliminary?`${LT.warn}10`:LT.bg2,borderRadius:LT.smRadius,padding:`${LT.sp.lg}px ${LT.sp['2xl']}px`,marginBottom:LT.sp.xl,border:`1px solid ${isPreliminary?LT.warn+'30':LT.border}`,display:"flex",alignItems:"center",gap:LT.sp.md,flexWrap:"wrap"}}>
+        <span style={{fontSize:LT.fs.md}}>🌍</span>
+        <span style={{fontSize:LT.fs.sm,color:LT.textMid,fontWeight:LT.fw.semi}}>{countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('globalCoverage',L)||'데이터 커버리지'} · {countryInfo?.coverageRate||'0%'}</span>
+        {isPreliminary&&<span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold,marginLeft:"auto"}}>⚠ {coveragePct}% {t('globalCoverage',L)||'커버리지'} — 예비 판정</span>}
       </div>}
       {/* 도시 컨텍스트 — CountryMap에서 도시 클릭 시 */}
-      {city&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,padding:"10px 16px",background:`${LT.accent}08`,borderRadius:LT.cardRadius,border:`1px solid ${LT.accent}20`}}>
-        <span style={{fontSize:16}}>📍</span>
-        <span style={{fontSize:15,fontWeight:700,color:LT.text}}>{city}</span>
-        <span style={{fontSize:12,color:LT.textDim}}>· {t('cnt_'+iso3,L)||iso3}</span>
-        <span style={{fontSize:11,padding:"2px 8px",borderRadius:10,background:`${LT.warn}15`,color:LT.warn,fontWeight:600,marginLeft:"auto"}}>{t('cmCityComingSoon',L)||'Coming Soon'}</span>
+      {city&&<div style={{display:"flex",alignItems:"center",gap:LT.sp.md,marginBottom:LT.sp.xl,padding:`${LT.sp.lg}px ${LT.sp['2xl']}px`,background:`${LT.accent}08`,borderRadius:LT.cardRadius,border:`1px solid ${LT.accent}20`}}>
+        <span style={{fontSize:LT.fs.xl}}>📍</span>
+        <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>{city}</span>
+        <span style={{fontSize:LT.fs.sm,color:LT.textDim}}>· {t('cnt_'+iso3,L)||iso3}</span>
+        <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.md}px`,borderRadius:LT.sp.lg,background:`${LT.warn}15`,color:LT.warn,fontWeight:LT.fw.semi,marginLeft:"auto"}}>{t('cmCityComingSoon',L)||'Coming Soon'}</span>
       </div>}
       {/* Score + State + Radar */}
-      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-        <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.08)',borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`}}>
-          <div style={{fontSize:16,color:LT.textDim}}>{t('dateLabel',L)}</div>
-          <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:8}}>
-            <span className="score-big" style={{fontSize:42,fontWeight:900,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
-            <span style={{fontSize:16,color:LT.textDim}}>/ 100</span>
-            {isPreliminary&&<span style={{fontSize:12,color:LT.warn,fontWeight:700,padding:"2px 6px",borderRadius:4,background:`${LT.warn}10`,marginLeft:4}}>예비</span>}
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
+        <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`1px solid ${LT.border}`}}>
+          <div style={{fontSize:LT.fs.xl,color:LT.textDim}}>{t('dateLabel',L)}</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:LT.sp.xs,marginTop:LT.sp.md}}>
+            <span className="score-big" style={{fontSize:LT.fs['4xl'],fontWeight:LT.fw.black,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
+            <span style={{fontSize:LT.fs.xl,color:LT.textDim}}>/ 100</span>
+            {isPreliminary&&<span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}10`,marginLeft:LT.sp.xs}}>예비</span>}
           </div>
-          <div style={{display:"flex",gap:16,marginTop:12}}>
-            {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:20,fontWeight:800,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
+          <div style={{display:"flex",gap:LT.sp['2xl'],marginTop:LT.sp.xl}}>
+            {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:LT.sp['3xl'],fontWeight:LT.fw.extra,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
           </div>
-          <div style={{marginTop:12}}><StateIndicator lang={L}/></div>
+          <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L}/></div>
         </div>
-        <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:12,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <RadarChart lang={L} sysData={activeSys}/>
         </div>
       </div>
       {/* Dual Lock + Delta */}
-      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
         <DualLockIndicator lang={L}/>
         <DeltaAnalysis lang={L}/>
       </div>
       {/* Key Actions */}
-      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t('keyActions',L)}</div>
-        {(t('actions',L)||[]).map((txt,i)=>(<div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}><span style={{width:22,height:22,borderRadius:11,background:i===4?LT.danger:i===0?LT.good:LT.warn,color:"#fff",fontSize:16,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</span><span style={{fontSize:15,color:LT.text,lineHeight:1.6}}>{txt}</span></div>))}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xl}}>{t('keyActions',L)}</div>
+        {(t('actions',L)||[]).map((txt,i)=>(<div key={i} style={{display:"flex",gap:LT.sp.lg,alignItems:"flex-start",marginBottom:LT.sp.md}}><span style={{width:22,height:22,borderRadius:11,background:i===4?LT.danger:i===0?LT.good:LT.warn,color:"#fff",fontSize:LT.fs.xl,fontWeight:LT.fw.extra,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</span><span style={{fontSize:LT.fs.lg,color:LT.text,lineHeight:1.6}}>{txt}</span></div>))}
       </div>
       {/* Verdict */}
-      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>{t('verdictTitle',L)}</div>
-        <div style={{fontSize:15,color:LT.textMid,lineHeight:2}}>{t('verdictText',L)}</div>
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>{t('verdictTitle',L)}</div>
+        <div style={{fontSize:LT.fs.lg,color:LT.textMid,lineHeight:2}}>{t('verdictText',L)}</div>
       </div>
       {/* Satellite summary */}
-      <div style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:20,marginBottom:16,border:`1px solid ${LT.border}`}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>{t('satTimeline',L)}</div>
-        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t("satVerify",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
-          <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:4}}>{t("satPredict",L)}</div><div style={{fontSize:16,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
+      <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>{t('satTimeline',L)}</div>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.lg}}>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satVerify",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satVerifyDesc",L)}</div></div>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satPredict",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satPredictDesc",L)}</div></div>
         </div>
       </div>
       {/* 9 Systems */}
-      <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("nineSystems",L)}</div>
-      <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-        {Object.entries(activeSys).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');const sName=s.name?.[L]||s.name?.en||sysN(k,L);const sBrief=s.name?'':sysB(k,L);return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:'0 1px 2px rgba(0,0,0,.05)',borderRadius:8,padding:"12px 10px",border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.1)'} onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 2px rgba(0,0,0,.05)'}>
-          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:16}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:col}}>{s.sc}</div></div></div>
-          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:4}}>{sName}</div>
-          <div style={{fontSize:14,color:LT.textDim}}>{sBrief}{sBrief?' · ':''}{s.keys.length} {t('gaugesLabel',L)}</div>
-          {alertKeys.length>0&&<div style={{fontSize:13,color:LT.danger,fontWeight:600,marginTop:4}}>⚠ {alertKeys.length}{t('alertsDetected',L)}</div>}
+      <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xl}}>{t("nineSystems",L)}</div>
+      <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:LT.sp.md}}>
+        {Object.entries(activeSys).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');const sName=s.name?.[L]||s.name?.en||sysN(k,L);const sBrief=s.name?'':sysB(k,L);return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.smRadius,padding:`${LT.sp.xl}px ${LT.sp.lg}px`,border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.boxShadow=LT.cardShadowHover} onMouseLeave={e=>e.currentTarget.style.boxShadow=LT.cardShadow}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:LT.fs.xl}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:LT.fs.lg,fontWeight:LT.fw.extra,color:col}}>{s.sc}</div></div></div>
+          <div style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text,marginTop:LT.sp.xs}}>{sName}</div>
+          <div style={{fontSize:LT.fs.md,color:LT.textDim}}>{sBrief}{sBrief?' · ':''}{s.keys.length} {t('gaugesLabel',L)}</div>
+          {alertKeys.length>0&&<div style={{fontSize:LT.fs.sm,color:LT.danger,fontWeight:LT.fw.semi,marginTop:LT.sp.xs}}>⚠ {alertKeys.length}{t('alertsDetected',L)}</div>}
         </div>);})}
       </div>
     </>}
     {tab==='report'&&<>
-      <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("gaugeDetail",L)}</div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{t("gaugeDetailSub",L)}</div></div>
+      <div style={{marginBottom:LT.sp['2xl']}}><div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{t("gaugeDetail",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,marginTop:LT.sp.xs}}>{t("gaugeDetailSub",L)}</div></div>
       {Object.entries(activeSys).map(([k,sys])=>{
         const tierKey = sys.tK || k;
         const needsTier=!TIER_ACCESS[demoUser?.plan||'FREE']?.systems?.includes(tierKey);
@@ -425,54 +425,54 @@ function DashboardPage({user,onNav,lang,country,city}){
       })}
     </>}
     {tab==='satellite'&&<>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("satStatus",L)}</div>
-        {satMeta&&<span style={{fontSize:12,padding:"3px 10px",borderRadius:10,background:satMeta.status==='COLLECTED'?`${LT.good}15`:satMeta.status==='PARTIAL'?`${LT.warn}15`:LT.bg3,color:satMeta.status==='COLLECTED'?LT.good:satMeta.status==='PARTIAL'?LT.warn:LT.textDim,fontWeight:600}}>{satMeta.status==='COLLECTED'?'🟢 LIVE':satMeta.status==='PARTIAL'?'🟡 PARTIAL':'⚪ DEMO'}{satMeta.last_success_asof?' · '+satMeta.last_success_asof.slice(5,16):''}</span>}
-        {!satMeta&&<span style={{fontSize:12,padding:"3px 10px",borderRadius:10,background:LT.bg3,color:LT.textDim,fontWeight:600}}>⚪ DEMO</span>}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp['2xl']}}>
+        <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{t("satStatus",L)}</div>
+        {satMeta&&<span style={{fontSize:LT.fs.sm,padding:`3px ${LT.sp.lg}px`,borderRadius:LT.sp.lg,background:satMeta.status==='COLLECTED'?`${LT.good}15`:satMeta.status==='PARTIAL'?`${LT.warn}15`:LT.bg3,color:satMeta.status==='COLLECTED'?LT.good:satMeta.status==='PARTIAL'?LT.warn:LT.textDim,fontWeight:LT.fw.semi}}>{satMeta.status==='COLLECTED'?'🟢 LIVE':satMeta.status==='PARTIAL'?'🟡 PARTIAL':'⚪ DEMO'}{satMeta.last_success_asof?' · '+satMeta.last_success_asof.slice(5,16):''}</span>}
+        {!satMeta&&<span style={{fontSize:LT.fs.sm,padding:`3px ${LT.sp.lg}px`,borderRadius:LT.sp.lg,background:LT.bg3,color:LT.textDim,fontWeight:LT.fw.semi}}>⚪ DEMO</span>}
       </div>
       {/* 위성 실데이터 카드 (S2 + R6) */}
-      {satData&&(satData.S2||satData.R6)&&<div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-        {satData.S2&&satData.S2.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.good}30`}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:15,fontWeight:700,color:LT.text}}>🌙 {t('satS2Name',L)||'야간광량'}</span>
-            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:`${LT.good}15`,color:LT.good,fontWeight:600}}>VIIRS DNB</span>
+      {satData&&(satData.S2||satData.R6)&&<div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.lg,marginBottom:LT.sp['2xl']}}>
+        {satData.S2&&satData.S2.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.good}30`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.md}}>
+            <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌙 {t('satS2Name',L)||'야간광량'}</span>
+            <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.good}15`,color:LT.good,fontWeight:LT.fw.semi}}>VIIRS DNB</span>
           </div>
-          <div style={{fontSize:26,fontWeight:900,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:14,color:LT.textDim,marginLeft:4}}>{satData.S2.unit}</span></div>
-          <div style={{display:"flex",gap:12,marginTop:8,fontSize:13,color:LT.textMid}}>
+          <div style={{fontSize:26,fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.S2.unit}</span></div>
+          <div style={{display:"flex",gap:LT.sp.xl,marginTop:LT.sp.md,fontSize:LT.fs.sm,color:LT.textMid}}>
             {satData.S2.mean_7d!=null&&<span>7d: {satData.S2.mean_7d}</span>}
             {satData.S2.mean_60d!=null&&<span>60d: {satData.S2.mean_60d}</span>}
             {satData.S2.baseline_365d!=null&&<span>365d: {satData.S2.baseline_365d}</span>}
           </div>
-          {satData.S2.anomaly!=null&&<div style={{marginTop:6,fontSize:13,fontWeight:700,color:satData.S2.anomaly>=0?LT.good:LT.danger}}>
+          {satData.S2.anomaly!=null&&<div style={{marginTop:LT.sp.sm,fontSize:LT.fs.sm,fontWeight:LT.fw.bold,color:satData.S2.anomaly>=0?LT.good:LT.danger}}>
             {satData.S2.anomaly>=0?'▲':'▼'} {(satData.S2.anomaly*100).toFixed(2)}% vs 365d baseline
           </div>}
         </div>}
-        {satData.R6&&satData.R6.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.warn}30`}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:15,fontWeight:700,color:LT.text}}>🌡️ {t('satR6Name',L)||'도시열섬'}</span>
-            <span style={{fontSize:11,padding:"2px 6px",borderRadius:4,background:`${LT.warn}15`,color:LT.warn,fontWeight:600}}>Landsat-9</span>
+        {satData.R6&&satData.R6.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.warn}30`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.md}}>
+            <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌡️ {t('satR6Name',L)||'도시열섬'}</span>
+            <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}15`,color:LT.warn,fontWeight:LT.fw.semi}}>Landsat-9</span>
           </div>
-          <div style={{fontSize:26,fontWeight:900,color:LT.text,fontFamily:"monospace"}}>{satData.R6.value}<span style={{fontSize:14,color:LT.textDim,marginLeft:4}}>{satData.R6.unit}</span></div>
-          <div style={{fontSize:13,color:LT.textMid,marginTop:8}}>{satData.R6.date} · {satData.R6.region}</div>
+          <div style={{fontSize:26,fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.R6.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.R6.unit}</span></div>
+          <div style={{fontSize:LT.fs.sm,color:LT.textMid,marginTop:LT.sp.md}}>{satData.R6.date} · {satData.R6.region}</div>
         </div>}
       </div>}
       {/* 기존 게이지 기반 위성 데이터 */}
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
-      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-        {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:'0 1px 3px rgba(0,0,0,.06)',borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`}}><div style={{fontSize:16,fontWeight:700,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:15,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:800,color:LT.text,marginTop:8,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{g.note}</div></div>);})}
+      <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.md,marginBottom:LT.sp['2xl']}}>
+        {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:LT.fs.lg,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:LT.fw.extra,color:LT.text,marginTop:LT.sp.md,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:LT.fs.xl,color:LT.textMid,marginTop:LT.sp.xs}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
       {/* ═══ 위성 교차검증 — 경제지표↔위성 연결 ═══ */}
-      <div style={{marginTop:16,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🔗 {t('satCrossTitle',L)||'위성 교차검증'}</div>
-        <div style={{fontSize:14,color:LT.textMid,marginBottom:12}}>{t('satCrossDesc',L)||'경제지표와 위성 데이터의 상관관계를 검증합니다'}</div>
+      <div style={{marginTop:LT.sp['2xl'],marginBottom:LT.sp.xl}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>🔗 {t('satCrossTitle',L)||'위성 교차검증'}</div>
+        <div style={{fontSize:LT.fs.md,color:LT.textMid,marginBottom:LT.sp.xl}}>{t('satCrossDesc',L)||'경제지표와 위성 데이터의 상관관계를 검증합니다'}</div>
         {Object.values(gaugeData).filter(g=>!isSat(g.c)&&SAT_XREF[g.c]).slice(0,4).map(g=>(
           <SatXrefBanner key={g.c} code={g.c} lang={L}/>
         ))}
       </div>
       {/* ═══ 위성 Before/After 비교 ═══ */}
-      {satData&&satData.S2&&satData.S2.status==='OK'&&<div style={{marginTop:16,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>📸 {t('satCompareTitle',L)||'위성 촬영 비교'}</div>
+      {satData&&satData.S2&&satData.S2.status==='OK'&&<div style={{marginTop:LT.sp['2xl'],marginBottom:LT.sp.xl}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>📸 {t('satCompareTitle',L)||'위성 촬영 비교'}</div>
         <SatCompare
           before={{date:satData.S2.images?.before?.date||(satData.S2.date?new Date(new Date(satData.S2.date).getTime()-30*86400000).toISOString().slice(0,10):'이전'),val:satData.S2.baseline_365d||satData.S2.mean_60d||0,imageUrl:satData.S2.images?.before?.url}}
           after={{date:satData.S2.images?.after?.date||satData.S2.date||'최신',val:satData.S2.value||0,imageUrl:satData.S2.images?.after?.url}}
@@ -482,8 +482,8 @@ function DashboardPage({user,onNav,lang,country,city}){
         />
       </div>}
       {/* Landsat R6 이미지 비교 */}
-      {satData&&satData.R6&&satData.R6.status==='OK'&&satData.R6.images&&<div style={{marginTop:16,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🌡️ {t('satR6Name',L)||'도시열섬'} Before / After</div>
+      {satData&&satData.R6&&satData.R6.status==='OK'&&satData.R6.images&&<div style={{marginTop:LT.sp['2xl'],marginBottom:LT.sp.xl}}>
+        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.lg}}>🌡️ {t('satR6Name',L)||'도시열섬'} Before / After</div>
         <SatCompare
           before={{date:satData.R6.images?.before?.date||'이전',val:null,imageUrl:satData.R6.images?.before?.url}}
           after={{date:satData.R6.images?.after?.date||satData.R6.date||'최신',val:satData.R6.value||0,imageUrl:satData.R6.images?.after?.url}}
@@ -493,28 +493,28 @@ function DashboardPage({user,onNav,lang,country,city}){
         />
       </div>}
       {/* Stock 연결 */}
-      <div onClick={()=>onNav('stock')} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}
+      <div onClick={()=>onNav('stock')} style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.border}`,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:LT.sp.md}}
         onMouseEnter={e=>e.currentTarget.style.background=LT.bg2} onMouseLeave={e=>e.currentTarget.style.background=LT.surface}>
         <div>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>📈 {t('satToStock',L)}</div>
-          <div style={{fontSize:15,color:LT.textMid,marginTop:2}}>{t('satToStockDesc',L)}</div>
+          <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>📈 {t('satToStock',L)}</div>
+          <div style={{fontSize:LT.fs.lg,color:LT.textMid,marginTop:2}}>{t('satToStockDesc',L)}</div>
         </div>
-        <span style={{fontSize:20,color:LT.textDim}}>→</span>
+        <span style={{fontSize:LT.sp['3xl'],color:LT.textDim}}>→</span>
       </div>
     </>}
     {tab==='alerts'&&<>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("alertCenter",L)}</div>
-        <button onClick={()=>{}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:14,cursor:"pointer"}}>{t('markAllRead',L)}</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.xl}}>
+        <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{t("alertCenter",L)}</div>
+        <button onClick={()=>{}} style={{padding:`${LT.sp.sm}px ${LT.sp.xl}px`,borderRadius:LT.sp.sm,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:LT.fs.md,cursor:"pointer"}}>{t('markAllRead',L)}</button>
       </div>
       {/* Filter pills */}
-      <div style={{display:"flex",gap:6,marginBottom:12}}>
+      <div style={{display:"flex",gap:LT.sp.sm,marginBottom:LT.sp.xl}}>
         {[
           {id:'all',label:t('filterAll',L),cnt:6},
           {id:'alert',label:t('alert',L),cnt:3,c:LT.danger},
           {id:'caution',label:t('caution',L),cnt:2,c:LT.warn},
           {id:'watch',label:t('stWatch',L),cnt:1,c:LT.info},
-        ].map(f=>(<button key={f.id} style={{padding:"5px 12px",borderRadius:16,border:`1px solid ${f.c||LT.border}`,background:`${f.c||LT.textDim}08`,color:f.c||LT.text,fontSize:14,fontWeight:600,cursor:"pointer"}}>{f.label} {f.cnt}</button>))}
+        ].map(f=>(<button key={f.id} style={{padding:`5px ${LT.sp.xl}px`,borderRadius:LT.sp['2xl'],border:`1px solid ${f.c||LT.border}`,background:`${f.c||LT.textDim}08`,color:f.c||LT.text,fontSize:LT.fs.md,fontWeight:LT.fw.semi,cursor:"pointer"}}>{f.label} {f.cnt}</button>))}
       </div>
       <TierLock plan={demoUser?.plan} req="BASIC" lang={L}>
       {[
@@ -524,17 +524,17 @@ function DashboardPage({user,onNav,lang,country,city}){
         {t:t('caution',L),c:LT.warn,g:"R2",m:t('alertR2',L),d:"2026-01-10",read:true},
         {t:t('caution',L),c:LT.warn,g:"C2",m:t('alertC2',L),d:"2026-01-08",read:true},
         {t:t('stWatch',L),c:LT.info,g:"I4",m:t('alertI4',L),d:"2026-01-05",read:true},
-      ].map((a,i)=>(<div key={i} style={{background:a.read?LT.surface:LT.bg2,borderRadius:LT.smRadius,padding:"14px 16px",border:`1px solid ${a.read?LT.border:a.c+'30'}`,marginBottom:8,display:"flex",gap:12,alignItems:"flex-start"}}>
-        <span style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:6,flexShrink:0}}/>
+      ].map((a,i)=>(<div key={i} style={{background:a.read?LT.surface:LT.bg2,borderRadius:LT.smRadius,padding:`${LT.sp.md}px ${LT.sp['2xl']}px`,border:`1px solid ${a.read?LT.border:a.c+'30'}`,marginBottom:LT.sp.md,display:"flex",gap:LT.sp.xl,alignItems:"flex-start"}}>
+        <span style={{width:8,height:8,borderRadius:4,background:a.c,marginTop:LT.sp.sm,flexShrink:0}}/>
         <div style={{flex:1}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-            <span style={{fontSize:15,fontWeight:a.read?500:700,color:a.c}}>{a.t} · {a.g}</span>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:LT.sp.xs}}>
+            <span style={{fontSize:LT.fs.lg,fontWeight:a.read?LT.fw.medium:LT.fw.bold,color:a.c}}>{a.t} · {a.g}</span>
+            <div style={{display:"flex",alignItems:"center",gap:LT.sp.sm}}>
               {!a.read&&<span style={{width:6,height:6,borderRadius:3,background:LT.accent}}/>}
-              <span style={{fontSize:14,color:LT.textDim}}>{a.d}</span>
+              <span style={{fontSize:LT.fs.md,color:LT.textDim}}>{a.d}</span>
             </div>
           </div>
-          <div style={{fontSize:15,color:a.read?LT.textDim:LT.text,lineHeight:1.5}}>{a.m}</div>
+          <div style={{fontSize:LT.fs.lg,color:a.read?LT.textDim:LT.text,lineHeight:1.5}}>{a.m}</div>
         </div>
       </div>))}
       </TierLock>
