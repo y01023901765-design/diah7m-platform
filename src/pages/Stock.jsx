@@ -498,12 +498,21 @@ function StockPage({user,lang}){
   const [search,setSearch]=useState('');
   const [filterTier,setFilterTier]=useState(0);
   const [filterArch,setFilterArch]=useState('');
+  const [filterCountry,setFilterCountry]=useState('');
   const [selected,setSelected]=useState(null);
+
+  // 국가별 고유 목록 (flag → {flag, count})
+  const countryList = (() => {
+    const m = {};
+    STOCKS.forEach(s => { m[s.c] = (m[s.c] || 0) + 1; });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([flag, cnt]) => ({ flag, cnt }));
+  })();
 
   const getName=s=>L==='ko'?s.n:(s.ne||s.n);
   const filtered=STOCKS.filter(s=>{
     if(filterTier && s.tier!==filterTier) return false;
     if(filterArch && s.a!==filterArch) return false;
+    if(filterCountry && s.c!==filterCountry) return false;
     if(search){const q=search.toLowerCase();return getName(s).toLowerCase().includes(q)||s.sid.toLowerCase().includes(q)||s.sec.toLowerCase().includes(q);}
     return true;
   });
@@ -550,7 +559,7 @@ function StockPage({user,lang}){
     </div>
 
     {/* Search + Archetype */}
-    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t('stockSearch',L)}
         style={{flex:1,minWidth:200,padding:"8px 12px",borderRadius:8,border:`1px solid ${LT.border}`,background:LT.surface,color:LT.text,fontSize:15,outline:"none"}}/>
       <div style={{display:"flex",gap:4}}>
@@ -560,6 +569,20 @@ function StockPage({user,lang}){
             style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${active?LT.text:LT.border}`,background:active?LT.bg3:LT.surface,color:active?LT.text:LT.textDim,fontSize:15,fontWeight:active?700:500,cursor:"pointer"}}>{L==='ko'?v.ko:(v.en||v.ko)}</button>);
         })}
       </div>
+    </div>
+    {/* Country Filter */}
+    <div style={{display:"flex",gap:4,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+      <button onClick={()=>setFilterCountry('')}
+        style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${!filterCountry?LT.text:LT.border}`,background:!filterCountry?LT.bg3:LT.surface,color:!filterCountry?LT.text:LT.textDim,fontSize:14,fontWeight:!filterCountry?700:500,cursor:"pointer"}}>
+        {L==='ko'?'전체':'All'} <span style={{fontSize:13,color:LT.textDim}}>({STOCKS.length})</span>
+      </button>
+      {countryList.map(({flag,cnt})=>{
+        const active=filterCountry===flag;
+        return(<button key={flag} onClick={()=>setFilterCountry(active?'':flag)}
+          style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${active?LT.text:LT.border}`,background:active?LT.bg3:LT.surface,fontSize:14,fontWeight:active?700:500,cursor:"pointer",color:active?LT.text:LT.textDim}}>
+          {flag}<span style={{fontSize:13,marginLeft:2}}>{cnt}</span>
+        </button>);
+      })}
     </div>
 
     {/* Column Header */}
