@@ -708,13 +708,26 @@ async function fetchECOS(params) {
   if (!apiKey) throw new Error('ECOS_API_KEY not configured');
 
   const { statisticCode, itemCode1, cycle, startDate, endDate } = params;
-  const end = endDate || new Date().toISOString().slice(0, 7).replace('-', '');
-  const start = startDate || new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
+  let end, start;
+  if (cycle === 'D') {
+    // Daily: YYYYMMDD 형식 필요
+    end = endDate || new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+  } else {
+    // Monthly/Quarterly/Annual: YYYYMM 형식
+    end = endDate || new Date().toISOString().slice(0, 7).replace('-', '');
+    start = startDate || new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
+  }
 
   const url = `https://ecos.bok.or.kr/api/StatisticSearch/${apiKey}/json/kr/1/1000/${statisticCode}/${cycle}/${start}/${end}/${itemCode1}`;
 
   const response = await axios.get(url, { timeout: FETCH_TIMEOUT_MS });
-  return response.data.StatisticSearch?.row || [];
+  const rows = response.data.StatisticSearch?.row;
+  const errMsg = response.data.RESULT?.MESSAGE;
+  if (!rows && errMsg) {
+    console.warn(`[ECOS] ${statisticCode}/${itemCode1}: ${errMsg}`);
+  }
+  return rows || [];
 }
 
 async function fetchFRED(params) {
@@ -778,15 +791,11 @@ async function fetchGauge(gaugeId) {
         if (gauge.params) {
           rawData = await fetchECOS(gauge.params);
         } else if (gauge.stat) {
-          // stat/item/cycle 형태 게이지 → params 형태로 변환
-          const end = new Date().toISOString().slice(0, 7).replace('-', '');
-          const start = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
+          // stat/item/cycle 형태 게이지 → fetchECOS에 위임 (날짜는 fetchECOS 내부에서 cycle 기반 자동 생성)
           rawData = await fetchECOS({
             statisticCode: gauge.stat,
             itemCode1: gauge.item,
             cycle: gauge.cycle,
-            startDate: start,
-            endDate: end,
           });
         }
         break;
