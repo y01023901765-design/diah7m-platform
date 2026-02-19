@@ -259,13 +259,11 @@ const GAUGE_MAP = {
     source: 'SATELLITE',
     api: 'fetchVIIRS',
     params: { region: 'KOR', product: 'VNP46A1' },
+    name: '야간광량', unit: 'nW/cm²/sr',
     transform: (data) => {
-      if (!data || !data.radiance) return null;
-      const radiance = data.radiance;
-      if (radiance.length < 60) return null;
-      const recent = radiance.slice(0, 30).reduce((a, b) => a + b, 0) / 30;
-      const prev = radiance.slice(30, 60).reduce((a, b) => a + b, 0) / 30;
-      return ((recent - prev) / prev) * 100;
+      // fetchVIIRS → { value, mean_60d, baseline_365d, anomaly, status }
+      if (!data || data.status !== 'OK') return null;
+      return data.anomaly != null ? data.anomaly * 100 : data.value;
     }
   },
 
@@ -418,6 +416,12 @@ const GAUGE_MAP = {
     source: 'SATELLITE',
     api: 'fetchLandsat',
     params: { region: 'KOR', product: 'LANDSAT9_TIR' },
+    name: '도시열섬', unit: '°C',
+    transform: (data) => {
+      // fetchLandsat → { value (°C), status }
+      if (!data || data.status !== 'OK') return null;
+      return data.value;
+    }
   },
 
   R7_WASTE: {
