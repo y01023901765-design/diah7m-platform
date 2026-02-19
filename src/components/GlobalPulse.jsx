@@ -8,6 +8,8 @@
  *   worldData       - /api/v1/global/world 응답 (nullable)
  *   commoditiesData  - /api/v1/global/commodities 응답 (nullable)
  *   lang            - 'ko' | 'en'
+ *
+ * ★ 디자인 토큰 적용 (LT.fs / LT.fw / LT.sp)
  */
 import { L as LT } from '../theme';
 
@@ -99,7 +101,7 @@ const CATEGORIES = [
 function scoreColor(score) {
   if (score == null) return LT.textDim;
   if (score >= 70) return LT.good;
-  if (score >= 40) return '#D97706';
+  if (score >= 40) return LT.warn;
   return LT.danger;
 }
 
@@ -107,7 +109,7 @@ function scoreColor(score) {
 function scoreTint(score) {
   if (score == null) return LT.bg2;
   if (score >= 70) return LT.good + '10';
-  if (score >= 40) return '#D9770610';
+  if (score >= 40) return LT.warn + '10';
   return LT.danger + '10';
 }
 
@@ -162,29 +164,30 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
       background: LT.surface,
       borderRadius: LT.cardRadius,
       border: `1px solid ${LT.border}`,
-      marginBottom: 16,
+      marginBottom: LT.sp['2xl'],
       overflow: 'hidden',
     }}>
       {/* ── 헤더 ── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '14px 16px 10px',
+        padding: `${LT.sp.md}px ${LT.sp['2xl']}px ${LT.sp.lg}px`,
         borderBottom: `1px solid ${LT.border}`,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>🌍</span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: LT.text }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.md }}>
+          <span style={{ fontSize: LT.fs['2xl'] }}>🌍</span>
+          <span style={{ fontSize: LT.fs.lg, fontWeight: LT.fw.extra, color: LT.text }}>
             {L === 'ko' ? '세계경제 펄스' : 'Global Economy Pulse'}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.sm }}>
           {hasWorld && (
-            <span style={{ fontSize: 12, color: LT.textDim }}>
+            <span style={{ fontSize: LT.fs.sm, color: LT.textDim }}>
               {timeAgo(worldData.lastUpdated)} {L === 'ko' ? '갱신' : 'ago'}
             </span>
           )}
           <span style={{
-            fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+            fontSize: LT.fs.xs, fontWeight: LT.fw.bold,
+            padding: `2px ${LT.sp.sm}px`, borderRadius: LT.sp.xs,
             background: hasWorld ? LT.good + '15' : LT.textDim + '15',
             color: hasWorld ? LT.good : LT.textDim,
           }}>
@@ -195,32 +198,32 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
 
       {/* ── 세계 점수 + 대륙 칩 ── */}
       {hasWorld && (
-        <div style={{ padding: '12px 16px', borderBottom: hasCommodities ? `1px solid ${LT.border}` : 'none' }}>
+        <div style={{ padding: `${LT.sp.xl}px ${LT.sp['2xl']}px`, borderBottom: hasCommodities ? `1px solid ${LT.border}` : 'none' }}>
           {/* 세계 점수 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.xl, marginBottom: LT.sp.lg }}>
             <div>
-              <div style={{ fontSize: 11, color: LT.textDim, fontWeight: 600, marginBottom: 2 }}>
+              <div style={{ fontSize: LT.fs.xs, color: LT.textDim, fontWeight: LT.fw.semi, marginBottom: 2 }}>
                 {L === 'ko' ? '세계 건강 점수' : 'World Health Score'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: LT.sp.xs }}>
                 <span style={{
-                  fontSize: 28, fontWeight: 900, fontFamily: 'monospace',
+                  fontSize: LT.fs['3xl'], fontWeight: LT.fw.black, fontFamily: 'monospace',
                   color: scoreColor(worldData.score),
                   fontVariantNumeric: 'tabular-nums',
                 }}>
                   {worldData.score != null ? Number(worldData.score).toFixed(1) : '--'}
                 </span>
-                <span style={{ fontSize: 14, color: LT.textDim }}>/ 100</span>
+                <span style={{ fontSize: LT.fs.md, color: LT.textDim }}>/ 100</span>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: LT.textDim, marginLeft: 'auto' }}>
+            <div style={{ fontSize: LT.fs.sm, color: LT.textDim, marginLeft: 'auto' }}>
               {worldData.memberCount || 43}{L === 'ko' ? '개국' : ' countries'}
             </div>
           </div>
 
           {/* 대륙 칩 */}
           <div style={{
-            display: 'flex', gap: 6, flexWrap: 'wrap',
+            display: 'flex', gap: LT.sp.sm, flexWrap: 'wrap',
           }}>
             {Object.entries(worldData.continents || {}).map(([code, cont]) => {
               const meta = CONTINENT_META[code] || { icon: '🌐', ko: code, en: code };
@@ -230,19 +233,19 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
                   key={code}
                   onClick={() => {/* Phase 2: 대륙 드릴다운 연결 */}}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 20,
+                    display: 'flex', alignItems: 'center', gap: LT.sp.xs,
+                    padding: `${LT.sp.xs}px ${LT.sp.lg}px`, borderRadius: LT.sp['3xl'],
                     border: `1px solid ${LT.border}`,
                     background: scoreTint(cont.score),
                     cursor: 'default', // Phase 2에서 pointer로 변경
-                    fontSize: 13, fontWeight: 600,
+                    fontSize: LT.fs.sm, fontWeight: LT.fw.semi,
                     color: LT.text,
                   }}
                 >
                   <span>{meta.icon}</span>
                   <span>{meta[L] || meta.en}</span>
                   <span style={{
-                    fontWeight: 800, fontFamily: 'monospace',
+                    fontWeight: LT.fw.extra, fontFamily: 'monospace',
                     color: scoreColor(cont.score),
                     fontVariantNumeric: 'tabular-nums',
                   }}>
@@ -258,11 +261,11 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
       {/* ── 주요 지표 (카테고리별) ── */}
       {hasCommodities && (
         <div style={{
-          padding: '10px 16px 14px',
+          padding: `${LT.sp.lg}px ${LT.sp['2xl']}px ${LT.sp.md}px`,
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}>
-          <div style={{ display: 'flex', gap: 16, minWidth: 'max-content' }}>
+          <div style={{ display: 'flex', gap: LT.sp['2xl'], minWidth: 'max-content' }}>
             {CATEGORIES.map(cat => {
               // 각 카테고리의 아이템 중 데이터가 있는 것만
               const liveItems = cat.items.filter(it => {
@@ -275,14 +278,14 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
                 <div key={cat.id} style={{ minWidth: 0 }}>
                   {/* 카테고리 라벨 */}
                   <div style={{
-                    fontSize: 11, fontWeight: 700, color: LT.textDim,
-                    marginBottom: 4, whiteSpace: 'nowrap',
+                    fontSize: LT.fs.xs, fontWeight: LT.fw.bold, color: LT.textDim,
+                    marginBottom: LT.sp.xs, whiteSpace: 'nowrap',
                   }}>
                     {cat[L] || cat.en}
                     <span style={{ opacity: 0.5, marginLeft: 3 }}>({cat.metaphor})</span>
                   </div>
                   {/* 지표값 행 */}
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: LT.sp.lg }}>
                     {liveItems.map(item => {
                       const r = commoditiesData.results[item.key];
                       const latest = r.data[0];
@@ -292,19 +295,19 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
                       return (
                         <div key={item.key} style={{ whiteSpace: 'nowrap' }}>
                           <span style={{
-                            fontSize: 11, color: LT.textDim, fontWeight: 500,
+                            fontSize: LT.fs.xs, color: LT.textDim, fontWeight: LT.fw.medium,
                           }}>
                             {item.label}
                           </span>
                           <div style={{
-                            fontSize: 14, fontWeight: 700, fontFamily: 'monospace',
+                            fontSize: LT.fs.md, fontWeight: LT.fw.bold, fontFamily: 'monospace',
                             color: LT.text,
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                             {fmtValue(latest?.value, item)}
                             {delta && (
                               <span style={{
-                                fontSize: 11, fontWeight: 800,
+                                fontSize: LT.fs.xs, fontWeight: LT.fw.extra,
                                 color: delta.color, marginLeft: 2,
                               }}>
                                 {delta.arrow}

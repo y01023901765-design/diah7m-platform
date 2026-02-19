@@ -1,4 +1,16 @@
-// DIAH-7M Design Tokens v2.0 — 정본
+// DIAH-7M Design Tokens v3.0 — 정본
+// ═══════════════════════════════════
+// 공통 스케일 (라이트/다크 모드 불변)
+// ═══════════════════════════════════
+const SCALE = {
+  // ── 타이포그래피 ──
+  fs: { xs:11, sm:13, md:14, lg:15, xl:16, '2xl':18, '3xl':28, '4xl':42 },
+  // ── 폰트 웨이트 ──
+  fw: { normal:400, medium:500, semi:600, bold:700, extra:800, black:900 },
+  // ── 간격 (padding, margin, gap) ──
+  sp: { xs:4, sm:6, md:8, lg:10, xl:12, '2xl':16, '3xl':20, '4xl':24 },
+};
+
 const T = {
   bg0:'#04060e', bg1:'#0a0f1e', bg2:'#111827', bg3:'#1a2235',
   surface:'#151c2e', surfaceHover:'#1c2540',
@@ -9,6 +21,7 @@ const T = {
   orange:'#f97316', orangeDim:'#f9731630', enterprise:'#f59e0b',
   sat:'#8b5cf6', satDim:'#8b5cf620', satBorder:'#6d28d9',
   cardRadius:14, smRadius:8,
+  ...SCALE,
 };
 
 // Light mode — Dashboard, 보고서, MyPage, Admin
@@ -45,6 +58,7 @@ const L = {
   btnSecondary:'#FFFFFF',     // 흰 배경 + 검정 테두리
   btnSecondaryBorder:'#D0D0D0',
   btnSecondaryText:'#333333',
+  ...SCALE,
 };
 
 export default T;
