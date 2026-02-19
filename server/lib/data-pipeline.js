@@ -67,12 +67,12 @@ const GAUGE_MAP = {
   O2_PMI: {
     id: 'O2_PMI',
     source: 'FRED',
-    params: { series: 'KORSPPCOREPCEPM' },
+    params: { series: 'NAPM' },
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      if (!data || data.length < 1) return null;
       const latest = parseFloat(data[0].value);
-      const prev = parseFloat(data[1].value);
-      return latest - prev;
+      if (isNaN(latest)) return null;
+      return latest;
     }
   },
 
@@ -585,14 +585,11 @@ const GAUGE_MAP = {
   // E축 (5개)
   E1_CHINA_PMI: {
     id: 'E1_CHINA_PMI',
-    source: 'FRED',
-    params: { series: 'CHNPMIMFGM' },
-    transform: (data) => {
-      if (!data || data.length < 2) return null;
-      const latest = parseFloat(data[0].value);
-      const prev = parseFloat(data[1].value);
-      return latest - prev;
-    }
+    source: 'TRADINGECONOMICS',
+    teSlug: 'china/manufacturing-pmi',
+    transform: (val) => val,
+    name: '중국 제조업 PMI',
+    unit: 'pt',
   },
 
   E2_US_PMI: {
@@ -633,14 +630,9 @@ const GAUGE_MAP = {
 
   E5_BALTIC: {
     id: 'E5_BALTIC',
-    source: 'YAHOO',
-    symbol: '^BDI',
-    transform: (data) => {
-      const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
-      if (!quotes?.close || quotes.close.length < 2) return null;
-      const closes = quotes.close.filter(v => v !== null);
-      return closes[closes.length - 1];
-    },
+    source: 'TRADINGECONOMICS',
+    teSlug: 'commodity/baltic',
+    transform: (val) => val,
     name: '발틱건화물지수(BDI)',
     unit: 'pt',
   },
@@ -769,6 +761,49 @@ async function fetchYahoo(symbol) {
   }
 }
 
+async function fetchTradingEconomics(slug) {
+  const cached = getCached(`te:${slug}`);
+  if (cached) return cached;
+
+  const url = `https://tradingeconomics.com/${slug}`;
+  try {
+    const response = await axios.get(url, {
+      timeout: FETCH_TIMEOUT_MS,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+    const html = response.data;
+    let value = null;
+
+    // Strategy 1: id="p" element (commodity pages like /commodity/baltic)
+    const pMatch = html.match(/id="p"[^>]*>([0-9.,]+)</);
+    if (pMatch) {
+      value = parseFloat(pMatch[1].replace(/,/g, ''));
+    }
+
+    // Strategy 2: meta description "increased/decreased to X.XX" (indicator pages)
+    if (value === null || isNaN(value)) {
+      const metaMatch = html.match(/content="[^"]*(?:increased|decreased|unchanged|remained)\s+to\s+([0-9.,]+)/i);
+      if (metaMatch) {
+        value = parseFloat(metaMatch[1].replace(/,/g, ''));
+      }
+    }
+
+    if (value !== null && !isNaN(value)) {
+      setCache(`te:${slug}`, value);
+      return value;
+    }
+    console.warn(`[TE] Could not parse value from ${slug}`);
+    return null;
+  } catch (error) {
+    console.error(`[TE] Error fetching ${slug}:`, error.message);
+    return null;
+  }
+}
+
 // 위성 모듈 안전 로드
 let fetchVIIRS, fetchLandsat;
 try {
@@ -817,6 +852,9 @@ async function fetchGauge(gaugeId) {
         break;
       case 'YAHOO':
         rawData = await fetchYahoo(gauge.symbol);
+        break;
+      case 'TRADINGECONOMICS':
+        rawData = await fetchTradingEconomics(gauge.teSlug);
         break;
       case 'SATELLITE':
         if (gauge.api === 'fetchVIIRS') {
@@ -1043,6 +1081,7 @@ module.exports = {
   fetchAll,
   fetchECOS,
   fetchYahoo,
+  fetchTradingEconomics,
   diagnoseMapping,
   testGauge,
   diagnoseAll,
