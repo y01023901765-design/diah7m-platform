@@ -361,7 +361,7 @@ function DashboardPage({user,onNav,lang,country,city}){
       {/* Score + State + Radar */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
         <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`1px solid ${LT.border}`}}>
-          <div style={{fontSize:LT.fs.xl,color:LT.textDim}}>{t('dateLabel',L)}</div>
+          <div style={{fontSize:LT.fs.xl,color:LT.textDim}}>2026.02 · {t('cnt_'+iso3,L)||iso3}</div>
           <div style={{display:"flex",alignItems:"baseline",gap:LT.sp.xs,marginTop:LT.sp.md}}>
             <span className="score-big" style={{fontSize:LT.fs['4xl'],fontWeight:LT.fw.black,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
             <span style={{fontSize:LT.fs.xl,color:LT.textDim}}>/ 100</span>
