@@ -268,7 +268,34 @@ try {
   console.warn('  ⚠️ Satellite routes failed:', e.message);
 }
 
-// (temp debug endpoints removed)
+// TEMP: 인증 없는 fetchAll 트리거 (검증 후 제거)
+app.get('/api/temp-refresh', async (req, res) => {
+  try {
+    const pipeline = require('./lib/data-pipeline');
+    const t0 = Date.now();
+    const result = await pipeline.fetchAll();
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    const gauges = result.gauges || [];
+    const ok = gauges.filter(g => g.status === 'OK');
+    const noData = gauges.filter(g => g.status === 'NO_DATA');
+    const err = gauges.filter(g => g.status === 'ERROR');
+    const derived = gauges.filter(g => g.status === 'NEEDS_CALC');
+    res.json({
+      time: `${elapsed}s`,
+      total: gauges.length,
+      ok: ok.length,
+      noData: noData.length,
+      error: err.length,
+      needsCalc: derived.length,
+      noDataList: noData.map(g => g.id),
+      errorList: err.map(g => `${g.id}: ${g.error}`),
+      needsCalcList: derived.map(g => g.id),
+      s4_credit: gauges.find(g => g.id === 'S4_CREDIT'),
+    });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
 
 // ═══ 9. SPA Fallback ═══
 if (fs.existsSync(distPath)) {

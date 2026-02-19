@@ -139,14 +139,13 @@ const GAUGE_MAP = {
   // F축 (8개)
   F1_KOSPI: {
     id: 'F1_KOSPI',
-    source: 'YAHOO',
-    symbol: '^KS11',
+    source: 'ECOS',
+    params: { statisticCode: '802Y001', itemCode1: '0001000', cycle: 'D' },
+    name: 'KOSPI종합지수', unit: 'pt',
     transform: (data) => {
-      if (!data || !data.chart) return null;
-      const prices = data.chart.result[0].indicators.quote[0].close;
-      if (!prices || prices.length < 2) return null;
-      const latest = prices[prices.length - 1];
-      const prev = prices[prices.length - 2];
+      if (!data || data.length < 2) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      const prev = parseFloat(data[1].DATA_VALUE);
       return ((latest - prev) / prev) * 100;
     }
   },
