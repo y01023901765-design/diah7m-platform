@@ -157,7 +157,7 @@ const GAUGE_MAP = {
   F2_KOSDAQ: {
     id: 'F2_KOSDAQ',
     source: 'ECOS',
-    params: { statisticCode: '802Y001', itemCode1: '0002000', cycle: 'D' },
+    params: { statisticCode: '802Y001', itemCode1: '0089000', cycle: 'D' },
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
