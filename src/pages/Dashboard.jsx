@@ -6,6 +6,7 @@ import { GaugeRow, SystemSection } from '../components/Gauges';
 import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN, SAT_XREF, TP } from '../components/TierLock';
 import { TIER_ACCESS } from '../data/gauges';
 import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
+import GlobalPulse from '../components/GlobalPulse';
 import * as API from '../api';
 
 // ── [Phase 1] 혼용 봉인 가드 + 엔티티 변환기 ──
@@ -155,6 +156,8 @@ function DashboardPage({user,onNav,lang,country,city}){
   const [countryInfo,setCountryInfo]=useState(null); // 글로벌 국가 데이터
   const [satData,setSatData]=useState(null); // 위성 실데이터 (S2/R6)
   const [satMeta,setSatMeta]=useState(null); // 위성 수집 메타
+  const [worldData,setWorldData]=useState(null); // 세계경제 펄스 (world score + 대륙)
+  const [commoditiesData,setCommoditiesData]=useState(null); // 32개 공통지표
   const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
   const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{/* localStorage unavailable */}};
 
@@ -218,6 +221,22 @@ function DashboardPage({user,onNav,lang,country,city}){
     })();
     return () => { cancelled = true; };
   },[iso3, isKorea]);
+
+  // ── 세계경제 펄스 데이터 (탭 전환 시 재요청 방지 — 한 번 로드 후 캐시)
+  useEffect(()=>{
+    if (worldData || commoditiesData) return; // 이미 로드됨 → skip
+    let cancelled = false;
+    (async()=>{
+      const [wRes, cRes] = await Promise.allSettled([
+        API.globalWorld(),
+        API.globalCommodities(),
+      ]);
+      if (cancelled) return;
+      if (wRes.status === 'fulfilled' && wRes.value) setWorldData(wRes.value);
+      if (cRes.status === 'fulfilled' && cRes.value) setCommoditiesData(cRes.value);
+    })();
+    return () => { cancelled = true; };
+  },[]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ★ datasetId 봉인: GLOBAL 데이터는 한국 D와 절대 병합하지 않음
   const isGlobalMode = !isKorea && countryInfo?.gauges;
@@ -315,6 +334,8 @@ function DashboardPage({user,onNav,lang,country,city}){
         background:demoPlan===p?'#111':`transparent`,color:demoPlan===p?"#fff":LT.textDim,cursor:"pointer"}}>{p}</button>))}
     </div>
     {tab==='overview'&&<>
+      {/* ── 세계경제 펄스 (공통지표 + 대륙 요약) ── */}
+      <GlobalPulse worldData={worldData} commoditiesData={commoditiesData} lang={L}/>
       {/* 국가 헤더 — 글로벌 국가 선택 시 */}
       {!isKorea&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"12px 16px",background:LT.surface,borderRadius:LT.cardRadius,border:`1px solid ${LT.border}`}}>
         <span style={{fontSize:24}}>{countryInfo?.flag||'🌍'}</span>

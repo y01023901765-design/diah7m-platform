@@ -227,6 +227,10 @@ export async function globalCommodities() {
   return api('/api/v1/global/commodities');
 }
 
+export async function globalWorld() {
+  return api('/api/v1/global/world');
+}
+
 // ── Connection state ──
 export function isAuthenticated() {
   return !!getToken();

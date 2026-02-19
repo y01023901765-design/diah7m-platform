@@ -1,0 +1,326 @@
+/**
+ * GlobalPulse — 세계경제 펄스 카드
+ * ═══════════════════════════════════
+ * Dashboard overview 탭 최상단에 배치
+ * 세계 점수 + 대륙 요약 + 32개 공통지표 카테고리별 표시
+ *
+ * Props:
+ *   worldData       - /api/v1/global/world 응답 (nullable)
+ *   commoditiesData  - /api/v1/global/commodities 응답 (nullable)
+ *   lang            - 'ko' | 'en'
+ */
+import { L as LT } from '../theme';
+
+// ═══════════════════════════════════
+// 대륙 메타 (아이콘 + 한/영 이름)
+// ═══════════════════════════════════
+const CONTINENT_META = {
+  ASIA: { icon: '🌏', ko: '아시아', en: 'Asia' },
+  EUR:  { icon: '🇪🇺', ko: '유럽',   en: 'Europe' },
+  NAM:  { icon: '🌎', ko: '북미',   en: 'N.America' },
+  SAM:  { icon: '🌎', ko: '남미',   en: 'S.America' },
+  MEA:  { icon: '🌍', ko: '중동/아프리카', en: 'MEA' },
+  OCE:  { icon: '🌏', ko: '오세아니아', en: 'Oceania' },
+};
+
+// ═══════════════════════════════════
+// 카테고리별 지표 매핑 (인체 비유 포함)
+// isInverse: true = 값 상승이 위험 (VIX, GSCPI 등)
+// ═══════════════════════════════════
+const CATEGORIES = [
+  {
+    id: 'energy', ko: '에너지', en: 'Energy', metaphor: '혈당',
+    items: [
+      { key: 'OIL_WTI',   label: 'WTI',   prefix: '$' },
+      { key: 'OIL_BRENT', label: 'Brent', prefix: '$' },
+      { key: 'NATGAS',    label: 'Gas',   prefix: '$' },
+    ],
+  },
+  {
+    id: 'metals', ko: '금속', en: 'Metals', metaphor: '칼슘/철분',
+    items: [
+      { key: 'GOLD',   label: 'Gold', prefix: '$', fmt: 'comma' },
+      { key: 'COPPER', label: 'Cu',   prefix: '$', fmt: 'comma' },
+    ],
+  },
+  {
+    id: 'logistics', ko: '물류', en: 'Logistics', metaphor: '혈류',
+    items: [
+      { key: 'BDI',       label: 'BDI',       fmt: 'comma' },
+      { key: 'CONTAINER', label: 'Container' },
+    ],
+  },
+  {
+    id: 'finance', ko: '금융', en: 'Finance', metaphor: '심박/혈압',
+    items: [
+      { key: 'VIX',   label: 'VIX',   isInverse: true },
+      { key: 'SP500', label: 'S&P',   fmt: 'comma' },
+      { key: 'DXY',   label: 'DXY' },
+    ],
+  },
+  {
+    id: 'bonds', ko: '채권', en: 'Bonds', metaphor: '체온/심전도',
+    items: [
+      { key: 'US10Y',       label: '10Y',  suffix: '%' },
+      { key: 'YIELD_CURVE', label: '곡선',  suffix: '%' },
+    ],
+  },
+  {
+    id: 'currency', ko: '통화', en: 'FX', metaphor: '삼투압',
+    items: [
+      { key: 'EURUSD', label: 'EUR' },
+      { key: 'USDJPY', label: 'JPY' },
+      { key: 'USDCNY', label: 'CNY' },
+    ],
+  },
+  {
+    id: 'leading', ko: '선행', en: 'Leading', metaphor: '반사신경',
+    items: [
+      { key: 'PMI_US',   label: 'PMI🇺🇸' },
+      { key: 'PMI_EU',   label: 'PMI🇪🇺' },
+      { key: 'OECD_CLI', label: 'CLI' },
+    ],
+  },
+  {
+    id: 'stress', ko: '스트레스', en: 'Stress', metaphor: '코르티솔',
+    items: [
+      { key: 'GSCPI',         label: 'GSCPI',  isInverse: true },
+      { key: 'CREDIT_SPREAD', label: 'HY스프레드', suffix: '%', isInverse: true },
+      { key: 'STLFSI',        label: 'STLFSI', isInverse: true },
+    ],
+  },
+];
+
+// ═══════════════════════════════════
+// 유틸
+// ═══════════════════════════════════
+
+/** 점수 → 색상 */
+function scoreColor(score) {
+  if (score == null) return LT.textDim;
+  if (score >= 70) return LT.good;
+  if (score >= 40) return '#D97706';
+  return LT.danger;
+}
+
+/** 점수 → 대륙 칩 배경 tint (매우 약하게) */
+function scoreTint(score) {
+  if (score == null) return LT.bg2;
+  if (score >= 70) return LT.good + '10';
+  if (score >= 40) return '#D9770610';
+  return LT.danger + '10';
+}
+
+/** 숫자 포맷 */
+function fmtValue(val, item) {
+  if (val == null || val === '.' || isNaN(val)) return '--';
+  const n = Number(val);
+  const str = item.fmt === 'comma'
+    ? n.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    : n.toFixed(n >= 100 ? 1 : 2);
+  return (item.prefix || '') + str + (item.suffix || '');
+}
+
+/** delta 방향 + 색상 (isInverse 반영) */
+function deltaInfo(current, prev, isInverse) {
+  if (current == null || prev == null || current === prev) return null;
+  const up = current > prev;
+  // isInverse: 값 상승이 나쁜 지표 (VIX, GSCPI, Credit Spread 등)
+  const isGood = isInverse ? !up : up;
+  return {
+    arrow: up ? '↑' : '↓',
+    color: isGood ? LT.good : LT.danger,
+  };
+}
+
+/** 경과 시간 텍스트 */
+function timeAgo(isoString) {
+  if (!isoString) return '';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '방금';
+  if (mins < 60) return `${mins}분 전`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}시간 전`;
+  return `${Math.floor(hrs / 24)}일 전`;
+}
+
+// ═══════════════════════════════════
+// 컴포넌트
+// ═══════════════════════════════════
+
+export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' }) {
+  // 둘 다 없으면 전체 숨김
+  if (!worldData && !commoditiesData) return null;
+
+  const L = lang;
+  const hasWorld = worldData && worldData.score != null;
+  const hasCommodities = commoditiesData && commoditiesData.results;
+
+  return (
+    <div style={{
+      background: LT.surface,
+      borderRadius: LT.cardRadius,
+      border: `1px solid ${LT.border}`,
+      marginBottom: 16,
+      overflow: 'hidden',
+    }}>
+      {/* ── 헤더 ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '14px 16px 10px',
+        borderBottom: `1px solid ${LT.border}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>🌍</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: LT.text }}>
+            {L === 'ko' ? '세계경제 펄스' : 'Global Economy Pulse'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {hasWorld && (
+            <span style={{ fontSize: 12, color: LT.textDim }}>
+              {timeAgo(worldData.lastUpdated)} {L === 'ko' ? '갱신' : 'ago'}
+            </span>
+          )}
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+            background: hasWorld ? LT.good + '15' : LT.textDim + '15',
+            color: hasWorld ? LT.good : LT.textDim,
+          }}>
+            {hasWorld ? '● LIVE' : '● --'}
+          </span>
+        </div>
+      </div>
+
+      {/* ── 세계 점수 + 대륙 칩 ── */}
+      {hasWorld && (
+        <div style={{ padding: '12px 16px', borderBottom: hasCommodities ? `1px solid ${LT.border}` : 'none' }}>
+          {/* 세계 점수 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, color: LT.textDim, fontWeight: 600, marginBottom: 2 }}>
+                {L === 'ko' ? '세계 건강 점수' : 'World Health Score'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{
+                  fontSize: 28, fontWeight: 900, fontFamily: 'monospace',
+                  color: scoreColor(worldData.score),
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {worldData.score != null ? Number(worldData.score).toFixed(1) : '--'}
+                </span>
+                <span style={{ fontSize: 14, color: LT.textDim }}>/ 100</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: LT.textDim, marginLeft: 'auto' }}>
+              {worldData.memberCount || 43}{L === 'ko' ? '개국' : ' countries'}
+            </div>
+          </div>
+
+          {/* 대륙 칩 */}
+          <div style={{
+            display: 'flex', gap: 6, flexWrap: 'wrap',
+          }}>
+            {Object.entries(worldData.continents || {}).map(([code, cont]) => {
+              const meta = CONTINENT_META[code] || { icon: '🌐', ko: code, en: code };
+              const sc = cont.score != null ? Number(cont.score).toFixed(0) : '--';
+              return (
+                <button
+                  key={code}
+                  onClick={() => {/* Phase 2: 대륙 드릴다운 연결 */}}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '4px 10px', borderRadius: 20,
+                    border: `1px solid ${LT.border}`,
+                    background: scoreTint(cont.score),
+                    cursor: 'default', // Phase 2에서 pointer로 변경
+                    fontSize: 13, fontWeight: 600,
+                    color: LT.text,
+                  }}
+                >
+                  <span>{meta.icon}</span>
+                  <span>{meta[L] || meta.en}</span>
+                  <span style={{
+                    fontWeight: 800, fontFamily: 'monospace',
+                    color: scoreColor(cont.score),
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {sc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 주요 지표 (카테고리별) ── */}
+      {hasCommodities && (
+        <div style={{
+          padding: '10px 16px 14px',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          <div style={{ display: 'flex', gap: 16, minWidth: 'max-content' }}>
+            {CATEGORIES.map(cat => {
+              // 각 카테고리의 아이템 중 데이터가 있는 것만
+              const liveItems = cat.items.filter(it => {
+                const r = commoditiesData.results[it.key];
+                return r && r.data && r.data.length > 0;
+              });
+              if (liveItems.length === 0) return null;
+
+              return (
+                <div key={cat.id} style={{ minWidth: 0 }}>
+                  {/* 카테고리 라벨 */}
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: LT.textDim,
+                    marginBottom: 4, whiteSpace: 'nowrap',
+                  }}>
+                    {cat[L] || cat.en}
+                    <span style={{ opacity: 0.5, marginLeft: 3 }}>({cat.metaphor})</span>
+                  </div>
+                  {/* 지표값 행 */}
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {liveItems.map(item => {
+                      const r = commoditiesData.results[item.key];
+                      const latest = r.data[0];
+                      const prev = r.data.length > 1 ? r.data[1] : null;
+                      const delta = deltaInfo(latest?.value, prev?.value, item.isInverse);
+
+                      return (
+                        <div key={item.key} style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            fontSize: 11, color: LT.textDim, fontWeight: 500,
+                          }}>
+                            {item.label}
+                          </span>
+                          <div style={{
+                            fontSize: 14, fontWeight: 700, fontFamily: 'monospace',
+                            color: LT.text,
+                            fontVariantNumeric: 'tabular-nums',
+                          }}>
+                            {fmtValue(latest?.value, item)}
+                            {delta && (
+                              <span style={{
+                                fontSize: 11, fontWeight: 800,
+                                color: delta.color, marginLeft: 2,
+                              }}>
+                                {delta.arrow}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
