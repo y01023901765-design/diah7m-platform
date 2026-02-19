@@ -819,6 +819,11 @@ async function fetchGauge(gaugeId) {
         throw new Error(`Unknown source: ${gauge.source}`);
     }
 
+    // 원시 데이터 길이 기록 (진단용)
+    const rawLen = Array.isArray(rawData) ? rawData.length : (rawData ? 1 : 0);
+    const rawFirstTime = Array.isArray(rawData) && rawData.length > 0 ? (rawData[0]?.TIME || rawData[0]?.date || '') : '';
+    const rawLastTime = Array.isArray(rawData) && rawData.length > 1 ? (rawData[rawData.length-1]?.TIME || rawData[rawData.length-1]?.date || '') : '';
+
     let value = gauge.transform ? gauge.transform(rawData) : rawData;
 
     const validation = validateGaugeValue(value, gaugeId);
@@ -826,7 +831,7 @@ async function fetchGauge(gaugeId) {
 
     // value가 null이면 NO_DATA로 분류 (수집 성공이지만 유효 데이터 없음)
     if (value === null || value === undefined) {
-      console.log(`[${new Date().toISOString()}] ⚠️  ${gaugeId} = null (API 응답은 있으나 값 산출 불가)`);
+      console.log(`[${new Date().toISOString()}] ⚠️  ${gaugeId} = null (rawLen=${rawLen}, range=${rawFirstTime}~${rawLastTime})`);
       return {
         id: gaugeId,
         gaugeId,
@@ -836,10 +841,11 @@ async function fetchGauge(gaugeId) {
         name: gauge.name || gaugeId,
         unit: gauge.unit || '',
         timestamp: new Date().toISOString(),
+        _debug: { rawLen, rawFirstTime, rawLastTime },
       };
     }
 
-    console.log(`[${new Date().toISOString()}] ✅ ${gaugeId} = ${value}`);
+    console.log(`[${new Date().toISOString()}] ✅ ${gaugeId} = ${value} (rawLen=${rawLen})`);
 
     return {
       id: gaugeId,
@@ -850,6 +856,7 @@ async function fetchGauge(gaugeId) {
       source: gauge.source,
       name: gauge.name || gaugeId,
       unit: gauge.unit || '',
+      _debug: { rawLen, rawFirstTime, rawLastTime },
     };
 
   } catch (error) {
