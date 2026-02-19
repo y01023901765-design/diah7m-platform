@@ -776,14 +776,14 @@ async function fetchTradingEconomics(slug) {
     let value = null;
 
     // Strategy 1: id="p" element (commodity pages like /commodity/baltic)
-    const pMatch = html.match(/id="p"[^>]*>([0-9.,]+)</);
+    const pMatch = html.match(/id="p"[^>]*>\s*([0-9.,]+)/);
     if (pMatch) {
       value = parseFloat(pMatch[1].replace(/,/g, ''));
     }
 
-    // Strategy 2: meta description "increased/decreased to X.XX" (indicator pages)
+    // Strategy 2: meta description "increased/decreased/fell/rose to X.XX" (indicator pages)
     if (value === null || isNaN(value)) {
-      const metaMatch = html.match(/content="[^"]*(?:increased|decreased|unchanged|remained)\s+to\s+([0-9.,]+)/i);
+      const metaMatch = html.match(/(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
       if (metaMatch) {
         value = parseFloat(metaMatch[1].replace(/,/g, ''));
       }
