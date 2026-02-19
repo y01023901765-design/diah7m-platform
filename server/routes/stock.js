@@ -6,6 +6,7 @@
  *   GET  /stock/list              — 100종목 목록 (+score, severity)
  *   GET  /stock/search?q=         — 종목 검색
  *   GET  /stock/stats/summary     — 종목 통계
+ *   GET  /stock/aggregate?country=KR — 국가별 주식 건강도 평균+섹터 분해
  *   GET  /stock/:ticker           — 종목 상세 (+health)
  *   GET  /stock/:ticker/gauges    — 15게이지 값+등급 (GaugeRow 바인딩)
  *   GET  /stock/:ticker/facilities — 시설별 위성 메트릭
@@ -133,6 +134,53 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       archetypes: Object.fromEntries(
         Object.entries(ARCHETYPES).map(([k, v]) => [k, { name: v.nameEn, count: PROFILES.filter(p => p.archetype === k).length }])
       ),
+    });
+  });
+
+  // ── 국가별 주식 건강도 Aggregate ──
+  router.get('/stock/aggregate', (req, res) => {
+    var country = (req.query.country || '').toUpperCase();
+    if (!country) return res.status(400).json({ error: 'country query required' });
+
+    var filtered = PROFILES.filter(function (p) { return p.country === country; });
+    if (filtered.length === 0) return res.json({ country: country, total: 0, avgScore: null, sectors: {} });
+
+    var scoreSum = 0;
+    var scoreCount = 0;
+    var sectors = {};
+
+    for (var i = 0; i < filtered.length; i++) {
+      var p = filtered[i];
+      var health = getHealthFromCache(p.ticker, p);
+      var score = health ? health.score : null;
+      var severity = health ? health.severity : null;
+
+      if (score != null) { scoreSum += score; scoreCount++; }
+
+      var sec = p.sector || 'Other';
+      if (!sectors[sec]) sectors[sec] = { count: 0, facilities: 0, scores: [], avgScore: null };
+      sectors[sec].count++;
+      sectors[sec].facilities += (p.facilities ? p.facilities.length : 0);
+      if (score != null) sectors[sec].scores.push(score);
+    }
+
+    // 섹터별 평균 계산
+    var secKeys = Object.keys(sectors);
+    for (var j = 0; j < secKeys.length; j++) {
+      var s = sectors[secKeys[j]];
+      if (s.scores.length > 0) {
+        s.avgScore = Math.round(s.scores.reduce(function (a, b) { return a + b; }, 0) / s.scores.length);
+      }
+      delete s.scores; // 내부용 제거
+    }
+
+    res.json({
+      country: country,
+      total: filtered.length,
+      scored: scoreCount,
+      avgScore: scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null,
+      facilities: filtered.reduce(function (sum, p) { return sum + (p.facilities ? p.facilities.length : 0); }, 0),
+      sectors: sectors,
     });
   });
 

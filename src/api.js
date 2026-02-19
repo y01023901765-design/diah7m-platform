@@ -268,6 +268,9 @@ export async function stockPrice(ticker) {
 export async function stockPrices() {
   return api('/api/v1/stock/prices');
 }
+export async function stockAggregate(country) {
+  return api(`/api/v1/stock/aggregate?country=${encodeURIComponent(country)}`);
+}
 
 // ── Catalog (Phase 3) ──
 export async function catalogCategories() {

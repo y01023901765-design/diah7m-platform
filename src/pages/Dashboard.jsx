@@ -184,6 +184,7 @@ function DashboardPage({user,onNav,lang,country,city}){
   const [satMeta,setSatMeta]=useState(null); // 위성 수집 메타
   const [worldData,setWorldData]=useState(null); // 세계경제 펄스 (world score + 대륙)
   const [commoditiesData,setCommoditiesData]=useState(null); // 32개 공통지표
+  const [stockAgg,setStockAgg]=useState(null); // 국가별 주식 건강도 aggregate
   const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
   const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{/* localStorage unavailable */}};
 
@@ -263,6 +264,16 @@ function DashboardPage({user,onNav,lang,country,city}){
     })();
     return () => { cancelled = true; };
   },[]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 국가별 주식 건강도 aggregate ──
+  const ISO3_TO_ISO2 = {KOR:'KR',USA:'US',JPN:'JP',DEU:'DE',GBR:'GB',FRA:'FR',CAN:'CA',AUS:'AU',ITA:'IT',ESP:'ES',NLD:'NL',CHE:'CH',SWE:'SE',NOR:'NO',DNK:'DK',FIN:'FI',AUT:'AT',BEL:'BE',IRL:'IE',PRT:'PT',GRC:'GR',CZE:'CZ',POL:'PL',HUN:'HU',SVK:'SK',SVN:'SI',EST:'EE',LVA:'LV',LTU:'LT',ISL:'IS',LUX:'LU',NZL:'NZ',ISR:'IL',TUR:'TR',MEX:'MX',CHL:'CL',COL:'CO',CRI:'CR',SGP:'SG',HKG:'HK',TWN:'TW',IND:'IN',CHN:'CN',SAU:'SA',BRA:'BR'};
+  useEffect(()=>{
+    const iso2 = ISO3_TO_ISO2[iso3];
+    if (!iso2) { setStockAgg(null); return; }
+    let c = false;
+    API.stockAggregate(iso2).then(d => { if (!c && d && d.total > 0) setStockAgg(d); }).catch(() => {});
+    return () => { c = true; };
+  },[iso3]);
 
   // ★ datasetId 봉인: GLOBAL 데이터는 한국 D와 절대 병합하지 않음
   const isGlobalMode = !isKorea && countryInfo?.gauges;
@@ -428,6 +439,39 @@ function DashboardPage({user,onNav,lang,country,city}){
           <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xs}}>{t("satPredict",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,lineHeight:1.7}}>{t("satFutureHint",L)}</div></div>
         </div>
       </div>
+      {/* Stock Summary Card — 해당 국가 주식 건강도 */}
+      {stockAgg&&stockAgg.total>0&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],marginBottom:LT.sp['2xl'],border:`1px solid ${LT.border}`,cursor:"pointer"}}
+        onClick={()=>onNav('stock')}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.xl}}>
+          <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>📈 {L==='ko'?'주식 건강도':'Stock Health'}</div>
+          <span style={{fontSize:LT.fs.lg,color:LT.textDim}}>→</span>
+        </div>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp.xl}}>
+          {/* 국가 경제 vs 주식 교차 비교 */}
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,textAlign:"center"}}>
+            <div style={{fontSize:LT.fs.md,color:LT.textDim,marginBottom:LT.sp.xs}}>{L==='ko'?'국가 경제':'Economy'}</div>
+            <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,fontFamily:"monospace",color:compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger}}>{compositeScore}</div>
+          </div>
+          <div style={{background:LT.bg2,borderRadius:LT.smRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,textAlign:"center"}}>
+            <div style={{fontSize:LT.fs.md,color:LT.textDim,marginBottom:LT.sp.xs}}>{L==='ko'?'주식 평균':'Stocks Avg'}</div>
+            <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,fontFamily:"monospace",color:stockAgg.avgScore>=70?LT.good:stockAgg.avgScore>=40?LT.warn:LT.danger}}>{stockAgg.avgScore??'—'}</div>
+          </div>
+        </div>
+        {/* 요약 통계 */}
+        <div style={{display:"flex",gap:LT.sp.xl,marginBottom:LT.sp.lg,flexWrap:"wrap"}}>
+          <span style={{fontSize:LT.fs.md,color:LT.textMid}}>{stockAgg.total} {L==='ko'?'종목':'stocks'}</span>
+          <span style={{fontSize:LT.fs.md,color:LT.textMid}}>{stockAgg.facilities||0} {L==='ko'?'시설':'facilities'}</span>
+          <span style={{fontSize:LT.fs.md,color:LT.textMid}}>{stockAgg.scored||0}/{stockAgg.total} {L==='ko'?'진단 완료':'scored'}</span>
+        </div>
+        {/* 섹터 분해 */}
+        {stockAgg.sectors&&Object.keys(stockAgg.sectors).length>0&&<div style={{display:"flex",gap:LT.sp.sm,flexWrap:"wrap"}}>
+          {Object.entries(stockAgg.sectors).sort((a,b)=>b[1].count-a[1].count).slice(0,6).map(([sec,d])=>(
+            <span key={sec} style={{fontSize:LT.fs.sm,padding:`2px ${LT.sp.md}px`,borderRadius:LT.sp.sm,background:d.avgScore!=null?(d.avgScore>=70?`${LT.good}15`:d.avgScore>=40?`${LT.warn}15`:`${LT.danger}15`):LT.bg3,color:d.avgScore!=null?(d.avgScore>=70?LT.good:d.avgScore>=40?LT.warn:LT.danger):LT.textDim,fontWeight:LT.fw.semi}}>
+              {sec} {d.count} {d.avgScore!=null?`(${d.avgScore})`:''}
+            </span>
+          ))}
+        </div>}
+      </div>}
       {/* 9 Systems */}
       <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.xl}}>{t("nineSystems",L)}</div>
       <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:LT.sp.md}}>
