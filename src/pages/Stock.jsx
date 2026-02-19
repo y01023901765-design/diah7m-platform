@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import TierLock from '../components/TierLock';
+import { GaugeRow, SystemSection } from '../components/Gauges';
+import { RadarChart } from '../components/Charts';
 import { STOCKS, ARCHETYPE_LABELS, TIER_LABELS } from '../data/stocks';
 import * as API from '../api';
 
@@ -67,36 +69,129 @@ function chgCell(v){
   return {col,txt};
 }
 
+// ═══ Stock Gauge 5축 정의 (stock-thresholds.js 미러) ═══
+const STOCK_AXES = {
+  SV: { id:'SV', name:{en:'Valuation',ko:'밸류에이션'}, icon:'💰', color:'#8b5cf6', gauges:['SG_V1','SG_V2','SG_V3','SG_V4'] },
+  SG: { id:'SG', name:{en:'Growth',ko:'성장성'}, icon:'📈', color:'#10b981', gauges:['SG_G1','SG_G2','SG_G3'] },
+  SQ: { id:'SQ', name:{en:'Quality',ko:'재무건전성'}, icon:'🏗️', color:'#3b82f6', gauges:['SG_Q1','SG_Q2','SG_Q3'] },
+  SM: { id:'SM', name:{en:'Momentum',ko:'모멘텀'}, icon:'⚡', color:'#f59e0b', gauges:['SG_M1','SG_M2','SG_M3'] },
+  SS: { id:'SS', name:{en:'Satellite',ko:'위성물리'}, icon:'🛰️', color:'#ef4444', gauges:['SG_S1','SG_S2'] },
+};
+
+const STOCK_GAUGE_NAMES = {
+  SG_V1:{en:'P/E Ratio',ko:'PER(배)'},SG_V2:{en:'P/B Ratio',ko:'PBR(배)'},
+  SG_V3:{en:'EV/EBITDA',ko:'EV/EBITDA(배)'},SG_V4:{en:'Dividend Yield',ko:'배당수익률(%)'},
+  SG_G1:{en:'Revenue Growth',ko:'매출성장률(%)'},SG_G2:{en:'Earnings Growth',ko:'순이익성장률(%)'},
+  SG_G3:{en:'OPM Trend',ko:'영업이익률추세(bps)'},
+  SG_Q1:{en:'ROE',ko:'ROE(%)'},SG_Q2:{en:'Debt/Equity',ko:'부채비율(%)'},
+  SG_Q3:{en:'FCF Margin',ko:'FCF마진(%)'},
+  SG_M1:{en:'RSI 14d',ko:'RSI 14일'},SG_M2:{en:'52W Strength',ko:'52주강도(%)'},
+  SG_M3:{en:'Volume Trend',ko:'거래량추세(%)'},
+  SG_S1:{en:'NTL Anomaly',ko:'야간광이상(%)'},SG_S2:{en:'Thermal Anomaly',ko:'열이상(°C)'},
+};
+
+// API 게이지 응답 → GaugeRow/SystemSection 형식 변환
+function buildStockEntityData(gaugesArr, health, lang) {
+  const L = lang || 'ko';
+  const gaugeData = {};
+  const sysData = {};
+
+  // 1) gauge 배열 → GaugeRow 호환 형식
+  for (let i = 0; i < (gaugesArr || []).length; i++) {
+    const g = gaugesArr[i];
+    const nm = STOCK_GAUGE_NAMES[g.id];
+    const gradeKo = g.grade === 'good' ? '양호' : g.grade === 'caution' ? '주의'
+      : g.grade === 'alert' ? '경보' : '주의';
+    gaugeData[g.id] = {
+      c: g.id,
+      n: nm ? nm[L] || nm.en : g.id,
+      s: g.axis,
+      u: '',
+      v: g.value,
+      p: g.prevValue ?? g.value,
+      ch: g.value != null ? (g.value >= 0 ? '+' + (typeof g.value === 'number' ? g.value.toFixed(1) : g.value) : String(typeof g.value === 'number' ? g.value.toFixed(1) : g.value)) : '—',
+      g: g.value != null ? gradeKo : '주의',
+      note: g.status === 'OK' ? '' : g.status || '',
+      t: null, m: null, act: [], bs: null,
+      _live: g.status === 'OK',
+      _global: false,
+    };
+  }
+
+  // 2) 축별 시스템 점수 → SystemSection 호환 형식
+  for (const [axId, ax] of Object.entries(STOCK_AXES)) {
+    const keys = ax.gauges.filter(k => gaugeData[k]);
+    const serverSys = health?.systemScores?.[axId];
+    let sc, g, hasAlert;
+    if (serverSys) {
+      sc = serverSys.score;
+      g = serverSys.grade === 'good' ? '양호' : serverSys.grade === 'caution' ? '주의' : '경보';
+      hasAlert = serverSys.hasAlert;
+    } else if (keys.length > 0) {
+      const scores = keys.map(k => gaugeData[k].g === '양호' ? 85 : gaugeData[k].g === '주의' ? 50 : 15);
+      const n = scores.length;
+      const raw = scores.reduce((a, b) => a + b, 0) / n;
+      sc = Math.round((n * raw + 3 * 50) / (n + 3)); // k=3 for stock
+      g = sc >= 70 ? '양호' : sc >= 40 ? '주의' : '경보';
+      hasAlert = scores.some(s => s <= 15);
+    } else {
+      sc = 50; g = '주의'; hasAlert = false;
+    }
+    sysData[axId] = {
+      tK: axId,
+      name: ax.name,
+      icon: ax.icon,
+      color: ax.color,
+      g, sc, keys,
+      hasAlert,
+    };
+  }
+
+  return { gaugeData, sysData };
+}
+
 // ═══ StockView — 5탭 종목 상세 ═══
 function StockView({stock:s,lang,onBack}){
   const L=lang||'ko';
   const [tab,setTab]=useState('diag');
   const [liveFacs,setLiveFacs]=useState(null);
   const [liveDelta,setLiveDelta]=useState(null);
+  const [liveGauges,setLiveGauges]=useState(null);
+  const [liveHealth,setLiveHealth]=useState(null);
+  const [expanded,setExpanded]=useState({});
   const {price,change,isUp}=fmtPrice(s.sid);
   const getName=x=>L==='ko'?x.n:(x.ne||x.n);
+  const toggleGauge=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
-  // API에서 시설/델타 데이터 로드 (실패 시 DUMMY fallback)
+  // API에서 시설/델타/게이지/건강도 로드
   useEffect(()=>{
     let c=false;
     (async()=>{
       try{
-        const [facRes,deltaRes]=await Promise.allSettled([
+        const [facRes,deltaRes,gaugeRes,profileRes]=await Promise.allSettled([
           API.stockFacilities(s.sid),
           API.stockDelta(s.sid),
+          API.stockGauges(s.sid),
+          API.stockProfile(s.sid),
         ]);
         if(c)return;
         if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
-        if(deltaRes.status==='fulfilled'&&deltaRes.value?.delta) setLiveDelta(deltaRes.value.delta);
+        if(deltaRes.status==='fulfilled') setLiveDelta(deltaRes.value);
+        if(gaugeRes.status==='fulfilled'&&gaugeRes.value?.gauges) setLiveGauges(gaugeRes.value.gauges);
+        if(profileRes.status==='fulfilled'&&profileRes.value?.health) setLiveHealth(profileRes.value.health);
       }catch{/* fallback to DUMMY */}
     })();
     return()=>{c=true};
   },[s.sid]);
 
+  // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
+  const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
+
   const facs=liveFacs||DUMMY_FAC[s.sid]||[];
   const normalCnt=facs.filter(f=>f.status==='normal').length;
   const warnCnt=facs.filter(f=>f.status==='warning').length;
-  const delta=liveDelta||DUMMY_DELTA[s.sid]||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
+  const rawDelta=liveDelta||DUMMY_DELTA[s.sid]||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
+  const delta={satIdx:rawDelta.ssScore||rawDelta.satIdx||50,mktIdx:rawDelta.smScore||rawDelta.mktIdx||50,gap:rawDelta.gap||0,state:rawDelta.state||'ALIGNED',desc:rawDelta.description?'':rawDelta.desc||'svDeltaAligned'};
   const archKey=s.a==='MFG'?'MFG':s.a==='EXT'?'EXT':s.a==='LOG'?'LOG':s.a==='PRC'?'PRC':s.a==='DST'?'DST':'SIT';
   const flowSteps=FLOW_TEMPLATES[archKey]||FLOW_TEMPLATES['MFG'];
   const bottleneck=warnCnt>0?Math.floor(flowSteps.length*0.6):null; // dummy bottleneck
@@ -143,6 +238,30 @@ function StockView({stock:s,lang,onBack}){
 
     {/* ═══ TAB 1: 진단 ═══ */}
     {tab==='diag'&&<>
+      {/* Score Card + Radar */}
+      {stockEntity&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <RadarChart lang={L} sysData={stockEntity.sysData}/>
+          <div style={{flex:1,minWidth:200}}>
+            <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{L==='ko'?'종합 건강도':'Overall Health'}</div>
+            <div style={{fontSize:36,fontWeight:900,color:liveHealth?.score>=70?LT.good:liveHealth?.score>=40?LT.warn:LT.danger,fontFamily:"monospace"}}>{liveHealth?.score??'—'}</div>
+            {liveHealth?.severity!=null&&<div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+              <span style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'리스크':'Risk'}</span>
+              <div style={{flex:1,height:6,background:LT.bg3,borderRadius:3,overflow:"hidden"}}>
+                <div style={{width:`${(liveHealth.severity/5)*100}%`,height:"100%",borderRadius:3,background:liveHealth.severity>=3.5?LT.danger:liveHealth.severity>=2?LT.warn:LT.good}}/>
+              </div>
+              <span style={{fontSize:14,fontWeight:700,fontFamily:"monospace",color:liveHealth.severity>=3.5?LT.danger:liveHealth.severity>=2?LT.warn:LT.good}}>{liveHealth.severity.toFixed(1)}/5</span>
+            </div>}
+            {liveHealth?.contextNote&&<div style={{fontSize:14,color:LT.textMid,marginTop:8,padding:8,background:LT.bg2,borderRadius:6}}>{liveHealth.contextNote}</div>}
+          </div>
+        </div>
+      </div>}
+      {/* 5축 Gauge Panel */}
+      {stockEntity&&<div style={{marginBottom:12}}>
+        {Object.entries(stockEntity.sysData).map(([axId,sys])=>(
+          <SystemSection key={axId} sysKey={axId} sys={sys} expanded={expanded} toggle={toggleGauge} lang={L} gaugeData={stockEntity.gaugeData} isGlobal={false}/>
+        ))}
+      </div>}
       {/* Facility Table */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>

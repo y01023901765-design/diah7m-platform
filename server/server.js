@@ -46,9 +46,12 @@ const engine = safeRequire('core-engine', './lib/core-engine');
 const pipeline = safeRequire('data-pipeline', './lib/data-pipeline');
 const DataStore = safeRequire('data-store', './lib/data-store');
 const globalPipeline = safeRequire('global-pipeline', './lib/global-pipeline');
+const StockStore = safeRequire('stock-store', './lib/stock-store');
+const stockPipeline = safeRequire('stock-pipeline', './lib/stock-pipeline');
 const { checkBootEnv } = require('./lib/env-check');
 
 let dataStore = null;
+let stockStore = null;
 async function initDataStore() {
   if (DataStore && db && db.connected) {
     dataStore = new DataStore(db);
@@ -57,6 +60,12 @@ async function initDataStore() {
   } else if (DataStore) {
     dataStore = new DataStore(null);
     console.log('  ⚠️  DataStore (memory-only, no DB)');
+  }
+  // StockStore 초기화
+  if (StockStore) {
+    stockStore = new StockStore(db && db.connected ? db : null);
+    await stockStore.init();
+    console.log('  ✅ StockStore initialized');
   }
 }
 
@@ -358,7 +367,7 @@ async function start() {
     }
 
     // 라우트 마운트 (dataStore 초기화 후)
-    const deps = { db, auth, engine, pipeline, dataStore, state };
+    const deps = { db, auth, engine, pipeline, dataStore, stockStore, stockPipeline, state };
     mountRoutes(app, deps);
 
     console.log(`\n  Modules: ${JSON.stringify(state.modules)}`);

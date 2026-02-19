@@ -39,10 +39,11 @@ const GAUGE_THRESHOLDS = {
 };
 
 // ── V2: Direction-aware gauge grading ────────────────────
+// thresholdsTable 파라미터: 주식/국가 등 엔진별 다른 threshold 주입 가능
 
-function gradeGauge(gaugeId, value) {
+function gradeGauge(gaugeId, value, thresholdsTable) {
   if (value == null || isNaN(value)) return { score: null, grade: null };
-  var th = GAUGE_THRESHOLDS[gaugeId];
+  var th = (thresholdsTable || GAUGE_THRESHOLDS)[gaugeId];
   if (!th) return { score: 50, grade: 'caution' };
   if (!th.good) return { score: 50, grade: 'good' }; // no thresholds → neutral=good
 
@@ -77,11 +78,108 @@ function gradeGauge(gaugeId, value) {
 
 var SHRINK_K = 4;
 
-function shrinkScore(rawAvg, gaugeCount) {
-  return Math.round((gaugeCount * rawAvg + SHRINK_K * 50) / (gaugeCount + SHRINK_K));
+function shrinkScore(rawAvg, gaugeCount, k) {
+  var kk = (k != null) ? k : SHRINK_K;
+  return Math.round((gaugeCount * rawAvg + kk * 50) / (gaugeCount + kk));
 }
 
-// ── V2: Country score with shrinkage ─────────────────────
+// ── V2: 범용 스코어링 (국가/주식 공용) ─────────────────
+// opts.thresholds — threshold 테이블 (기본: GAUGE_THRESHOLDS)
+// opts.criticals — critical 게이지 목록 (기본: CRITICAL_GAUGE_IDS)
+// opts.k         — 수축 강도 (기본: 4)
+
+function computeScoreV2(gauges, opts) {
+  var thresholds = (opts && opts.thresholds) || null;
+  var criticals = (opts && opts.criticals) || CRITICAL_GAUGE_IDS;
+  var k = (opts && opts.k != null) ? opts.k : SHRINK_K;
+
+  var gaugeScores = {};
+  var byAxis = {};
+
+  var gIds = Object.keys(gauges);
+  for (var i = 0; i < gIds.length; i++) {
+    var gId = gIds[i];
+    var g = gauges[gId];
+    if (!g || g.value == null) continue;
+
+    var val = typeof g.value === 'string' ? parseFloat(g.value) : g.value;
+    if (isNaN(val)) continue;
+
+    var result = gradeGauge(gId, val, thresholds);
+    if (!result.grade) continue;
+
+    var isCritical = criticals.indexOf(gId) !== -1;
+    var weight = isCritical ? 2 : 1;
+    gaugeScores[gId] = { score: result.score, grade: result.grade, weight: weight };
+
+    var ax = g.axis || 'unknown';
+    if (!byAxis[ax]) byAxis[ax] = [];
+    byAxis[ax].push({ gaugeId: gId, score: result.score, grade: result.grade, weight: weight });
+  }
+
+  // System scores: weighted mean (importance) → shrink (n=actual count)
+  var systemScores = {};
+  var axKeys = Object.keys(byAxis);
+  for (var a = 0; a < axKeys.length; a++) {
+    var ax = axKeys[a];
+    var items = byAxis[ax];
+    var tw = 0, ws = 0;
+    var hasAlert = false;
+    var alertCount = 0;
+    for (var j = 0; j < items.length; j++) {
+      tw += items[j].weight;
+      ws += items[j].score * items[j].weight;
+      if (items[j].grade === 'alert') {
+        hasAlert = true;
+        alertCount++;
+      }
+    }
+    var rawAvg = ws / tw;
+    var sc = shrinkScore(rawAvg, items.length, k);
+    systemScores[ax] = {
+      score: sc,
+      grade: sc >= 70 ? 'good' : sc >= 40 ? 'caution' : 'alert',
+      count: items.length,
+      hasAlert: hasAlert,
+      alertCount: alertCount,
+    };
+  }
+
+  // Overall: weighted mean (importance) → shrink (n=actual count)
+  var allItems = [];
+  for (var kk = 0; kk < axKeys.length; kk++) {
+    var axItems = byAxis[axKeys[kk]];
+    for (var m = 0; m < axItems.length; m++) {
+      allItems.push(axItems[m]);
+    }
+  }
+  var totalW = 0, totalS = 0;
+  for (var p = 0; p < allItems.length; p++) {
+    totalW += allItems[p].weight;
+    totalS += allItems[p].score * allItems[p].weight;
+  }
+  var overallRaw = totalW > 0 ? totalS / totalW : 50;
+  var score = shrinkScore(overallRaw, allItems.length, k);
+  var confidence = allItems.length / (Object.keys(thresholds || GAUGE_THRESHOLDS).length || 20);
+
+  var alertGaugeIds = [];
+  var gsKeys = Object.keys(gaugeScores);
+  for (var q = 0; q < gsKeys.length; q++) {
+    if (gaugeScores[gsKeys[q]].grade === 'alert') {
+      alertGaugeIds.push(gsKeys[q]);
+    }
+  }
+
+  return {
+    score: score,
+    confidence: confidence,
+    gaugeScores: gaugeScores,
+    systemScores: systemScores,
+    alertGauges: alertGaugeIds,
+  };
+}
+
+// ── V2: Country score (기존 래퍼 — 하위호환) ──────────
 
 function computeCountryScoreV2(gauges) {
   var gaugeScores = {};
@@ -341,6 +439,7 @@ module.exports = {
   scoreGauge: scoreGauge,
   gradeGauge: gradeGauge,
   shrinkScore: shrinkScore,
+  computeScoreV2: computeScoreV2,
   computeCountryScore: computeCountryScore,
   computeCountryScoreV2: computeCountryScoreV2,
   computeGdpWeightedScore: computeGdpWeightedScore,
