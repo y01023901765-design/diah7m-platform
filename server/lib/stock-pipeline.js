@@ -45,6 +45,45 @@ var STOCK_GAUGE_MAP = {
   SG_S2: { source: 'SATELLITE', api: 'fetchLandsat' },
 };
 
+// ── Yahoo crumb 인증 (quoteSummary v10 필수) ────────
+
+var _crumb = null;
+var _crumbCookies = null;
+var _crumbTs = 0;
+var _crumbTTL = 3600 * 1000; // 1시간 유효
+
+async function ensureCrumb() {
+  var now = Date.now();
+  if (_crumb && _crumbCookies && (now - _crumbTs < _crumbTTL)) return;
+
+  try {
+    // 1) fc.yahoo.com → Set-Cookie 수집
+    var cookieRes = await axios.get('https://fc.yahoo.com', {
+      timeout: 5000,
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      maxRedirects: 0,
+      validateStatus: function (s) { return s < 400 || s === 404; },
+    });
+    var setCookies = cookieRes.headers['set-cookie'] || [];
+    _crumbCookies = setCookies.map(function (c) { return c.split(';')[0]; }).join('; ');
+
+    // 2) crumb 토큰 가져오기
+    var crumbRes = await axios.get('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Cookie': _crumbCookies,
+      },
+    });
+    _crumb = crumbRes.data;
+    _crumbTs = now;
+  } catch (err) {
+    console.error('[StockPipeline] crumb fetch error:', err.message);
+    _crumb = null;
+    _crumbCookies = null;
+  }
+}
+
 // ── Yahoo quoteSummary API ──────────────────────────
 
 var _summaryCache = {};
@@ -55,14 +94,18 @@ async function fetchYahooSummary(ticker) {
   var cached = _summaryCache[ticker];
   if (cached && (now - cached.ts < _summaryTTL)) return cached.data;
 
+  await ensureCrumb();
   var modules = 'defaultKeyStatistics,financialData,summaryDetail';
-  var url = YAHOO_BASE + '/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
+  var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
 
   try {
+    var headers = { 'User-Agent': 'Mozilla/5.0' };
+    if (_crumbCookies) headers['Cookie'] = _crumbCookies;
+
     var res = await axios.get(url, {
-      params: { modules: modules },
+      params: { modules: modules, crumb: _crumb || '' },
       timeout: YAHOO_TIMEOUT,
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+      headers: headers,
     });
 
     var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
@@ -72,6 +115,12 @@ async function fetchYahooSummary(ticker) {
     }
     return data;
   } catch (err) {
+    // crumb 만료 시 재시도 1회
+    if (err.response && err.response.status === 401 && _crumb) {
+      _crumb = null;
+      _crumbTs = 0;
+      return fetchYahooSummary(ticker);
+    }
     console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
     return null;
   }
