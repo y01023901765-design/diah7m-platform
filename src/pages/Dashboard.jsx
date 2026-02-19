@@ -8,18 +8,91 @@ import { TIER_ACCESS } from '../data/gauges';
 import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
 import * as API from '../api';
 
-// ── 글로벌 게이지 ID → 프론트 데모 키 매핑 ──
-const GLOBAL_TO_FRONT = {
-  G_I1:'I1', G_I2:'I4', G_I3:'I5',           // 금리, 환율, 통화량
-  G_E1:'E1', G_E2:'E2', G_E3:'E3',           // 수출, 수입, 경상수지
-  G_C1:'C5', G_C2:'C2',                       // 소비, 소비자심리
-  G_S1:'S3', G_S2:'S4',                       // CLI, 정부지출
-  G_F1:'F3', G_F2:'P4',                       // 주식시장, 정부부채
-  G_P1:'P1', G_P2:'P2',                       // CPI, PPI
-  G_R1:'O1', G_R2:'O2',                       // 산업생산, PMI
-  G_L1:'L2', G_L2:'L1',                       // 실업률, 경제활동참가율
-  G_D1:'O4', G_D2:'C4',                       // GDP성장률, 자본형성
-};
+// ── [Phase 1] 혼용 봉인 가드 + 엔티티 변환기 ──
+
+/** 혼용 봉인 자동 안전장치 — datasetId=GLOBAL인데 한국 D 키와 겹치면 경고 */
+function assertNoMix(entityInfo, isKorea) {
+  if (!isKorea && entityInfo?.datasetId === 'GLOBAL') {
+    const globalKeys = Object.keys(entityInfo.gauges || {});
+    const koreaKeys = Object.keys(D);
+    const overlap = globalKeys.filter(k => koreaKeys.includes(k));
+    if (overlap.length > 0) {
+      console.error('[DIAH-7M] 혼용 감지! 글로벌 키가 한국 D에 존재:', overlap);
+    }
+  }
+}
+
+/** 서버 응답 → 프론트 렌더링 데이터 변환 (모든 엔티티 공용) */
+function buildEntityData(entityInfo, lang) {
+  const L = lang || 'ko';
+  const gaugeData = {};
+  const sysData = {};
+
+  // 1) gauges → 프론트 GaugeRow 형식
+  for (const [gId, g] of Object.entries(entityInfo.gauges || {})) {
+    if (g.value == null) continue;
+    const v = g.value;
+    // 상태 판정: 서버 thresholds 있으면 신뢰, 없으면 프론트 임시
+    let grade;
+    if (g.thresholds) {
+      const { good: gd, warn: wn, alarm: al } = g.thresholds;
+      grade = v >= al ? '경보' : v >= wn ? '주의' : '양호';
+    } else {
+      const absV = Math.abs(v);
+      grade = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
+    }
+    gaugeData[gId] = {
+      c: gId,
+      n: g.name?.[L] || g.name?.en || gId,
+      s: g.axis,
+      u: g.unit || '',
+      v,
+      p: g.history?.[1]?.value ?? v,
+      ch: v >= 0 ? `+${v.toFixed?.(1) ?? v}` : `${v.toFixed?.(1) ?? v}`,
+      g: grade,
+      note: `${g.provider || ''} ${g.date || ''}`.trim(),
+      t: null,
+      m: null,
+      act: [],
+      bs: null,
+      _live: true,
+      _global: true,
+    };
+  }
+
+  // 2) axes → 프론트 SYS 형식
+  const axesSource = entityInfo.axes || reverseAxesFromGauges(entityInfo.gauges);
+
+  for (const [axId, ax] of Object.entries(axesSource)) {
+    const keys = (ax.keys || ax.gauges || []).filter(k => gaugeData[k]);
+    if (keys.length === 0) continue;
+    const scores = keys.map(k => gaugeData[k].g === '양호' ? 100 : gaugeData[k].g === '주의' ? 50 : 0);
+    const sc = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const g = sc >= 70 ? '양호' : sc >= 40 ? '주의' : '경보';
+    sysData[axId] = {
+      tK: ax.tierKey || axId,
+      name: ax.name,
+      icon: ax.icon || '📊',
+      color: ax.color || '#888',
+      g,
+      sc,
+      keys,
+    };
+  }
+
+  return { gaugeData, sysData };
+}
+
+/** 폴백: 구버전 서버 (axes 필드 없을 때) */
+function reverseAxesFromGauges(gauges) {
+  const axMap = {};
+  for (const [gId, g] of Object.entries(gauges || {})) {
+    if (!g.axis) continue;
+    if (!axMap[g.axis]) axMap[g.axis] = { keys: [] };
+    axMap[g.axis].keys.push(gId);
+  }
+  return axMap;
+}
 
 // ── 서버 새ID → 프론트 구ID 매핑 ──
 const SERVER_TO_FRONT = {
@@ -43,35 +116,7 @@ const SERVER_TO_FRONT = {
   L1_UNEMPLOYMENT:'L2', L2_PARTICIPATION:'L1', L3_WAGE:'L1', L4_HOURS:'L1', L5_YOUTH_UNEMP:'L2',
 };
 
-// ── 글로벌 데이터 머지: countryInfo.gauges 객체 → 프론트 데모 덮어쓰기 ──
-function mergeGlobalData(demoD, globalGauges) {
-  if (!globalGauges || typeof globalGauges !== 'object') return demoD;
-  const merged = { ...demoD };
-  const applied = new Set();
-  for (const [gId, gData] of Object.entries(globalGauges)) {
-    const key = GLOBAL_TO_FRONT[gId];
-    if (!key || !merged[key] || applied.has(key)) continue;
-    if (gData.value == null) continue;
-    applied.add(key);
-    const v = gData.value;
-    const absV = Math.abs(v);
-    const newG = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
-    merged[key] = {
-      ...merged[key],
-      v,
-      p: merged[key].v,
-      g: newG,
-      n: gData.name?.ko || gData.name?.en || merged[key].n,
-      u: gData.unit || merged[key].u,
-      ch: v >= 0 ? `+${v.toFixed?.(1) ?? v}` : `${v.toFixed?.(1) ?? v}`,
-      note: `${gData.provider || 'WB'} ${gData.date || ''}`,
-      _live: true,
-    };
-  }
-  return merged;
-}
-
-// ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
+// ── 실데이터 ↔ 데모 머지 (한국 전용): API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
 function mergeGaugeData(demoD, liveResults) {
   if (!liveResults || !Array.isArray(liveResults)) return demoD;
   const merged = { ...demoD };
@@ -174,18 +219,39 @@ function DashboardPage({user,onNav,lang,country,city}){
     return () => { cancelled = true; };
   },[iso3, isKorea]);
 
-  // 실데이터 있으면 머지, 없으면 데모 그대로
-  // 한국: liveData.gauges 배열 사용 | 글로벌: countryInfo.gauges 객체 사용
-  const gaugeData = !isKorea && countryInfo?.gauges
-    ? mergeGlobalData(D, countryInfo.gauges)
-    : liveData?.gauges ? mergeGaugeData(D, liveData.gauges) : D;
+  // ★ datasetId 봉인: GLOBAL 데이터는 한국 D와 절대 병합하지 않음
+  const isGlobalMode = !isKorea && countryInfo?.gauges;
+  if (isGlobalMode) assertNoMix(countryInfo, isKorea);
+
+  const { gaugeData: globalGD, sysData: globalSys } =
+    isGlobalMode ? buildEntityData(countryInfo, L) : {};
+
+  const gaugeData = isGlobalMode ? globalGD
+    : (liveData?.gauges ? mergeGaugeData(D, liveData.gauges) : D);
+  const activeSys = isGlobalMode ? globalSys : SYS;
+
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
-  // 종합 점수: 양호=100, 주의=50, 경보=0 → 가중 평균
   const totalG=allG.length||1;
-  const compositeScore=((good*100+caution*50+alertCnt*0)/totalG).toFixed(1);
+  const rawScore=((good*100+caution*50+alertCnt*0)/totalG);
+
+  // ★ 커버리지 기반 점수 감쇠 (coverage < 70% → 예비 판정)
+  const coveragePct = countryInfo?.gaugeCount && countryInfo?.totalGauges
+    ? Math.round(countryInfo.gaugeCount / countryInfo.totalGauges * 100) : 100;
+  const isPreliminary = isGlobalMode && coveragePct < 70;
+  const confidence = Math.min(1, coveragePct / 70);
+  const compositeScore = isGlobalMode
+    ? (rawScore * confidence).toFixed(1)
+    : rawScore.toFixed(1);
   const scoreColor=compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger;
-  const tabs=[{id:'overview',label:t('overview',L)},{id:'report',label:t('gaugeTab',L)},{id:'satellite',label:t('satTab',L)},{id:'alerts',label:t('alertTab',L)+(alertCnt>0?` (${alertCnt})`:'')  }];
+
+  // ★ 글로벌 모드: 위성 탭 숨김
+  const tabs=[
+    {id:'overview',label:t('overview',L)},
+    {id:'report',label:t('gaugeTab',L)},
+    ...(!isGlobalMode ? [{id:'satellite',label:t('satTab',L)}] : []),
+    {id:'alerts',label:t('alertTab',L)+(alertCnt>0?` (${alertCnt})`:'')}
+  ];
   const demoUser={...user,plan:demoPlan};
   // 43국 리스트
   const COUNTRIES=[
@@ -254,9 +320,15 @@ function DashboardPage({user,onNav,lang,country,city}){
         <span style={{fontSize:24}}>{countryInfo?.flag||'🌍'}</span>
         <div>
           <div style={{fontSize:18,fontWeight:800,color:LT.text}}>{countryInfo?.name?.[L]||countryInfo?.name?.en||iso3}</div>
-          <div style={{fontSize:13,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||20} {t('gaugesLabel',L)} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
+          <div style={{fontSize:13,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('gaugesLabel',L)} · {countryInfo?.coverageRate||''} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
         </div>
         <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:"6px 12px",borderRadius:6,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:12,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
+      </div>}
+      {/* ★ 커버리지 배너 + 예비 판정 경고 */}
+      {isGlobalMode&&<div style={{background:isPreliminary?`${LT.warn}10`:LT.bg2,borderRadius:LT.smRadius,padding:"10px 16px",marginBottom:12,border:`1px solid ${isPreliminary?LT.warn+'30':LT.border}`,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <span style={{fontSize:14}}>🌍</span>
+        <span style={{fontSize:13,color:LT.textMid,fontWeight:600}}>{countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('globalCoverage',L)||'데이터 커버리지'} · {countryInfo?.coverageRate||'0%'}</span>
+        {isPreliminary&&<span style={{fontSize:12,color:LT.warn,fontWeight:700,marginLeft:"auto"}}>⚠ {coveragePct}% {t('globalCoverage',L)||'커버리지'} — 예비 판정</span>}
       </div>}
       {/* 도시 컨텍스트 — CountryMap에서 도시 클릭 시 */}
       {city&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,padding:"10px 16px",background:`${LT.accent}08`,borderRadius:LT.cardRadius,border:`1px solid ${LT.accent}20`}}>
@@ -272,6 +344,7 @@ function DashboardPage({user,onNav,lang,country,city}){
           <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:8}}>
             <span className="score-big" style={{fontSize:42,fontWeight:900,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
             <span style={{fontSize:16,color:LT.textDim}}>/ 100</span>
+            {isPreliminary&&<span style={{fontSize:12,color:LT.warn,fontWeight:700,padding:"2px 6px",borderRadius:4,background:`${LT.warn}10`,marginLeft:4}}>예비</span>}
           </div>
           <div style={{display:"flex",gap:16,marginTop:12}}>
             {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:20,fontWeight:800,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:16,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
@@ -279,7 +352,7 @@ function DashboardPage({user,onNav,lang,country,city}){
           <div style={{marginTop:12}}><StateIndicator lang={L}/></div>
         </div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:12,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <RadarChart lang={L}/>
+          <RadarChart lang={L} sysData={activeSys}/>
         </div>
       </div>
       {/* Dual Lock + Delta */}
@@ -308,25 +381,26 @@ function DashboardPage({user,onNav,lang,country,city}){
       {/* 9 Systems */}
       <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>{t("nineSystems",L)}</div>
       <div className="grid-3" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-        {Object.entries(SYS).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:'0 1px 2px rgba(0,0,0,.05)',borderRadius:8,padding:"12px 10px",border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
+        {Object.entries(activeSys).map(([k,s])=>{const col=gc(s.g);const alertKeys=s.keys.filter(gk=>gaugeData[gk]?.g==='경보');const sName=s.name?.[L]||s.name?.en||sysN(k,L);const sBrief=s.name?'':sysB(k,L);return(<div key={k} onClick={()=>setTab('report')} style={{background:LT.surface,boxShadow:'0 1px 2px rgba(0,0,0,.05)',borderRadius:8,padding:"12px 10px",border:`1px solid ${LT.border}`,cursor:"pointer",transition:"box-shadow .15s"}}
           onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.1)'} onMouseLeave={e=>e.currentTarget.style.boxShadow='0 1px 2px rgba(0,0,0,.05)'}>
           <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:16}}>{s.icon}</span><div style={{width:28,height:28,borderRadius:14,background:`conic-gradient(${col} ${s.sc}%, ${LT.border} ${s.sc}%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:20,borderRadius:10,background:LT.bg2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:col}}>{s.sc}</div></div></div>
-          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:4}}>{sysN(k,L)}</div>
-          <div style={{fontSize:14,color:LT.textDim}}>{sysB(k,L)} · {s.keys.length} {t('gaugesLabel',L)}</div>
+          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:4}}>{sName}</div>
+          <div style={{fontSize:14,color:LT.textDim}}>{sBrief}{sBrief?' · ':''}{s.keys.length} {t('gaugesLabel',L)}</div>
           {alertKeys.length>0&&<div style={{fontSize:13,color:LT.danger,fontWeight:600,marginTop:4}}>⚠ {alertKeys.length}{t('alertsDetected',L)}</div>}
         </div>);})}
       </div>
     </>}
     {tab==='report'&&<>
       <div style={{marginBottom:16}}><div style={{fontSize:18,fontWeight:800,color:LT.text}}>{t("gaugeDetail",L)}</div><div style={{fontSize:16,color:LT.textMid,marginTop:4}}>{t("gaugeDetailSub",L)}</div></div>
-      {Object.entries(SYS).map(([k,sys])=>{
-        const needsTier=!TIER_ACCESS[demoUser?.plan||'FREE']?.systems?.includes(k);
-        const reqTier=k==='A1'?'FREE':['A2','A3'].includes(k)?'BASIC':'PRO';
+      {Object.entries(activeSys).map(([k,sys])=>{
+        const tierKey = sys.tK || k;
+        const needsTier=!TIER_ACCESS[demoUser?.plan||'FREE']?.systems?.includes(tierKey);
+        const reqTier=tierKey==='A1'?'FREE':['A2','A3'].includes(tierKey)?'BASIC':'PRO';
         return needsTier?
           <TierLock key={k} plan={demoUser?.plan} req={reqTier} lang={L}>
-            <SystemSection sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData}/>
+            <SystemSection sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData} gaugeData={isGlobalMode?gaugeData:null} isGlobal={isGlobalMode}/>
           </TierLock>:
-          <SystemSection key={k} sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData}/>;
+          <SystemSection key={k} sysKey={k} sys={sys} expanded={expanded} toggle={toggle} lang={L} liveSat={satData} gaugeData={isGlobalMode?gaugeData:null} isGlobal={isGlobalMode}/>;
       })}
     </>}
     {tab==='satellite'&&<>

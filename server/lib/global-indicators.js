@@ -259,15 +259,15 @@ const GLOBAL_COMMODITIES = {
 // 축(Axis) → 게이지 매핑
 // ═══════════════════════════════════════════
 const AXIS_MAP = {
-  AX1: { name: { en: 'Circulatory', ko: '순환계' }, bodyPart: 'heart', gauges: ['G_I1','G_I2','G_I3'] },
-  AX2: { name: { en: 'Respiratory', ko: '호흡계' }, bodyPart: 'lungs', gauges: ['G_E1','G_E2','G_E3'] },
-  AX3: { name: { en: 'Digestive', ko: '소화계' }, bodyPart: 'stomach', gauges: ['G_C1','G_C2'] },
-  AX4: { name: { en: 'Nervous', ko: '신경계' }, bodyPart: 'brain', gauges: ['G_S1','G_S2'] },
-  AX5: { name: { en: 'Immune', ko: '면역계' }, bodyPart: 'shield', gauges: ['G_F1','G_F2'] },
-  AX6: { name: { en: 'Endocrine', ko: '내분비계' }, bodyPart: 'glands', gauges: ['G_P1','G_P2'] },
-  AX7: { name: { en: 'Musculoskeletal', ko: '근골격계' }, bodyPart: 'muscle', gauges: ['G_R1','G_R2'] },
-  AX8: { name: { en: 'Urinary', ko: '비뇨계' }, bodyPart: 'kidneys', gauges: ['G_L1','G_L2'] },
-  AX9: { name: { en: 'Reproductive', ko: '생식계' }, bodyPart: 'growth', gauges: ['G_D1','G_D2'] },
+  AX1: { name: { en: 'Circulatory', ko: '순환계' }, bodyPart: 'heart', icon: '❤️', color: '#ff4d6a', tierKey: 'A1', gauges: ['G_I1','G_I2','G_I3'] },
+  AX2: { name: { en: 'Respiratory', ko: '호흡계' }, bodyPart: 'lungs', icon: '🫁', color: '#3b82f6', tierKey: 'A2', gauges: ['G_E1','G_E2','G_E3'] },
+  AX3: { name: { en: 'Digestive', ko: '소화계' }, bodyPart: 'stomach', icon: '🛒', color: '#f0b429', tierKey: 'A3', gauges: ['G_C1','G_C2'] },
+  AX4: { name: { en: 'Nervous', ko: '신경계' }, bodyPart: 'brain', icon: '🧠', color: '#8b5cf6', tierKey: 'A4', gauges: ['G_S1','G_S2'] },
+  AX5: { name: { en: 'Immune', ko: '면역계' }, bodyPart: 'shield', icon: '🛡️', color: '#10b981', tierKey: 'A5', gauges: ['G_F1','G_F2'] },
+  AX6: { name: { en: 'Endocrine', ko: '내분비계' }, bodyPart: 'glands', icon: '💊', color: '#ec4899', tierKey: 'A6', gauges: ['G_P1','G_P2'] },
+  AX7: { name: { en: 'Musculoskeletal', ko: '근골격계' }, bodyPart: 'muscle', icon: '🏭', color: '#f97316', tierKey: 'A7', gauges: ['G_R1','G_R2'] },
+  AX8: { name: { en: 'Urinary', ko: '비뇨계' }, bodyPart: 'kidneys', icon: '👥', color: '#dc2626', tierKey: 'A8', gauges: ['G_L1','G_L2'] },
+  AX9: { name: { en: 'Reproductive', ko: '생식계' }, bodyPart: 'growth', icon: '🌍', color: '#0ea5e9', tierKey: 'A9', gauges: ['G_D1','G_D2'] },
 };
 
 /** 게이지 ID 목록 */

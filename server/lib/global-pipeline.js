@@ -17,7 +17,7 @@
 'use strict';
 
 const { COUNTRIES, WB_COUNTRIES, OECD_MEMBERS, getWBCountryString, getOECDCountryString } = require('./country-profiles');
-const { GLOBAL_GAUGES, GLOBAL_COMMODITIES, GAUGE_IDS } = require('./global-indicators');
+const { GLOBAL_GAUGES, GLOBAL_COMMODITIES, GAUGE_IDS, AXIS_MAP } = require('./global-indicators');
 
 // ═══════════════════════════════════════════
 // 설정
@@ -689,6 +689,43 @@ function countCoveredCountries(merged) {
 
 
 // ═══════════════════════════════════════════
+// 축(Axes) 메타 빌더 + 응답 검증
+// ═══════════════════════════════════════════
+
+/** 데이터 있는 축만 필터링하여 프론트에 전달 */
+function buildAxesInfo(gauges) {
+  const axes = {};
+  for (const [axId, axMeta] of Object.entries(AXIS_MAP)) {
+    const liveKeys = axMeta.gauges.filter(gId => gauges[gId]?.value != null);
+    if (liveKeys.length === 0) continue;
+    axes[axId] = {
+      ...axMeta,
+      keys: liveKeys,
+      gaugeCount: liveKeys.length,
+      totalGauges: axMeta.gauges.length,
+    };
+  }
+  return axes;
+}
+
+/** 서버 self-validate: API 계약 위반 시 errors에 추가 */
+function validateResponse(resp) {
+  const contractErrors = [];
+  if (!resp.datasetId) contractErrors.push('datasetId 누락');
+  if (!resp.entityType) contractErrors.push('entityType 누락');
+  for (const [axId, ax] of Object.entries(resp.axes || {})) {
+    for (const gKey of (ax.keys || [])) {
+      if (!resp.gauges[gKey]) contractErrors.push(`axes.${axId}.keys에 존재하지 않는 gaugeId: ${gKey}`);
+    }
+    if (!ax.tierKey) contractErrors.push(`axes.${axId}.tierKey 누락`);
+  }
+  if (contractErrors.length) {
+    resp.errors = [...(resp.errors || []), ...contractErrors.map(msg => ({ type: 'contract', msg }))];
+  }
+  return resp;
+}
+
+// ═══════════════════════════════════════════
 // 단일 국가 수집 (국가별 보고서용)
 // ═══════════════════════════════════════════
 
@@ -701,12 +738,27 @@ async function fetchCountryData(iso3, options = {}) {
   if (!country) throw new Error(`Unknown country: ${iso3}`);
 
   if (country.tier === 'satellite_only') {
-    return {
+    return validateResponse({
+      entityType: 'country',
+      datasetId: 'GLOBAL',
       country: iso3,
+      countryName: country.name,
       tier: 'satellite_only',
+      currency: country.currency,
       gauges: {},
+      axes: {},
+      axisOrder: Object.keys(AXIS_MAP),
+      gaugeCount: 0,
+      totalGauges: GAUGE_IDS.length,
+      coverageRate: '0%',
+      errors: [],
+      fetchedAt: new Date().toISOString(),
       note: 'Satellite data only — official indicators excluded',
-    };
+      // Phase 2 예약 필드
+      parentId: null,
+      childrenSummary: null,
+      causalChain: { factor: [], trigger: [], cause: null, manifest: [], result: [] },
+    });
   }
 
   const { fredApiKey } = options;
@@ -744,6 +796,9 @@ async function fetchCountryData(iso3, options = {}) {
             provider: source.provider,
             unit: gauge.unit,
             history: data.slice(0, 10), // 최근 10개
+            // Phase 2 예약: 서버 기준 활성화 시 프론트 자동 전환
+            thresholds: null,
+            scoreRule: null,
           };
           break; // 첫 번째 성공 소스에서 중단
         }
@@ -753,18 +808,34 @@ async function fetchCountryData(iso3, options = {}) {
     }
   }
 
-  return {
+  return validateResponse({
+    // ── 필수 필드 (Phase 1) ──
+    entityType: 'country',
+    datasetId: 'GLOBAL',
     country: iso3,
     countryName: country.name,
     tier: country.tier,
     currency: country.currency,
     gauges,
+    axes: buildAxesInfo(gauges),
+    axisOrder: Object.keys(AXIS_MAP),
     gaugeCount: Object.keys(gauges).length,
     totalGauges: GAUGE_IDS.length,
     coverageRate: `${Math.round(Object.keys(gauges).length / GAUGE_IDS.length * 100)}%`,
     errors,
     fetchedAt: new Date().toISOString(),
-  };
+
+    // ── Phase 2 예약 필드 ──
+    parentId: null,
+    childrenSummary: null,
+    causalChain: {
+      factor: [],
+      trigger: [],
+      cause: null,
+      manifest: [],
+      result: [],
+    },
+  });
 }
 
 

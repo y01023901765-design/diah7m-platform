@@ -2,17 +2,21 @@ import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import { SYS, sysN } from './TierLock';
 
-function RadarChart({lang:RL}){
-  const axes=Object.entries(SYS).map(([k,s])=>({id:k,...s}));
+function RadarChart({lang:RL,sysData}){
+  const sys=sysData||SYS;
+  const axes=Object.entries(sys).map(([k,s])=>({id:k,...s}));
+  const axisCount=axes.length||1;
   const cx=120,cy=120,r=90;
-  const getP=(i,v)=>{const a=(Math.PI*2*i/9)-Math.PI/2;return[cx+r*(v/100)*Math.cos(a),cy+r*(v/100)*Math.sin(a)];};
+  const getP=(i,v)=>{const a=(Math.PI*2*i/axisCount)-Math.PI/2;return[cx+r*(v/100)*Math.cos(a),cy+r*(v/100)*Math.sin(a)];};
   const poly=axes.map((a,i)=>getP(i,a.sc).join(",")).join(" ");
   const grid=[25,50,75,100];
+  // 라벨: name 있으면 사용, 없으면 sysN 폴백
+  const getLabel=(a)=>{const n=a.name?.[RL]||a.name?.en||sysN(a.id,RL);return n.slice(0,3);};
   return(<svg viewBox="0 0 240 240" style={{width:"100%",maxWidth:260}}>
     {grid.map(g=>(<polygon key={g} points={axes.map((_,i)=>getP(i,g).join(",")).join(" ")} fill="none" stroke={LT.border} strokeWidth={.5}/>))}
     {axes.map((_,i)=>{const[x,y]=getP(i,100);return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke={LT.border} strokeWidth={.5}/>;} )}
     <polygon points={poly} fill="#E0E0E0" stroke={LT.accent} strokeWidth={1.5}/>
-    {axes.map((a,i)=>{const[px,py]=getP(i,a.sc);const[lx,ly]=getP(i,118);return(<g key={a.id}><circle cx={px} cy={py} r={3} fill={a.color}/><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fill={LT.textMid} fontSize={8} fontWeight={600}>{a.icon}{sysN(a.id,RL).slice(0,3)}</text></g>);})}
+    {axes.map((a,i)=>{const[px,py]=getP(i,a.sc);const[lx,ly]=getP(i,118);return(<g key={a.id}><circle cx={px} cy={py} r={3} fill={a.color}/><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fill={LT.textMid} fontSize={8} fontWeight={600}>{a.icon}{getLabel(a)}</text></g>);})}
   </svg>);
 }
 
