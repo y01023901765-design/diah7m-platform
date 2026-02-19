@@ -8,6 +8,19 @@ import { TIER_ACCESS } from '../data/gauges';
 import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
 import * as API from '../api';
 
+// ── 글로벌 게이지 ID → 프론트 데모 키 매핑 ──
+const GLOBAL_TO_FRONT = {
+  G_I1:'I1', G_I2:'I4', G_I3:'I5',           // 금리, 환율, 통화량
+  G_E1:'E1', G_E2:'E2', G_E3:'E3',           // 수출, 수입, 경상수지
+  G_C1:'C5', G_C2:'C2',                       // 소비, 소비자심리
+  G_S1:'S3', G_S2:'S4',                       // CLI, 정부지출
+  G_F1:'F3', G_F2:'P4',                       // 주식시장, 정부부채
+  G_P1:'P1', G_P2:'P2',                       // CPI, PPI
+  G_R1:'O1', G_R2:'O2',                       // 산업생산, PMI
+  G_L1:'L2', G_L2:'L1',                       // 실업률, 경제활동참가율
+  G_D1:'O4', G_D2:'C4',                       // GDP성장률, 자본형성
+};
+
 // ── 서버 새ID → 프론트 구ID 매핑 ──
 const SERVER_TO_FRONT = {
   // O축 → 기존 A7(O/M)
@@ -29,6 +42,34 @@ const SERVER_TO_FRONT = {
   // L축 → 기존 A8(L/D)
   L1_UNEMPLOYMENT:'L2', L2_PARTICIPATION:'L1', L3_WAGE:'L1', L4_HOURS:'L1', L5_YOUTH_UNEMP:'L2',
 };
+
+// ── 글로벌 데이터 머지: countryInfo.gauges 객체 → 프론트 데모 덮어쓰기 ──
+function mergeGlobalData(demoD, globalGauges) {
+  if (!globalGauges || typeof globalGauges !== 'object') return demoD;
+  const merged = { ...demoD };
+  const applied = new Set();
+  for (const [gId, gData] of Object.entries(globalGauges)) {
+    const key = GLOBAL_TO_FRONT[gId];
+    if (!key || !merged[key] || applied.has(key)) continue;
+    if (gData.value == null) continue;
+    applied.add(key);
+    const v = gData.value;
+    const absV = Math.abs(v);
+    const newG = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
+    merged[key] = {
+      ...merged[key],
+      v,
+      p: merged[key].v,
+      g: newG,
+      n: gData.name?.ko || gData.name?.en || merged[key].n,
+      u: gData.unit || merged[key].u,
+      ch: v >= 0 ? `+${v.toFixed?.(1) ?? v}` : `${v.toFixed?.(1) ?? v}`,
+      note: `${gData.provider || 'WB'} ${gData.date || ''}`,
+      _live: true,
+    };
+  }
+  return merged;
+}
 
 // ── 실데이터 ↔ 데모 머지: API 값이 있으면 덮어쓰기, 없으면 데모 유지 ──
 function mergeGaugeData(demoD, liveResults) {
@@ -134,7 +175,10 @@ function DashboardPage({user,onNav,lang,country,city}){
   },[iso3, isKorea]);
 
   // 실데이터 있으면 머지, 없으면 데모 그대로
-  const gaugeData = liveData?.gauges ? mergeGaugeData(D, liveData.gauges) : D;
+  // 한국: liveData.gauges 배열 사용 | 글로벌: countryInfo.gauges 객체 사용
+  const gaugeData = !isKorea && countryInfo?.gauges
+    ? mergeGlobalData(D, countryInfo.gauges)
+    : liveData?.gauges ? mergeGaugeData(D, liveData.gauges) : D;
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
   // 종합 점수: 양호=100, 주의=50, 경보=0 → 가중 평균
