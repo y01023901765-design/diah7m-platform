@@ -12,6 +12,7 @@
  * ★ 디자인 토큰 적용 (LT.fs / LT.fw / LT.sp)
  */
 import { L as LT } from '../theme';
+import { t } from '../i18n';
 
 // ═══════════════════════════════════
 // 대륙 메타 (아이콘 + 한/영 이름)
@@ -135,16 +136,16 @@ function deltaInfo(current, prev, isInverse) {
   };
 }
 
-/** 경과 시간 텍스트 */
-function timeAgo(isoString) {
+/** 경과 시간 텍스트 (다국어) */
+function timeAgo(isoString, lang) {
   if (!isoString) return '';
   const diff = Date.now() - new Date(isoString).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return '방금';
-  if (mins < 60) return `${mins}분 전`;
+  if (mins < 1) return t('timeJustNow', lang);
+  if (mins < 60) return `${mins}${t('timeMinAgo', lang)}`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}시간 전`;
-  return `${Math.floor(hrs / 24)}일 전`;
+  if (hrs < 24) return `${hrs}${t('timeHrAgo', lang)}`;
+  return `${Math.floor(hrs / 24)}${t('timeDayAgo', lang)}`;
 }
 
 // ═══════════════════════════════════
@@ -176,13 +177,13 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
         <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.md }}>
           <span style={{ fontSize: LT.fs['2xl'] }}>🌍</span>
           <span style={{ fontSize: LT.fs.lg, fontWeight: LT.fw.extra, color: LT.text }}>
-            {L === 'ko' ? '세계경제 펄스' : 'Global Economy Pulse'}
+            {t('gpTitle', L)}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.sm }}>
           {hasWorld && (
             <span style={{ fontSize: LT.fs.sm, color: LT.textDim }}>
-              {timeAgo(worldData.lastUpdated)} {L === 'ko' ? '갱신' : 'ago'}
+              {timeAgo(worldData.lastUpdated, L)} {t('timeUpdated', L)}
             </span>
           )}
           <span style={{
@@ -203,7 +204,7 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
           <div style={{ display: 'flex', alignItems: 'center', gap: LT.sp.xl, marginBottom: LT.sp.lg }}>
             <div>
               <div style={{ fontSize: LT.fs.xs, color: LT.textDim, fontWeight: LT.fw.semi, marginBottom: 2 }}>
-                {L === 'ko' ? '세계 건강 점수' : 'World Health Score'}
+                {t('gpHealthScore', L)}
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: LT.sp.xs }}>
                 <span style={{
@@ -217,7 +218,7 @@ export default function GlobalPulse({ worldData, commoditiesData, lang = 'ko' })
               </div>
             </div>
             <div style={{ fontSize: LT.fs.sm, color: LT.textDim, marginLeft: 'auto' }}>
-              {worldData.memberCount || 43}{L === 'ko' ? '개국' : ' countries'}
+              {worldData.memberCount || 43}{t('gpCountries', L)}
             </div>
           </div>
 
