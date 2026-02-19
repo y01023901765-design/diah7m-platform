@@ -463,20 +463,19 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   // -- Schema-compliant 보고서 생성 --
   router.post('/report', requireAuth, async (req, res) => {
     try {
-      if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine v1.1 required' });
+      if (!engine || !engine.diagnose) return res.status(503).json({ error: 'Engine v2.0 required' });
       const { gauges, thresholds, country_code, country_name, product_type, frequency, language } = req.body;
       if (!gauges || typeof gauges !== 'object') return res.status(400).json({ error: 'Gauge data required' });
 
-      const report = engine.generateReport(gauges, {
-        thresholds: thresholds || {},
-        countryCode: country_code || 'KR',
-        countryName: country_name || '대한민국',
-        productType: product_type || 'national',
-        frequency: frequency || 'monthly',
-        tier: req.user?.plan || 'FREE',
-        language: language || 'ko',
-        channel: 'web',
-      });
+      const report = await engine.diagnose(
+        Array.isArray(gauges) ? gauges : Object.entries(gauges).map(([id, v]) => ({ id, value: v })),
+        {
+          countryCode: country_code || 'KR',
+          countryName: country_name || '대한민국',
+          productType: product_type || 'national',
+          frequency: frequency || 'monthly',
+        }
+      );
 
       if (db) {
         await db.run(
@@ -496,36 +495,37 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   });
 
   // -- 자동 보고서 (캐시 데이터 → 엔진) --
-  router.get('/report/auto', requireAuth, (req, res) => {
-    if (!engine || !engine.generateReport) return res.status(503).json({ error: 'Engine unavailable' });
-    if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
+  router.get('/report/auto', requireAuth, async (req, res) => {
+    try {
+      if (!engine || !engine.diagnose) return res.status(503).json({ error: 'Engine unavailable' });
+      if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
 
-    const gaugeData = dataStore.toGaugeData();
-    const prevData = dataStore.toPrevData();
-    if (Object.keys(gaugeData).length === 0) {
-      // GPT 피드백: 404 대신 200 OK + demo 데이터
-      const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
-      return res.status(200).json({
-        success: true,
-        data: DEMO_DIAGNOSIS,
-        demo: true,
-        stale: true,
-        warnings: ['NO_DATA_USING_DEMO', 'Call POST /api/v1/data/refresh to collect real data']
-      });
+      const gaugeData = dataStore.toGaugeData();
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        return res.status(200).json({
+          success: true,
+          data: DEMO_DIAGNOSIS,
+          demo: true,
+          stale: true,
+          warnings: ['NO_DATA_USING_DEMO', 'Call POST /api/v1/data/refresh to collect real data']
+        });
+      }
+
+      const report = await engine.diagnose(
+        Array.isArray(gaugeData) ? gaugeData : Object.entries(gaugeData).map(([id, v]) => ({ id, value: typeof v === 'object' ? v.value : v })),
+        {
+          countryCode: req.query.country || 'KR',
+          countryName: req.query.country_name || '대한민국',
+          productType: 'national',
+          frequency: req.query.frequency || 'monthly',
+        }
+      );
+
+      res.json(report);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-
-    const report = engine.generateReport(gaugeData, {
-      prevData,
-      countryCode: req.query.country || 'KR',
-      countryName: req.query.country_name || '대한민국',
-      productType: 'national',
-      frequency: req.query.frequency || 'monthly',
-      tier: req.user?.plan || 'FREE',
-      language: req.query.lang || 'ko',
-      channel: 'web',
-    });
-
-    res.json(report);
   });
 
   // -- 진단 이력 --
