@@ -265,19 +265,19 @@ app.get('/api/ecos-data-probe', async (req, res) => {
   if (!ecosKey) return res.json({ error: 'ECOS_API_KEY not set' });
   const { stat, item, cycle } = req.query;
   if (!stat || !item) return res.json({ error: 'stat and item required' });
-  const c = cycle || 'M';
+  const cyc = cycle || 'M';
   const end = new Date().toISOString().slice(0, 7).replace('-', '');
   const start = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
-  const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/10/${stat}/${c}/${start}/${end}/${item}`;
+  const url = `https://ecos.bok.or.kr/api/StatisticSearch/${ecosKey}/json/kr/1/10/${stat}/${cyc}/${start}/${end}/${item}`;
   try {
     const r = await new Promise((resolve, reject) => {
       require('https').get(url, { timeout: 8000 }, (resp) => {
-        let d = ''; resp.on('data', c => d += c);
+        let d = ''; resp.on('data', chunk => d += chunk);
         resp.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ parseError: d.slice(0,200) }); } });
       }).on('error', reject);
     });
     const rows = r?.StatisticSearch?.row || [];
-    res.json({ stat, item, cycle: c, len: rows.length, msg: r?.RESULT?.MESSAGE, rows: rows.slice(0, 5) });
+    res.json({ stat, item, cycle: cyc, len: rows.length, msg: r?.RESULT?.MESSAGE, rows: rows.slice(0, 5) });
   } catch (e) { res.json({ error: e.message }); }
 });
 
