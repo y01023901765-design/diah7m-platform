@@ -330,11 +330,97 @@ async function fetchStockBatch(tickers) {
   return results;
 }
 
+// ── ticker → Yahoo symbol 매핑 ───────────────────────
+
+// 한국(.KS), 일본(.T), 홍콩(.HK), 사우디(.SR), 대만(.TW), 중국(.SS/.SZ)
+var SUFFIX_MAP = { KR:'.KS', JP:'.T', HK:'.HK', SA:'.SR', TW:'.TW' };
+// 중국은 6/0으로 시작하는 숫자 → .SS(상해)/.SZ(심천)
+function toYahooSymbol(ticker, country) {
+  if (!country) return ticker;
+  // 이미 접미사 있으면 그대로
+  if (ticker.includes('.')) return ticker;
+  // 알파벳만(ADR/미국상장)이면 접미사 안 붙임 (TSM, BYD, NIO, LI 등)
+  if (/^[A-Za-z]+$/.test(ticker)) return ticker;
+  // 숫자 포함 ticker → 로컬 거래소
+  // 한국 6자리: 005930.KS
+  if (country === 'KR' && /^\d{6}$/.test(ticker)) return ticker + '.KS';
+  // 일본 4자리: 7203.T
+  if (country === 'JP' && /^\d{4}$/.test(ticker)) return ticker + '.T';
+  // 홍콩 4자리: 9866.HK
+  if ((country === 'HK' || country === 'CN') && /^\d{4}$/.test(ticker)) return ticker + '.HK';
+  // 중국 본토 6자리: 601857.SS / 300750.SZ
+  if (country === 'CN' && /^\d{6}$/.test(ticker)) {
+    return ticker.startsWith('6') ? ticker + '.SS' : ticker + '.SZ';
+  }
+  // 대만 4자리: 2330.TW
+  if (country === 'TW' && /^\d{4}$/.test(ticker)) return ticker + '.TW';
+  // 사우디: 2222.SR
+  if (country === 'SA' && /^\d{4}$/.test(ticker)) return ticker + '.SR';
+  return ticker;
+}
+
+// ── 종목 가격 수집 (chart meta에서 추출) ──────────────
+
+var _priceCache = {};
+var _priceTTL = 5 * 60 * 1000; // 5분
+
+async function fetchStockPrice(ticker, country) {
+  var now = Date.now();
+  var cached = _priceCache[ticker];
+  if (cached && (now - cached.ts < _priceTTL)) return cached.data;
+
+  var yahooSym = toYahooSymbol(ticker, country);
+  var chartData = await fetchYahooChart(yahooSym, '5d');
+  if (!chartData || !chartData.meta) return null;
+
+  var meta = chartData.meta;
+  var price = meta.regularMarketPrice;
+  var prevClose = meta.chartPreviousClose || meta.previousClose;
+  var currency = meta.currency || 'USD';
+
+  if (price == null) return null;
+
+  var change = (prevClose && prevClose > 0)
+    ? Math.round(((price - prevClose) / prevClose) * 10000) / 100
+    : null;
+
+  var result = {
+    price: price,
+    prevClose: prevClose || null,
+    change: change,
+    currency: currency,
+    marketState: meta.currentTradingPeriod ? 'open' : 'closed',
+    updatedAt: new Date().toISOString(),
+  };
+
+  _priceCache[ticker] = { data: result, ts: now };
+  return result;
+}
+
+// 배치 가격 수집 — profiles 배열 [{ticker, country}, ...]
+async function fetchStockPrices(profiles) {
+  var results = {};
+  for (var i = 0; i < profiles.length; i++) {
+    var p = profiles[i];
+    var t = (typeof p === 'string') ? p : p.ticker;
+    var c = (typeof p === 'string') ? null : p.country;
+    try {
+      results[t] = await fetchStockPrice(t, c);
+    } catch (err) {
+      results[t] = null;
+    }
+  }
+  return results;
+}
+
 module.exports = {
   STOCK_GAUGE_MAP: STOCK_GAUGE_MAP,
+  toYahooSymbol: toYahooSymbol,
   fetchYahooSummary: fetchYahooSummary,
   fetchYahooChart: fetchYahooChart,
   fetchStockGauge: fetchStockGauge,
   fetchAllStockGauges: fetchAllStockGauges,
   fetchStockBatch: fetchStockBatch,
+  fetchStockPrice: fetchStockPrice,
+  fetchStockPrices: fetchStockPrices,
 };

@@ -7,24 +7,7 @@ import { RadarChart } from '../components/Charts';
 import { STOCKS, ARCHETYPE_LABELS, TIER_LABELS } from '../data/stocks';
 import * as API from '../api';
 
-// ═══ Dummy Data (→ API 교체) ═══
-const DUMMY_PRICE={
-  'TSLA':{p:342.50,ch:2.8},'TSMC':{p:185.20,ch:1.2},'005930':{p:82400,ch:-0.5,krw:true},
-  '000660':{p:218000,ch:1.8,krw:true},'NVDA':{p:892.40,ch:3.5},'ASML':{p:985.30,ch:0.8},
-  'AAPL':{p:228.50,ch:-0.3},'XOM':{p:118.90,ch:0.4},'005380':{p:265000,ch:1.1,krw:true},
-  'VALE3':{p:58.20,ch:-1.2},'INTC':{p:32.80,ch:-2.1},'MU':{p:108.50,ch:2.2},
-  'QCOM':{p:172.30,ch:0.6},'AMD':{p:168.90,ch:1.9},'TXN':{p:195.40,ch:0.3},
-  '035420':{p:215000,ch:-0.8,krw:true},'035720':{p:42500,ch:-1.5,krw:true},
-  '051910':{p:368000,ch:0.9,krw:true},'006400':{p:412000,ch:1.3,krw:true},
-  '373220':{p:385000,ch:2.1,krw:true},'BABA':{p:118.50,ch:3.2},'9988':{p:118.50,ch:3.2},
-  'AMZN':{p:198.20,ch:1.5},'MSFT':{p:415.80,ch:0.7},'GOOGL':{p:178.90,ch:1.1},
-  'META':{p:585.30,ch:2.4},'2317':{p:185.00,ch:0.5},'TM':{p:192.40,ch:-0.2},
-  'VOW3':{p:118.50,ch:-0.8},'SHEL':{p:32.80,ch:0.3},'CVX':{p:162.50,ch:0.6},
-  'RIO':{p:68.90,ch:-0.4},'BHP':{p:42.30,ch:-0.7},'NUE':{p:158.20,ch:1.4},
-  '005490':{p:312000,ch:0.8,krw:true},'LMT':{p:485.20,ch:0.2},'BA':{p:178.90,ch:-1.8},
-  '009540':{p:128000,ch:2.5,krw:true},'ZTS':{p:178.50,ch:0.4},'COST':{p:892.30,ch:0.9},
-  'WMT':{p:185.40,ch:0.5},'UPS':{p:142.80,ch:-0.6},'MAERSK':{p:1285.00,ch:-1.2},
-};
+// ═══ 가격 포맷 (API 실데이터 기반) ═══
 const DUMMY_FAC={
   'TSLA':[
     {name:'Giga Texas',loc:'Austin, TX',status:'normal',viirs:12,no2:8,therm:5},
@@ -57,11 +40,15 @@ const FLOW_TEMPLATES={
   SIT:['design','permit','excavate','foundation','frame','finish','install','inspect','complete','handover','operate'],
 };
 
-function fmtPrice(sid){
-  const d=DUMMY_PRICE[sid];
-  if(!d) return {price:'—',change:'—',isUp:true};
-  const price=d.krw?(d.p>=10000?(d.p/10000).toFixed(1)+'만':d.p.toLocaleString()):('$'+d.p.toFixed(2));
-  return {price,change:(d.ch>0?'+':'')+d.ch.toFixed(1)+'%',isUp:d.ch>=0};
+function fmtPrice(sid, livePrices){
+  const d = livePrices && livePrices[sid];
+  if(!d || d.price==null) return {price:'—',change:'—',isUp:true};
+  const isKrw = d.currency==='KRW';
+  const price = isKrw
+    ? (d.price>=10000?(d.price/10000).toFixed(1)+'만':d.price.toLocaleString())
+    : (d.currency==='JPY'?'¥':d.currency==='CNY'?'¥':d.currency==='TWD'?'NT$':'$')+d.price.toLocaleString(undefined,{minimumFractionDigits:d.price>=1000?0:2,maximumFractionDigits:d.price>=1000?0:2});
+  const ch = d.change!=null ? d.change : 0;
+  return {price, change:(ch>0?'+':'')+ch.toFixed(1)+'%', isUp:ch>=0};
 }
 function chgCell(v){
   const col=v===null?LT.textDim:v>0?LT.good:v<0?LT.danger:LT.text;
@@ -159,27 +146,31 @@ function StockView({stock:s,lang,onBack}){
   const [liveGauges,setLiveGauges]=useState(null);
   const [liveHealth,setLiveHealth]=useState(null);
   const [expanded,setExpanded]=useState({});
-  const {price,change,isUp}=fmtPrice(s.sid);
+  const [livePrice,setLivePrice]=useState(null);
+  const pData = livePrice ? {[s.sid]:livePrice} : {};
+  const {price,change,isUp}=fmtPrice(s.sid, pData);
   const getName=x=>L==='ko'?x.n:(x.ne||x.n);
   const toggleGauge=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
-  // API에서 시설/델타/게이지/건강도 로드
+  // API에서 시설/델타/게이지/건강도/가격 로드
   useEffect(()=>{
     let c=false;
     (async()=>{
       try{
-        const [facRes,deltaRes,gaugeRes,profileRes]=await Promise.allSettled([
+        const [facRes,deltaRes,gaugeRes,profileRes,priceRes]=await Promise.allSettled([
           API.stockFacilities(s.sid),
           API.stockDelta(s.sid),
           API.stockGauges(s.sid),
           API.stockProfile(s.sid),
+          API.stockPrice(s.sid),
         ]);
         if(c)return;
         if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
         if(deltaRes.status==='fulfilled') setLiveDelta(deltaRes.value);
         if(gaugeRes.status==='fulfilled'&&gaugeRes.value?.gauges) setLiveGauges(gaugeRes.value.gauges);
         if(profileRes.status==='fulfilled'&&profileRes.value?.health) setLiveHealth(profileRes.value.health);
-      }catch{/* fallback to DUMMY */}
+        if(priceRes.status==='fulfilled'&&priceRes.value?.price!=null) setLivePrice(priceRes.value);
+      }catch{/* fallback */}
     })();
     return()=>{c=true};
   },[s.sid]);
@@ -500,6 +491,16 @@ function StockPage({user,lang}){
   const [filterArch,setFilterArch]=useState('');
   const [filterCountry,setFilterCountry]=useState('');
   const [selected,setSelected]=useState(null);
+  const [livePrices,setLivePrices]=useState({});
+
+  // 가격 배치 로드
+  useEffect(()=>{
+    let c=false;
+    API.safeApi('/api/v1/stock/prices',{},{}).then(d=>{
+      if(!c&&d&&d.prices) setLivePrices(d.prices);
+    });
+    return()=>{c=true};
+  },[]);
 
   // 국가별 고유 목록 (flag → {flag, count})
   const countryList = (() => {
@@ -595,7 +596,7 @@ function StockPage({user,lang}){
 
     {/* Rows */}
     {filtered.slice(0,user?.plan==='PRO'||user?.plan==='ENTERPRISE'?100:10).map(s=>{
-      const {price,change,isUp}=fmtPrice(s.sid);
+      const {price,change,isUp}=fmtPrice(s.sid, livePrices);
       return(<div key={s.id} onClick={()=>setSelected(s)} style={{display:"flex",alignItems:"center",padding:"10px 14px",borderBottom:`1px solid ${LT.border}`,cursor:"pointer",transition:"background .15s"}}
         onMouseEnter={e=>e.currentTarget.style.background=LT.bg2} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
         <span style={{width:36,fontSize:14,flexShrink:0}}>{s.c}</span>

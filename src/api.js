@@ -262,6 +262,12 @@ export async function stockSignals(ticker) {
 export async function stockGauges(ticker) {
   return api(`/api/v1/stock/${ticker}/gauges`);
 }
+export async function stockPrice(ticker) {
+  return api(`/api/v1/stock/${ticker}/price`);
+}
+export async function stockPrices() {
+  return api('/api/v1/stock/prices');
+}
 
 // ── Catalog (Phase 3) ──
 export async function catalogCategories() {

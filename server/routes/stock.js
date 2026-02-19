@@ -136,6 +136,20 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     });
   });
 
+  // ── 전체 종목 가격 배치 (반드시 :ticker 앞에 정의) ──
+  router.get('/stock/prices', async (req, res) => {
+    if (!stockPipeline || !stockPipeline.fetchStockPrices) {
+      return res.json({ prices: {}, error: 'Pipeline unavailable' });
+    }
+    const profiles = PROFILES.map(function (p) { return { ticker: p.ticker, country: p.country }; });
+    try {
+      const prices = await stockPipeline.fetchStockPrices(profiles);
+      res.json({ total: Object.keys(prices).length, prices });
+    } catch (e) {
+      res.json({ prices: {}, error: e.message });
+    }
+  });
+
   // ── 종목 상세 프로필 (+health) ──
   router.get('/stock/:ticker', (req, res) => {
     const profile = byTicker[req.params.ticker.toUpperCase()];
@@ -215,6 +229,22 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       stale: isStale,
       gauges,
     });
+  });
+
+  // ── 종목 가격 (실시간) ──
+  router.get('/stock/:ticker/price', async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    const profile = byTicker[ticker];
+    if (!profile) return res.status(404).json({ error: 'Stock not found' });
+    if (!stockPipeline || !stockPipeline.fetchStockPrice) {
+      return res.json({ ticker, price: null, error: 'Pipeline unavailable' });
+    }
+    try {
+      const p = await stockPipeline.fetchStockPrice(ticker, profile.country);
+      res.json({ ticker, ...p });
+    } catch (e) {
+      res.json({ ticker, price: null, error: e.message });
+    }
   });
 
   // ── 시설별 위성 메트릭 (Tab1 진단) ──
