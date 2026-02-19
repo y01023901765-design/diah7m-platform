@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import T, { L as LT } from '../theme';
 import { t } from '../i18n';
 import { SAT_META, isSat, SAT_XREF, TP, LEAD, EV_STYLE } from './TierLock';
@@ -51,27 +52,62 @@ function SparkLine({data,c,w=140,h=32}){
     <circle cx={parseFloat(last[0])} cy={parseFloat(last[1])} r={2.5} fill={c||LT.textMid}/>
   </svg>);
 }
-function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit}){
-  return(<div style={{display:"flex",gap:10}}>
-    {[{lb:bf.date,val:bf.val,ds:"30일 전",isCurrent:false},
-      {lb:af.date,val:af.val,ds:"최신",isCurrent:true}].map((s,i)=>(
-      <div key={i} style={{flex:1}}>
-        <div style={{fontSize:15,color:s.isCurrent?LT.text:LT.textDim,marginBottom:4,textAlign:"center",fontWeight:s.isCurrent?700:400}}>{s.isCurrent?"최신 촬영분":"30일 전 수집"} · {s.lb}</div>
-        <div style={{width:"100%",aspectRatio:"1.6",borderRadius:8,border:`1px solid ${s.isCurrent?LT.text+'20':LT.border}`,overflow:"hidden",position:"relative",background:LT.bg2}}>
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
-            <div style={{fontSize:28,marginBottom:4}}>🛰️</div>
-            <div style={{fontSize:15,color:LT.textDim,textAlign:"center",padding:"0 10px",lineHeight:1.4}}>{sensor}<br/>{product}</div>
+function SatCompare({before:bf,after:af,sensor,product,coord,radius,unit,palette,paletteLabels}){
+  const [imgState,setImgState]=useState({beforeLoaded:false,afterLoaded:false,beforeError:false,afterError:false});
+  const sides=[
+    {lb:bf.date,val:bf.val,ds:"이전 수집",isCurrent:false,imgUrl:bf.imageUrl,loaded:imgState.beforeLoaded,error:imgState.beforeError,
+     onLoad:()=>setImgState(p=>({...p,beforeLoaded:true})),onError:()=>setImgState(p=>({...p,beforeError:true}))},
+    {lb:af.date,val:af.val,ds:"최신 촬영분",isCurrent:true,imgUrl:af.imageUrl,loaded:imgState.afterLoaded,error:imgState.afterError,
+     onLoad:()=>setImgState(p=>({...p,afterLoaded:true})),onError:()=>setImgState(p=>({...p,afterError:true}))},
+  ];
+  return(<div>
+    <div style={{display:"flex",gap:10}}>
+      {sides.map((s,i)=>(
+        <div key={i} style={{flex:1}}>
+          <div style={{fontSize:15,color:s.isCurrent?LT.text:LT.textDim,marginBottom:4,textAlign:"center",fontWeight:s.isCurrent?700:400}}>{s.ds} · {s.lb}</div>
+          <div style={{width:"100%",aspectRatio:"1.6",borderRadius:8,border:`1px solid ${s.isCurrent?LT.text+'20':LT.border}`,overflow:"hidden",position:"relative",background:LT.bg2}}>
+            {/* 실제 위성 이미지 */}
+            {s.imgUrl&&!s.error?(
+              <>
+                {!s.loaded&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{fontSize:14,color:LT.textDim,fontWeight:500}}>Loading...</div>
+                </div>}
+                <img src={s.imgUrl} alt={`${sensor} ${s.ds}`}
+                  style={{width:"100%",height:"100%",objectFit:"cover",opacity:s.loaded?1:0,transition:"opacity .3s"}}
+                  onLoad={s.onLoad} onError={s.onError}/>
+              </>
+            ):(
+              /* 이모지 폴백 */
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
+                <div style={{fontSize:28,marginBottom:4}}>🛰️</div>
+                <div style={{fontSize:15,color:LT.textDim,textAlign:"center",padding:"0 10px",lineHeight:1.4}}>{sensor}<br/>{product}</div>
+              </div>
+            )}
+            <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 8px",background:`${LT.bg3}cc`,borderTop:`1px solid ${LT.border}`}}>
+              <div style={{fontSize:15,color:LT.textDim}}>{coord} · {radius}</div>
+            </div>
           </div>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"4px 8px",background:LT.bg3,borderTop:`1px solid ${LT.border}`}}>
-            <div style={{fontSize:15,color:LT.textDim}}>{coord} · {radius}</div>
+          <div style={{textAlign:"center",marginTop:8}}>
+            <span style={{fontSize:24,fontFamily:"monospace",fontWeight:800,color:LT.text}}>{s.val}</span>
+            <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}> {unit}</span>
           </div>
         </div>
-        <div style={{textAlign:"center",marginTop:8}}>
-          <span style={{fontSize:24,fontFamily:"monospace",fontWeight:800,color:LT.text}}>{s.val}</span>
-          <span style={{fontSize:15,color:LT.textDim,fontFamily:"monospace"}}> {unit}</span>
-        </div>
-      </div>
-    ))}
+      ))}
+    </div>
+    {/* 팔레트 범례 */}
+    {palette&&palette.length>0&&<ColorLegend palette={palette} labels={paletteLabels}/>}
+  </div>);
+}
+/** 팔레트 색상 범례 바 */
+function ColorLegend({palette,labels}){
+  return(<div style={{marginTop:8}}>
+    <div style={{display:"flex",height:10,borderRadius:5,overflow:"hidden",border:`1px solid ${LT.border}`}}>
+      {palette.map((c,i)=>(<div key={i} style={{flex:1,background:`#${c}`}}/>))}
+    </div>
+    {labels&&<div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+      <span style={{fontSize:11,color:LT.textDim,fontFamily:"monospace"}}>{labels.min}</span>
+      <span style={{fontSize:11,color:LT.textDim,fontFamily:"monospace"}}>{labels.max}</span>
+    </div>}
   </div>);
 }
 function EvPkg({ev}){
@@ -195,4 +231,4 @@ const TIER_LABEL={T1:{ko:'위성 직접관측',en:'Satellite Direct',color:LT.te
   T3:{ko:'간접 참고신호',en:'Cross-Reference',color:LT.textMid}};
 
 
-export { SatBadge, SatXrefBanner, SparkLine, SatCompare, EvPkg, BtPanel, LtPanel, SatEvidencePanel };
+export { SatBadge, SatXrefBanner, SparkLine, SatCompare, ColorLegend, EvPkg, BtPanel, LtPanel, SatEvidencePanel };

@@ -453,10 +453,22 @@ function DashboardPage({user,onNav,lang,country,city}){
       {satData&&satData.S2&&satData.S2.status==='OK'&&<div style={{marginTop:16,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>📸 {t('satCompareTitle',L)||'위성 촬영 비교'}</div>
         <SatCompare
-          before={{date:satData.S2.date?new Date(new Date(satData.S2.date).getTime()-30*86400000).toISOString().slice(0,10):'30일 전',val:satData.S2.baseline_365d||satData.S2.mean_60d||0}}
-          after={{date:satData.S2.date||'최신',val:satData.S2.value||0}}
+          before={{date:satData.S2.images?.before?.date||(satData.S2.date?new Date(new Date(satData.S2.date).getTime()-30*86400000).toISOString().slice(0,10):'이전'),val:satData.S2.baseline_365d||satData.S2.mean_60d||0,imageUrl:satData.S2.images?.before?.url}}
+          after={{date:satData.S2.images?.after?.date||satData.S2.date||'최신',val:satData.S2.value||0,imageUrl:satData.S2.images?.after?.url}}
           sensor="VIIRS DNB" product={t('satS2Name',L)||'야간광량'}
           coord="37.5°N 127.0°E" radius="50km" unit={satData.S2.unit||'nW/cm²/sr'}
+          palette={satData.S2.images?.palette} paletteLabels={satData.S2.images?.paletteLabels}
+        />
+      </div>}
+      {/* Landsat R6 이미지 비교 */}
+      {satData&&satData.R6&&satData.R6.status==='OK'&&satData.R6.images&&<div style={{marginTop:16,marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🌡️ {t('satR6Name',L)||'도시열섬'} Before / After</div>
+        <SatCompare
+          before={{date:satData.R6.images?.before?.date||'이전',val:null,imageUrl:satData.R6.images?.before?.url}}
+          after={{date:satData.R6.images?.after?.date||satData.R6.date||'최신',val:satData.R6.value||0,imageUrl:satData.R6.images?.after?.url}}
+          sensor="Landsat-9" product={t('satR6Name',L)||'도시열섬 (ST_B10)'}
+          coord="37.5°N 127.0°E" radius="50km" unit={satData.R6.unit||'°C'}
+          palette={satData.R6.images?.palette} paletteLabels={satData.R6.images?.paletteLabels}
         />
       </div>}
       {/* Stock 연결 */}

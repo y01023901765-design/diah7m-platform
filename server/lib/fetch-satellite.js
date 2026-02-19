@@ -62,6 +62,43 @@ async function authenticateGEE() {
   });
 }
 
+// ═══ 이미지 썸네일 파라미터 ═══
+const THUMB_PARAMS = {
+  VIIRS: {
+    bands: 'avg_rad',
+    palette: ['000000', '1a1a5e', '0066cc', '00ccff', 'ffff00', 'ffffff'],
+    min: 0, max: 80,
+    dimensions: '512x320',
+    paletteLabels: { min: '0 nW/cm²/sr', max: '80 nW/cm²/sr' },
+  },
+  LANDSAT: {
+    bands: 'ST_B10',
+    palette: ['0000ff', '00ffff', '00ff00', 'ffff00', 'ff8800', 'ff0000'],
+    min: 280, max: 320,  // 켈빈 (7°C ~ 47°C)
+    dimensions: '512x320',
+    paletteLabels: { min: '7°C', max: '47°C' },
+  },
+};
+
+/** GEE getThumbURL 래퍼 — URL 문자열만 반환, 이미지 바이트 없음 */
+function getThumbPromise(image, geometry, params) {
+  return new Promise(function(resolve) {
+    if (!image) return resolve(null);
+    try {
+      image.getThumbURL({
+        region: geometry,
+        dimensions: params.dimensions,
+        palette: params.palette,
+        min: params.min, max: params.max,
+        format: 'png',
+      }, function(url, err) { resolve(err || !url ? null : url); });
+    } catch(e) {
+      console.warn('  ⚠️ getThumbURL error:', e.message);
+      resolve(null);
+    }
+  });
+}
+
 // ═══ 2. VIIRS 야간광 (S2) ═══
 // 43국 수도/경제 중심지 bbox (약 30~50km)
 const REGIONS = {
@@ -186,7 +223,7 @@ async function fetchVIIRS(regionCode, lookbackDays) {
             var baseline365 = (baselineStats && baselineStats.avg_rad) ? Math.round(baselineStats.avg_rad * 100) / 100 : null;
             var anomaly = (baseline365 && baseline365 > 0) ? Math.round(((mean60d - baseline365) / baseline365) * 10000) / 10000 : null;
 
-            resolve({
+            var resultData = {
               gaugeId: 'S2', source: 'SATELLITE', name: '야간광량', unit: 'nW/cm²/sr',
               value: mean60d,
               mean_7d: mean7d,
@@ -202,7 +239,42 @@ async function fetchVIIRS(regionCode, lookbackDays) {
                 scale: 1000,
                 baseline_days: 365,
               }
-            });
+            };
+
+            // ── 이미지 썸네일 생성 (수치 수집 완료 후 안전하게) ──
+            try {
+              var afterImg = collection.first().select('avg_rad');
+              // "before": 90~365일 전 기간에서 최신 1장
+              var beforeStart = new Date();
+              beforeStart.setDate(beforeStart.getDate() - 365);
+              var beforeEnd = new Date();
+              beforeEnd.setDate(beforeEnd.getDate() - 90);
+              var beforeCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                .filterBounds(geometry)
+                .filterDate(beforeStart.toISOString().split('T')[0], beforeEnd.toISOString().split('T')[0])
+                .select('avg_rad')
+                .sort('system:time_start', false);
+              var beforeImg = beforeCol.first();
+
+              Promise.all([
+                getThumbPromise(afterImg, geometry, THUMB_PARAMS.VIIRS),
+                getThumbPromise(beforeImg, geometry, THUMB_PARAMS.VIIRS),
+              ]).then(function(urls) {
+                if (urls[0] || urls[1]) {
+                  resultData.images = {
+                    after: urls[0] ? { url: urls[0], date: resultData.date } : null,
+                    before: urls[1] ? { url: urls[1], date: beforeEnd.toISOString().slice(0, 10) } : null,
+                    palette: THUMB_PARAMS.VIIRS.palette,
+                    paletteLabels: THUMB_PARAMS.VIIRS.paletteLabels,
+                  };
+                  console.log('  📸 VIIRS thumb:', urls[0] ? 'after✓' : 'after✗', urls[1] ? 'before✓' : 'before✗');
+                }
+                resolve(resultData);
+              }).catch(function() { resolve(resultData); });
+            } catch(imgErr) {
+              console.warn('  ⚠️ VIIRS image generation skipped:', imgErr.message);
+              resolve(resultData);
+            }
           });
         });
       });
@@ -243,12 +315,50 @@ async function fetchLandsat(regionCode, lookbackDays) {
         });
       }
       var tempC = Math.round((stats.ST_B10 * 0.00341802 + 149.0 - 273.15) * 10) / 10;
-      resolve({
+      var resultData = {
         gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬', unit: '°C',
         value: tempC, prevValue: null, date: new Date().toISOString().slice(0, 10),
         region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
         source_meta: { dataset: 'LANDSAT/LC09/C02/T1_L2', cloud_filter: 30, scale: 100 }
-      });
+      };
+
+      // ── 이미지 썸네일 생성 ──
+      try {
+        // "after": 최신 이미지의 ST_B10 → 켈빈 스케일 적용
+        var afterRaw = collection.first().select('ST_B10');
+        var afterScaled = afterRaw.multiply(0.00341802).add(149.0);
+        // "before": 90~180일 전 구름 30% 미만 최신 이미지
+        var bfStart = new Date();
+        bfStart.setDate(bfStart.getDate() - 180);
+        var bfEnd = new Date();
+        bfEnd.setDate(bfEnd.getDate() - 90);
+        var beforeCol = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+          .filterBounds(geometry)
+          .filterDate(bfStart.toISOString().split('T')[0], bfEnd.toISOString().split('T')[0])
+          .filter(ee.Filter.lt('CLOUD_COVER', 30))
+          .sort('system:time_start', false);
+        var beforeRaw = beforeCol.first().select('ST_B10');
+        var beforeScaled = beforeRaw.multiply(0.00341802).add(149.0);
+
+        Promise.all([
+          getThumbPromise(afterScaled, geometry, THUMB_PARAMS.LANDSAT),
+          getThumbPromise(beforeScaled, geometry, THUMB_PARAMS.LANDSAT),
+        ]).then(function(urls) {
+          if (urls[0] || urls[1]) {
+            resultData.images = {
+              after: urls[0] ? { url: urls[0], date: resultData.date } : null,
+              before: urls[1] ? { url: urls[1], date: bfEnd.toISOString().slice(0, 10) } : null,
+              palette: THUMB_PARAMS.LANDSAT.palette,
+              paletteLabels: THUMB_PARAMS.LANDSAT.paletteLabels,
+            };
+            console.log('  📸 Landsat thumb:', urls[0] ? 'after✓' : 'after✗', urls[1] ? 'before✓' : 'before✗');
+          }
+          resolve(resultData);
+        }).catch(function() { resolve(resultData); });
+      } catch(imgErr) {
+        console.warn('  ⚠️ Landsat image generation skipped:', imgErr.message);
+        resolve(resultData);
+      }
     });
   });
 }
