@@ -81,15 +81,24 @@ function computeDeltaDivergence(satScore, mktScore) {
 }
 
 // ── 이중봉쇄 (Dual Lock) ───────────────────────────
-// Input 막힘: 재무건전성(SQ) 경보
-// Output 막힘: 위성물리(SS) 경보
+// Input 막힘: 재무건전성(SQ) 경보 — 자금·재고 투입 능력 상실
+// Output 막힘: 위성물리(SS) 경보 — 생산·출하 물리적 중단
+//
+// 임계값 근거 (BLOCK_THRESHOLD = 35):
+// - V2 수축평균 k=3: 게이지 3개 중 2개 alert(15) + 1개 caution(50)
+//   → raw = (15+15+50)/3 ≈ 26.7 → adjusted = (3*26.7 + 3*50)/(3+3) = 38.3
+//   → 즉, 3개 중 2개 경보 + 1개 주의 수준이면 봉쇄 트리거
+// - 35점 = "게이지 대다수가 경보 영역에 진입"한 상태
+// - 50(중립) 미만이면서 충분히 낮아야 오탐 방지
+
+var BLOCK_THRESHOLD = 35;
 
 function computeDualLock(systemScores) {
   var sqScore = systemScores.SQ ? systemScores.SQ.score : 50;
   var ssScore = systemScores.SS ? systemScores.SS.score : 50;
 
-  var inputBlocked = sqScore < 40;  // 재무 악화 → 투입(자금/재고) 막힘
-  var outputBlocked = ssScore < 40; // 위성 악화 → 산출(생산/출하) 막힘
+  var inputBlocked = sqScore < BLOCK_THRESHOLD;
+  var outputBlocked = ssScore < BLOCK_THRESHOLD;
 
   return {
     input: inputBlocked ? 'BLOCKED' : 'OK',

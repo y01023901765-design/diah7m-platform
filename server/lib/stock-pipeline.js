@@ -489,15 +489,18 @@ async function fetchSatelliteGauges(ticker) {
     SG_S2: { id: 'SG_S2', value: null, status: 'NO_PROFILE' },
   };
 
-  // process 시설만 (공장/정유/데이터센터 등)
+  // process 시설만 (공장/정유/데이터센터 등 — 실제 생산 활동 발생 지점)
   var processFacilities = (profile.facilities || []).filter(function(f) {
     return f.stage === 'process' && !f.underConstruction;
   });
 
   if (processFacilities.length === 0) {
-    // stage 미지정 시 전체 시설 사용
+    // stage 미지정 fallback: 생산형 시설 타입만 허용 (port/terminal 제외)
+    // → SG_S1/S2는 "생산 가동률" 지표이므로, 항만 야간광을 섞으면 오염됨
+    var PRODUCTION_TYPES = ['fab','assembly','manufacturing','battery','steelworks',
+      'chemical','refinery','datacenter','mine','plant','factory','fulfillment','hub','campus'];
     processFacilities = (profile.facilities || []).filter(function(f) {
-      return !f.underConstruction && f.type !== 'port';
+      return !f.underConstruction && PRODUCTION_TYPES.indexOf(f.type) >= 0;
     });
   }
 

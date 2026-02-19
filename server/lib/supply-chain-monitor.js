@@ -43,13 +43,15 @@ function gradeSensor(sensorType, anomPct) {
 }
 
 // THERMAL은 anomDegC 기준 (별도)
+// 근거: 공장 일일 온도 변동 ±2°C 정상, ±3°C 이상이면 가동 변화 시사
+//       과열은 냉각 시스템 부하 기준 — 제조업 실내 +15°C 이상 비정상
 function gradeThermal(anomDegC) {
   if (anomDegC == null) return 'NO_DATA';
   // 큰 음수 = 온도 급감 = 가동 중단 가능성
-  if (anomDegC <= -5)  return 'ALARM';
-  if (anomDegC <= -2)  return 'WARN';
-  if (anomDegC >= 8)   return 'WARN';  // 이상 과열
-  if (anomDegC >= 12)  return 'ALARM'; // 심각 과열
+  if (anomDegC <= -6)   return 'ALARM';  // 기준치 대비 6°C 이상 하락 → 가동 중단 의심
+  if (anomDegC <= -3.5)  return 'WARN';  // 3.5°C 하락 → 가동률 감소 시사
+  if (anomDegC >= 18)   return 'ALARM'; // 심각 과열 (냉각계통 고장 수준)
+  if (anomDegC >= 12)   return 'WARN';  // 이상 과열 (냉각 부하 상승)
   return 'OK';
 }
 
@@ -286,14 +288,17 @@ function computeConfidence(stages, archetype) {
 function generateStory(stages, physicalDL, combinedDL, profile, archetypeInfo) {
   var archCode = profile.archetype;
 
-  // ── 최악 시설 + 센서 찾기 ──
+  // ── 최악 시설 + 센서 찾기 (ALARM 우선 → WARN → 순서) ──
   var worstEvidence = null;
   var worstStage = null;
+  var worstRank = 99; // 0=ALARM, 1=WARN, 99=none
   ['process', 'input', 'output'].forEach(function(stg) {
     if (!stages[stg]) return;
     var ev = stages[stg].evidence;
-    if (ev && ev.length > 0 && !worstEvidence) {
-      if (ev[0].grade === 'ALARM' || ev[0].grade === 'WARN') {
+    if (ev && ev.length > 0) {
+      var rank = ev[0].grade === 'ALARM' ? 0 : ev[0].grade === 'WARN' ? 1 : 99;
+      if (rank < worstRank) {
+        worstRank = rank;
         worstEvidence = ev[0];
         worstStage = stg;
       }
@@ -345,13 +350,21 @@ function generateStory(stages, physicalDL, combinedDL, profile, archetypeInfo) {
       manifest += '출하구간 데이터 미수집';
     }
   } else {
-    // worstStage === 'output' → 상류 process 참조
+    // worstStage === 'output' → 상류 process 참조, 없으면 input까지 소급
+    var upstreamEv = null;
+    var upstreamLabel = '';
     if (stages.process && stages.process.evidence && stages.process.evidence.length > 0) {
-      var procEv = stages.process.evidence[0];
-      var procVal = procEv.unit === 'anomDegC' ? procEv.value + '°C' : procEv.value + '%';
-      manifest += '생산구간 ' + procEv.nodeId + ' ' + (sensorName[procEv.sensor] || procEv.sensor) + ' ' + procVal;
+      upstreamEv = stages.process.evidence[0];
+      upstreamLabel = '생산구간';
+    } else if (stages.input && stages.input.evidence && stages.input.evidence.length > 0) {
+      upstreamEv = stages.input.evidence[0];
+      upstreamLabel = '입고구간';
+    }
+    if (upstreamEv) {
+      var upVal = upstreamEv.unit === 'anomDegC' ? upstreamEv.value + '°C' : upstreamEv.value + '%';
+      manifest += upstreamLabel + ' ' + upstreamEv.nodeId + ' ' + (sensorName[upstreamEv.sensor] || upstreamEv.sensor) + ' ' + upVal;
     } else {
-      manifest += '생산구간 데이터 미수집';
+      manifest += '상류구간 데이터 미수집';
     }
   }
 
