@@ -72,7 +72,7 @@ async function collectAllScores() {
         var data = await fetchCountryData(iso3, {
           fredApiKey: process.env.FRED_API_KEY,
         });
-        var result = scoreEngine.computeCountryScore(data.gauges || {});
+        var result = scoreEngine.computeCountryScoreV2(data.gauges || {});
         return {
           iso3: iso3,
           name: COUNTRIES[iso3].name,

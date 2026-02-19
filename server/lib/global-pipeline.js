@@ -18,6 +18,7 @@
 
 const { COUNTRIES, WB_COUNTRIES, OECD_MEMBERS, getWBCountryString, getOECDCountryString } = require('./country-profiles');
 const { GLOBAL_GAUGES, GLOBAL_COMMODITIES, GAUGE_IDS, AXIS_MAP } = require('./global-indicators');
+const scoreEngine = require('./score-engine');
 
 // ═══════════════════════════════════════════
 // 설정
@@ -982,8 +983,9 @@ async function fetchCountryData(iso3, options = {}) {
             date: data[0].date,
             provider: source.provider,
             unit: gauge.unit,
+            direction: gauge.direction || 'neutral',
+            critical: gauge.critical || false,
             history: data.slice(0, 10), // 최근 10개
-            // Phase 2 예약: 서버 기준 활성화 시 프론트 자동 전환
             thresholds: null,
             scoreRule: null,
           };
@@ -992,6 +994,20 @@ async function fetchCountryData(iso3, options = {}) {
       } catch (e) {
         errors.push({ gaugeId, provider: source.provider, error: e.message });
       }
+    }
+  }
+
+  // ── V2 Score Engine: compute scores with shrinkage ──
+  const scoreResult = scoreEngine.computeCountryScoreV2(gauges);
+
+  // Attach grade/score to each gauge from score engine result
+  const gaugeKeys = Object.keys(gauges);
+  for (let gi = 0; gi < gaugeKeys.length; gi++) {
+    const gk = gaugeKeys[gi];
+    const gs = scoreResult.gaugeScores[gk];
+    if (gs) {
+      gauges[gk].grade = gs.grade;
+      gauges[gk].gaugeScore = gs.score;
     }
   }
 
@@ -1011,6 +1027,12 @@ async function fetchCountryData(iso3, options = {}) {
     coverageRate: `${Math.round(Object.keys(gauges).length / GAUGE_IDS.length * 100)}%`,
     errors,
     fetchedAt: new Date().toISOString(),
+
+    // ── V2 Score: shrinkage + direction-aware ──
+    countryScore: scoreResult.score,
+    countryConfidence: scoreResult.confidence,
+    systemScores: scoreResult.systemScores,
+    alertGauges: scoreResult.alertGauges,
 
     // ── Phase 2 예약 필드 ──
     parentId: null,

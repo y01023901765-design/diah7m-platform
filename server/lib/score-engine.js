@@ -4,11 +4,174 @@
  * DIAH-7M Score Engine — Country / Continent / World scoring
  * ═══════════════════════════════════════════════════════════
  * Pure computation module. No I/O, no Express, no side effects.
+ *
+ * V2: Bayesian shrinkage + direction-aware grading + score-alert separation
  */
 
 const CRITICAL_GAUGE_IDS = ['G_D1', 'G_L1', 'G_P1', 'G_S1', 'G_R2', 'G_F2'];
 
-// ── Individual gauge scoring ────────────────────────────
+// ── V2: 20-gauge threshold table ─────────────────────────
+// dir: higher_better | lower_better | target_2pct | neutral
+// good/warn/alarm: [low, high] ranges
+// Score mapping: 양호=85, 주의=50, 경보=15
+
+const GAUGE_THRESHOLDS = {
+  G_I1: { dir: 'neutral',        good: [0, 8] },
+  G_I2: { dir: 'neutral' },
+  G_I3: { dir: 'neutral',        good: [40, 120] },
+  G_E1: { dir: 'higher_better' },
+  G_E2: { dir: 'neutral' },
+  G_E3: { dir: 'higher_better' },
+  G_C1: { dir: 'neutral',        good: [45, 75] },
+  G_C2: { dir: 'higher_better',  good: [100, 110], warn: [98, 100], alarm: [0, 96] },
+  G_S1: { dir: 'higher_better',  good: [100.5, 105], warn: [99.5, 100.5], alarm: [0, 99.5] },
+  G_S2: { dir: 'neutral' },
+  G_F1: { dir: 'higher_better' },
+  G_F2: { dir: 'lower_better',   good: [0, 60], warn: [60, 100], alarm: [100, 300] },
+  G_P1: { dir: 'target_2pct',    good: [1, 3], warn: [0, 5], alarm: [-1, 8] },
+  G_P2: { dir: 'neutral',        good: [-2, 3], warn: [-5, 6] },
+  G_R1: { dir: 'higher_better' },
+  G_R2: { dir: 'higher_better',  good: [52, 65], warn: [48, 52], alarm: [0, 48] },
+  G_L1: { dir: 'lower_better',   good: [0, 4], warn: [4, 8], alarm: [8, 30] },
+  G_L2: { dir: 'higher_better',  good: [65, 90], warn: [55, 65], alarm: [0, 55] },
+  G_D1: { dir: 'higher_better',  good: [3, 15], warn: [0, 3], alarm: [-5, 0] },
+  G_D2: { dir: 'higher_better',  good: [22, 45], warn: [18, 22], alarm: [0, 18] },
+};
+
+// ── V2: Direction-aware gauge grading ────────────────────
+
+function gradeGauge(gaugeId, value) {
+  if (value == null || isNaN(value)) return { score: null, grade: null };
+  var th = GAUGE_THRESHOLDS[gaugeId];
+  if (!th) return { score: 50, grade: 'caution' };
+  if (!th.good) return { score: 50, grade: 'good' }; // no thresholds → neutral=good
+
+  var gL = th.good[0], gH = th.good[1];
+  var wL = th.warn ? th.warn[0] : gL;
+  var wH = th.warn ? th.warn[1] : gH;
+
+  if (th.dir === 'lower_better') {
+    if (value <= gH) return { score: 85, grade: 'good' };
+    if (value <= wH) return { score: 50, grade: 'caution' };
+    return { score: 15, grade: 'alert' };
+  }
+  if (th.dir === 'target_2pct') {
+    if (value >= gL && value <= gH) return { score: 85, grade: 'good' };
+    if (value >= wL && value <= wH) return { score: 50, grade: 'caution' };
+    return { score: 15, grade: 'alert' };
+  }
+  if (th.dir === 'neutral') {
+    if (value >= gL && value <= gH) return { score: 85, grade: 'good' };
+    if (value >= wL && value <= wH) return { score: 50, grade: 'caution' };
+    return { score: 15, grade: 'alert' };
+  }
+  // higher_better (default)
+  if (value >= gL) return { score: 85, grade: 'good' };
+  if (value >= wL) return { score: 50, grade: 'caution' };
+  return { score: 15, grade: 'alert' };
+}
+
+// ── V2: Bayesian shrinkage ───────────────────────────────
+// adjusted = (n * raw + k * 50) / (n + k)
+// n = actual gauge count (NOT weight sum!) → prevents overconfidence
+
+var SHRINK_K = 4;
+
+function shrinkScore(rawAvg, gaugeCount) {
+  return Math.round((gaugeCount * rawAvg + SHRINK_K * 50) / (gaugeCount + SHRINK_K));
+}
+
+// ── V2: Country score with shrinkage ─────────────────────
+
+function computeCountryScoreV2(gauges) {
+  var gaugeScores = {};
+  var byAxis = {};
+
+  var gIds = Object.keys(gauges);
+  for (var i = 0; i < gIds.length; i++) {
+    var gId = gIds[i];
+    var g = gauges[gId];
+    if (!g || g.value == null) continue;
+
+    var val = typeof g.value === 'string' ? parseFloat(g.value) : g.value;
+    if (isNaN(val)) continue;
+
+    var result = gradeGauge(gId, val);
+    if (!result.grade) continue;
+
+    var isCritical = CRITICAL_GAUGE_IDS.indexOf(gId) !== -1;
+    var weight = isCritical ? 2 : 1;
+    gaugeScores[gId] = { score: result.score, grade: result.grade, weight: weight };
+
+    var ax = g.axis || 'unknown';
+    if (!byAxis[ax]) byAxis[ax] = [];
+    byAxis[ax].push({ gaugeId: gId, score: result.score, grade: result.grade, weight: weight });
+  }
+
+  // System scores: weighted mean (importance) → shrink (n=actual count, confidence)
+  var systemScores = {};
+  var axKeys = Object.keys(byAxis);
+  for (var a = 0; a < axKeys.length; a++) {
+    var ax = axKeys[a];
+    var items = byAxis[ax];
+    var tw = 0, ws = 0;
+    var hasAlert = false;
+    var alertCount = 0;
+    for (var j = 0; j < items.length; j++) {
+      tw += items[j].weight;
+      ws += items[j].score * items[j].weight;
+      if (items[j].grade === 'alert') {
+        hasAlert = true;
+        alertCount++;
+      }
+    }
+    var rawAvg = ws / tw;                          // importance in raw only
+    var sc = shrinkScore(rawAvg, items.length);    // n = actual gauge count!
+    systemScores[ax] = {
+      score: sc,
+      grade: sc >= 70 ? 'good' : sc >= 40 ? 'caution' : 'alert',
+      count: items.length,
+      hasAlert: hasAlert,
+      alertCount: alertCount,
+    };
+  }
+
+  // Overall: weighted mean (importance) → shrink (n=actual count)
+  var allItems = [];
+  for (var k = 0; k < axKeys.length; k++) {
+    var axItems = byAxis[axKeys[k]];
+    for (var m = 0; m < axItems.length; m++) {
+      allItems.push(axItems[m]);
+    }
+  }
+  var totalW = 0, totalS = 0;
+  for (var p = 0; p < allItems.length; p++) {
+    totalW += allItems[p].weight;
+    totalS += allItems[p].score * allItems[p].weight;
+  }
+  var overallRaw = totalW > 0 ? totalS / totalW : 50;
+  var score = shrinkScore(overallRaw, allItems.length);
+  var confidence = allItems.length / 20; // display only, no penalty
+
+  // Collect alert gauge IDs
+  var alertGaugeIds = [];
+  var gsKeys = Object.keys(gaugeScores);
+  for (var q = 0; q < gsKeys.length; q++) {
+    if (gaugeScores[gsKeys[q]].grade === 'alert') {
+      alertGaugeIds.push(gsKeys[q]);
+    }
+  }
+
+  return {
+    score: score,
+    confidence: confidence,
+    gaugeScores: gaugeScores,
+    systemScores: systemScores,
+    alertGauges: alertGaugeIds,
+  };
+}
+
+// ── V1: Individual gauge scoring (legacy) ────────────────
 
 function scoreGauge(gaugeId, value) {
   if (value === null || value === undefined || isNaN(value)) return 0;
@@ -55,7 +218,7 @@ function scoreGauge(gaugeId, value) {
   }
 }
 
-// ── Country score ───────────────────────────────────────
+// ── V1: Country score (legacy, kept for hierarchy.js compat) ──
 
 function computeCountryScore(gauges) {
   var BASE = 50;
@@ -174,8 +337,12 @@ function computeWorldScore(allCountryScores, gdpWeights) {
 
 module.exports = {
   CRITICAL_GAUGE_IDS: CRITICAL_GAUGE_IDS,
+  GAUGE_THRESHOLDS: GAUGE_THRESHOLDS,
   scoreGauge: scoreGauge,
+  gradeGauge: gradeGauge,
+  shrinkScore: shrinkScore,
   computeCountryScore: computeCountryScore,
+  computeCountryScoreV2: computeCountryScoreV2,
   computeGdpWeightedScore: computeGdpWeightedScore,
   computeContinentScores: computeContinentScores,
   computeWorldScore: computeWorldScore,

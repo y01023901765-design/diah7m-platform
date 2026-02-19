@@ -36,14 +36,18 @@ function buildEntityData(entityInfo, lang) {
   for (const [gId, g] of Object.entries(entityInfo.gauges || {})) {
     if (g.value == null) continue;
     const v = g.value;
-    // 상태 판정: 서버 thresholds 있으면 신뢰, 없으면 프론트 임시
+    // 상태 판정: 서버 grade 우선 → thresholds → 방향인식 폴백
     let grade;
-    if (g.thresholds) {
+    if (g.grade) {
+      // V2: 서버에서 direction-aware grading 완료
+      grade = g.grade === 'good' ? '양호' : g.grade === 'caution' ? '주의'
+        : g.grade === 'alert' ? '경보' : '주의';
+    } else if (g.thresholds) {
       const { good: gd, warn: wn, alarm: al } = g.thresholds;
       grade = v >= al ? '경보' : v >= wn ? '주의' : '양호';
     } else {
-      const absV = Math.abs(v);
-      grade = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
+      // 폴백: 방향 인식 (absV 방식 폐기)
+      grade = '주의'; // 기본값 = 중립
     }
     gaugeData[gId] = {
       c: gId,
@@ -70,10 +74,26 @@ function buildEntityData(entityInfo, lang) {
   for (const [axId, ax] of Object.entries(axesSource)) {
     const keys = (ax.keys || ax.gauges || []).filter(k => gaugeData[k]);
     if (keys.length === 0) continue;
-    const scores = keys.map(k => gaugeData[k].g === '양호' ? 100 : gaugeData[k].g === '주의' ? 50 : 0);
-    const sc = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-    const g = sc >= 70 ? '양호' : sc >= 40 ? '주의' : '경보';
+
+    // V2: 서버 systemScores 사용 → 수축 폴백
     const sysKey = ax.tierKey || normAxisKey(axId);
+    const serverSysSc = entityInfo.systemScores?.[axId];
+    let sc, g, hasAlert;
+    if (serverSysSc) {
+      sc = serverSysSc.score;
+      g = serverSysSc.grade === 'good' ? '양호' : serverSysSc.grade === 'caution' ? '주의' : '경보';
+      hasAlert = serverSysSc.hasAlert;
+    } else {
+      // 수축 폴백: (n*raw + k*50) / (n+k), k=4
+      const scores = keys.map(k => gaugeData[k].g==='양호'?85:gaugeData[k].g==='주의'?50:15);
+      const n = scores.length;
+      const raw = scores.reduce((a,b)=>a+b,0)/n;
+      const K = 4;
+      sc = Math.round((n*raw + K*50)/(n+K));
+      g = sc>=70?'양호':sc>=40?'주의':'경보';
+      hasAlert = scores.some(s=>s<=15);
+    }
+
     sysData[sysKey] = {
       tK: sysKey,
       name: ax.name,
@@ -82,6 +102,7 @@ function buildEntityData(entityInfo, lang) {
       g,
       sc,
       keys,
+      hasAlert,
     };
   }
 
@@ -257,16 +278,19 @@ function DashboardPage({user,onNav,lang,country,city}){
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
   const totalG=allG.length||1;
-  const rawScore=((good*100+caution*50+alertCnt*0)/totalG);
 
-  // ★ 커버리지 기반 점수 감쇠 (coverage < 70% → 예비 판정)
+  // ★ V2: 서버 countryScore 우선 (수축 적용됨) → 폴백 = 프론트 단순 평균
+  let compositeScore;
+  if (isGlobalMode && countryInfo?.countryScore != null) {
+    compositeScore = Number(countryInfo.countryScore).toFixed(1);
+  } else {
+    const rawScore=((good*100+caution*50+alertCnt*0)/totalG);
+    compositeScore = rawScore.toFixed(1);
+  }
+  // coverage = 표시용만 (점수 감쇠 없음! 이중 처벌 제거)
   const coveragePct = countryInfo?.gaugeCount && countryInfo?.totalGauges
     ? Math.round(countryInfo.gaugeCount / countryInfo.totalGauges * 100) : 100;
   const isPreliminary = isGlobalMode && coveragePct < 70;
-  const confidence = Math.min(1, coveragePct / 70);
-  const compositeScore = isGlobalMode
-    ? (rawScore * confidence).toFixed(1)
-    : rawScore.toFixed(1);
   const scoreColor=compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger;
 
   // ★ 글로벌 모드: 위성 탭 숨김
