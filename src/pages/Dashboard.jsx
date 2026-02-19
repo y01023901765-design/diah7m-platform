@@ -311,7 +311,7 @@ function DashboardPage({user,onNav,lang,country,city}){
     {/* Onboarding Banner */}
     {showOnboard&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`1px solid ${LT.border}`,marginBottom:LT.sp['2xl'],position:"relative"}}>
       <button onClick={dismissOnboard} style={{position:"absolute",top:LT.sp.lg,right:LT.sp.xl,border:"none",background:"transparent",color:LT.textDim,fontSize:LT.fs['2xl'],cursor:"pointer",padding:LT.sp.xs}}>✕</button>
-      <div style={{fontSize:17,fontWeight:LT.fw.extra,color:LT.text,marginBottom:LT.sp.md}}>👋 {t('onboardTitle',L)}</div>
+      <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text,marginBottom:LT.sp.md}}>👋 {t('onboardTitle',L)}</div>
       <div style={{fontSize:LT.fs.lg,color:LT.textMid,lineHeight:1.7,marginBottom:LT.sp.xl}}>{t('onboardDesc',L)}</div>
       <div style={{display:"flex",gap:LT.sp.md,flexWrap:"wrap"}}>
         {[
@@ -338,7 +338,7 @@ function DashboardPage({user,onNav,lang,country,city}){
       <GlobalPulse worldData={worldData} commoditiesData={commoditiesData} lang={L}/>
       {/* 국가 헤더 — 글로벌 국가 선택 시 */}
       {!isKorea&&<div style={{display:"flex",alignItems:"center",gap:LT.sp.lg,marginBottom:LT.sp['2xl'],padding:`${LT.sp.xl}px ${LT.sp['2xl']}px`,background:LT.surface,borderRadius:LT.cardRadius,border:`1px solid ${LT.border}`}}>
-        <span style={{fontSize:LT.sp['4xl']}}>  {countryInfo?.flag||'🌍'}</span>
+        <span style={{fontSize:LT.fs['3xl']}}>  {countryInfo?.flag||'🌍'}</span>
         <div>
           <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{countryInfo?.name?.[L]||countryInfo?.name?.en||iso3}</div>
           <div style={{fontSize:LT.fs.sm,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('gaugesLabel',L)} · {countryInfo?.coverageRate||''} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
@@ -368,7 +368,7 @@ function DashboardPage({user,onNav,lang,country,city}){
             {isPreliminary&&<span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}10`,marginLeft:LT.sp.xs}}>예비</span>}
           </div>
           <div style={{display:"flex",gap:LT.sp['2xl'],marginTop:LT.sp.xl}}>
-            {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:LT.sp['3xl'],fontWeight:LT.fw.extra,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
+            {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
           </div>
           <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L}/></div>
         </div>
@@ -437,7 +437,7 @@ function DashboardPage({user,onNav,lang,country,city}){
             <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌙 {t('satS2Name',L)||'야간광량'}</span>
             <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.good}15`,color:LT.good,fontWeight:LT.fw.semi}}>VIIRS DNB</span>
           </div>
-          <div style={{fontSize:26,fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.S2.unit}</span></div>
+          <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.S2.unit}</span></div>
           <div style={{display:"flex",gap:LT.sp.xl,marginTop:LT.sp.md,fontSize:LT.fs.sm,color:LT.textMid}}>
             {satData.S2.mean_7d!=null&&<span>7d: {satData.S2.mean_7d}</span>}
             {satData.S2.mean_60d!=null&&<span>60d: {satData.S2.mean_60d}</span>}
@@ -452,14 +452,14 @@ function DashboardPage({user,onNav,lang,country,city}){
             <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌡️ {t('satR6Name',L)||'도시열섬'}</span>
             <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}15`,color:LT.warn,fontWeight:LT.fw.semi}}>Landsat-9</span>
           </div>
-          <div style={{fontSize:26,fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.R6.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.R6.unit}</span></div>
+          <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.R6.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.R6.unit}</span></div>
           <div style={{fontSize:LT.fs.sm,color:LT.textMid,marginTop:LT.sp.md}}>{satData.R6.date} · {satData.R6.region}</div>
         </div>}
       </div>}
       {/* 기존 게이지 기반 위성 데이터 */}
       <TierLock plan={demoUser?.plan} req="PRO" lang={L}>
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.md,marginBottom:LT.sp['2xl']}}>
-        {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:LT.fs.lg,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:22,fontWeight:LT.fw.extra,color:LT.text,marginTop:LT.sp.md,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:LT.fs.xl,color:LT.textMid,marginTop:LT.sp.xs}}>{g.note}</div></div>);})}
+        {Object.values(gaugeData).filter(g=>isSat(g.c)).map(g=>{const s=SAT_META[g.c];return(<div key={g.c} style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.border}`}}><div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>{s.icon} {gN(g.c,L)}</div><div style={{fontSize:LT.fs.lg,color:LT.textMid}}>{s.sat} · {s.freq}</div><div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text,marginTop:LT.sp.md,fontFamily:"monospace"}}>{g.v}<span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{g.u}</span></div><div style={{fontSize:LT.fs.xl,color:LT.textMid,marginTop:LT.sp.xs}}>{g.note}</div></div>);})}
       </div>
       </TierLock>
       {/* ═══ 위성 교차검증 — 경제지표↔위성 연결 ═══ */}
@@ -499,7 +499,7 @@ function DashboardPage({user,onNav,lang,country,city}){
           <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text}}>📈 {t('satToStock',L)}</div>
           <div style={{fontSize:LT.fs.lg,color:LT.textMid,marginTop:2}}>{t('satToStockDesc',L)}</div>
         </div>
-        <span style={{fontSize:LT.sp['3xl'],color:LT.textDim}}>→</span>
+        <span style={{fontSize:LT.fs['2xl'],color:LT.textDim}}>→</span>
       </div>
     </>}
     {tab==='alerts'&&<>
