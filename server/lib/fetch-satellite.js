@@ -100,54 +100,16 @@ function getThumbPromise(image, geometry, params) {
 }
 
 // ═══ 2. VIIRS 야간광 (S2) ═══
-// 43국 수도/경제 중심지 bbox (약 30~50km)
-const REGIONS = {
-  // ── OECD 38국 ──
-  KR: { name: '대한민국 (서울)', bbox: [126.7, 37.4, 127.2, 37.7] },
-  US: { name: 'USA (New York)', bbox: [-74.1, 40.6, -73.7, 40.9] },
-  JP: { name: '日本 (東京)', bbox: [139.5, 35.5, 139.9, 35.8] },
-  DE: { name: 'Deutschland (Berlin)', bbox: [13.2, 52.4, 13.6, 52.6] },
-  GB: { name: 'UK (London)', bbox: [-0.3, 51.4, 0.1, 51.6] },
-  FR: { name: 'France (Paris)', bbox: [2.2, 48.8, 2.5, 48.9] },
-  CA: { name: 'Canada (Toronto)', bbox: [-79.5, 43.6, -79.2, 43.8] },
-  AU: { name: 'Australia (Sydney)', bbox: [151.1, -33.9, 151.3, -33.8] },
-  IT: { name: 'Italia (Roma)', bbox: [12.3, 41.8, 12.6, 42.0] },
-  ES: { name: 'España (Madrid)', bbox: [-3.8, 40.3, -3.5, 40.5] },
-  MX: { name: 'México (CDMX)', bbox: [-99.3, 19.3, -99.0, 19.5] },
-  NL: { name: 'Nederland (Amsterdam)', bbox: [4.7, 52.3, 5.0, 52.4] },
-  CH: { name: 'Schweiz (Zürich)', bbox: [8.4, 47.3, 8.6, 47.4] },
-  SE: { name: 'Sverige (Stockholm)', bbox: [17.9, 59.3, 18.2, 59.4] },
-  PL: { name: 'Polska (Warszawa)', bbox: [20.9, 52.1, 21.1, 52.3] },
-  BE: { name: 'België (Brussel)', bbox: [4.3, 50.8, 4.5, 50.9] },
-  AT: { name: 'Österreich (Wien)', bbox: [16.3, 48.1, 16.5, 48.3] },
-  NO: { name: 'Norge (Oslo)', bbox: [10.6, 59.9, 10.8, 60.0] },
-  DK: { name: 'Danmark (København)', bbox: [12.4, 55.6, 12.7, 55.7] },
-  FI: { name: 'Suomi (Helsinki)', bbox: [24.8, 60.1, 25.1, 60.2] },
-  IE: { name: 'Ireland (Dublin)', bbox: [-6.4, 53.3, -6.1, 53.4] },
-  PT: { name: 'Portugal (Lisboa)', bbox: [-9.2, 38.7, -9.0, 38.8] },
-  CZ: { name: 'Česko (Praha)', bbox: [14.3, 50.0, 14.5, 50.1] },
-  GR: { name: 'Greece (Athina)', bbox: [23.6, 37.9, 23.8, 38.0] },
-  HU: { name: 'Magyarorszag (Budapest)', bbox: [19.0, 47.4, 19.2, 47.6] },
-  NZ: { name: 'New Zealand (Auckland)', bbox: [174.7, -36.9, 174.9, -36.8] },
-  IL: { name: 'Israel (Tel Aviv)', bbox: [34.7, 32.0, 34.9, 32.1] },
-  CL: { name: 'Chile (Santiago)', bbox: [-70.7, -33.5, -70.5, -33.4] },
-  TR: { name: 'Turkiye (Istanbul)', bbox: [28.8, 41.0, 29.2, 41.1] },
-  CO: { name: 'Colombia (Bogota)', bbox: [-74.2, 4.6, -74.0, 4.7] },
-  SK: { name: 'Slovensko (Bratislava)', bbox: [17.0, 48.1, 17.2, 48.2] },
-  LT: { name: 'Lietuva (Vilnius)', bbox: [25.2, 54.6, 25.4, 54.7] },
-  SI: { name: 'Slovenija (Ljubljana)', bbox: [14.4, 46.0, 14.6, 46.1] },
-  LV: { name: 'Latvija (Riga)', bbox: [23.9, 56.9, 24.2, 57.0] },
-  EE: { name: 'Eesti (Tallinn)', bbox: [24.7, 59.4, 24.9, 59.5] },
-  LU: { name: 'Luxembourg', bbox: [6.1, 49.5, 6.2, 49.7] },
-  IS: { name: 'Island (Reykjavik)', bbox: [-22.0, 64.1, -21.8, 64.2] },
-  CR: { name: 'Costa Rica (San Jose)', bbox: [-84.1, 9.9, -83.9, 10.0] },
-  // ── 추가 5국 ──
-  SG: { name: 'Singapore', bbox: [103.7, 1.2, 104.0, 1.4] },
-  HK: { name: 'Hong Kong', bbox: [114.1, 22.2, 114.3, 22.4] },
-  TW: { name: 'Taiwan (Taipei)', bbox: [121.4, 25.0, 121.6, 25.1] },
-  IN: { name: 'India (Mumbai)', bbox: [72.8, 19.0, 73.0, 19.2] },
-  CN: { name: 'China (Shanghai)', bbox: [121.3, 31.1, 121.6, 31.4] },
-};
+// 43국 수도/경제 중심지 bbox — country-profiles.js에서 동적 생성
+// 국가 추가 시 country-profiles.js의 satellite.bbox만 추가하면 자동 반영
+var _cpCountries = require('./country-profiles').COUNTRIES;
+var REGIONS = {};
+for (var _iso3 of Object.keys(_cpCountries)) {
+  var _c = _cpCountries[_iso3];
+  if (_c.satellite && _c.satellite.bbox) {
+    REGIONS[_c.iso2] = { name: _c.name.en, bbox: _c.satellite.bbox };
+  }
+}
 
 async function fetchVIIRS(regionCode, lookbackDays) {
   regionCode = regionCode || 'KR';

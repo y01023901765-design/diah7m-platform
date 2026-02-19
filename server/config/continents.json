@@ -1,0 +1,30 @@
+{
+  "ASIA": {
+    "name": { "en": "Asia", "ko": "아시아" },
+    "members": ["KOR", "JPN", "CHN", "IND", "SGP", "HKG", "TWN"]
+  },
+  "EUR": {
+    "name": { "en": "Europe", "ko": "유럽" },
+    "members": [
+      "GBR", "DEU", "FRA", "ITA", "ESP", "NLD", "CHE", "SWE", "NOR",
+      "POL", "CZE", "HUN", "DNK", "FIN", "AUT", "BEL", "IRL", "PRT",
+      "GRC", "SVK", "SVN", "EST", "LVA", "LTU", "ISL", "LUX"
+    ]
+  },
+  "NAM": {
+    "name": { "en": "North America", "ko": "북미" },
+    "members": ["USA", "CAN", "MEX"]
+  },
+  "SAM": {
+    "name": { "en": "South America", "ko": "남미" },
+    "members": ["CHL", "COL", "CRI"]
+  },
+  "MEA": {
+    "name": { "en": "Middle East & Africa", "ko": "중동/아프리카" },
+    "members": ["ISR", "TUR"]
+  },
+  "OCE": {
+    "name": { "en": "Oceania", "ko": "오세아니아" },
+    "members": ["AUS", "NZL"]
+  }
+}

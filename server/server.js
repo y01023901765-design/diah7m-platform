@@ -255,6 +255,15 @@ if (globalPipeline && globalPipeline.createGlobalRouter) {
   console.log('  ✅ Global router mounted (43 countries)');
 }
 
+// ═══ 8.1. Global Hierarchy (World/Continent scoring) ═══
+try {
+  const { createHierarchyRouter } = require('./routes/hierarchy');
+  app.use('/api/v1/global', createHierarchyRouter());
+  console.log('  ✅ Hierarchy router mounted (World/Continent scoring)');
+} catch (e) {
+  console.warn('  ⚠️ Hierarchy router failed:', e.message);
+}
+
 // ═══ 8.5. 위성 라우트 (수집/조회 분리) ═══
 try {
   const satRouter = require('./routes/satellite');
