@@ -125,10 +125,12 @@ function StockView({stock:s,lang,onBack}){
   const [liveSignals,setLiveSignals]=useState(null);
   const [liveChart,setLiveChart]=useState(null);
   const [chartRange,setChartRange]=useState('6mo');
+  const [loading,setLoading]=useState(true);
 
   // API에서 시설/델타/게이지/건강도/가격/플로우/시그널 로드
   useEffect(()=>{
     let c=false;
+    setLoading(true);
     (async()=>{
       try{
         const [facRes,deltaRes,gaugeRes,profileRes,priceRes,flowRes,sigRes]=await Promise.allSettled([
@@ -149,6 +151,7 @@ function StockView({stock:s,lang,onBack}){
         if(flowRes.status==='fulfilled'&&flowRes.value?.stages) setLiveFlow(flowRes.value);
         if(sigRes.status==='fulfilled'&&sigRes.value?.flags) setLiveSignals(sigRes.value);
       }catch{/* fallback */}
+      if(!c) setLoading(false);
     })();
     return()=>{c=true};
   },[s.sid]);
@@ -213,6 +216,12 @@ function StockView({stock:s,lang,onBack}){
 
     {/* ═══ TAB 1: 진단 ═══ */}
     {tab==='diag'&&<>
+      {/* Loading skeleton */}
+      {loading&&!stockEntity&&<div style={{padding:40,textAlign:"center"}}>
+        <div style={{width:32,height:32,border:`3px solid ${LT.border}`,borderTopColor:LT.text,borderRadius:"50%",margin:"0 auto 12px",animation:"spin 1s linear infinite"}}/>
+        <div style={{fontSize:15,color:LT.textDim}}>{L==='ko'?'진단 데이터 로딩 중...':'Loading diagnosis...'}</div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>}
       {/* Score Card + Radar */}
       {stockEntity&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
@@ -358,6 +367,12 @@ function StockView({stock:s,lang,onBack}){
 
     {/* ═══ TAB 3: 플로우 — 공급망 물리 흐름 ═══ */}
     {tab==='flow'&&<>
+      {/* Loading skeleton */}
+      {loading&&!liveFlow&&<div style={{padding:40,textAlign:"center"}}>
+        <div style={{width:32,height:32,border:`3px solid ${LT.border}`,borderTopColor:LT.text,borderRadius:"50%",margin:"0 auto 12px",animation:"spin 1s linear infinite"}}/>
+        <div style={{fontSize:15,color:LT.textDim}}>{L==='ko'?'공급망 데이터 로딩 중...':'Loading supply chain...'}</div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>}
       {/* 3-Stage 다이어그램 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>

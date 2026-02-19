@@ -259,8 +259,16 @@ function computeConfidence(stages, archetype) {
   // 3) freshness: 항상 80 (실시간이 아닌 위성 특성상)
   var freshness = 80;
 
-  // pessimistic minimum
-  return Math.round(Math.min(dataQuality, sensorAgreement, freshness));
+  // 4) facilityCount 보정: 관측 시설 수가 많을수록 통계적 신뢰 상향
+  var totalFacilities = 0;
+  ['input', 'process', 'output'].forEach(function(stg) {
+    if (stages[stg] && stages[stg].facilityCount) totalFacilities += stages[stg].facilityCount;
+  });
+  // 1개=+0, 2개=+3, 3개=+5, 5개+=+8, cap +10
+  var facBonus = totalFacilities <= 1 ? 0 : Math.min(10, Math.round(Math.log2(totalFacilities) * 5));
+
+  // pessimistic minimum + facility bonus
+  return Math.min(100, Math.round(Math.min(dataQuality, sensorAgreement, freshness) + facBonus));
 }
 
 // ═══════════════════════════════════════════════════════════════

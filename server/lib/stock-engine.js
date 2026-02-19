@@ -130,6 +130,17 @@ function buildContextNote(alertGauges, glContext) {
 // ── 종합 건강도 (모든 것 합치기) ────────────────────
 
 function buildStockHealth(profile, gaugeValues, glContext) {
+  // 0. edge case: 빈 입력 방어
+  if (!gaugeValues || typeof gaugeValues !== 'object' || Object.keys(gaugeValues).length === 0) {
+    return {
+      score: 50, confidence: 0, severity: 2.5,
+      gaugeScores: {}, systemScores: {}, alertGauges: [],
+      delta: { gap: 0, state: 'ALIGNED', flag: null },
+      dualLock: { input: 'OK', output: 'OK', isDualLocked: false },
+      contextNote: null,
+    };
+  }
+
   // 1. 게이지에 axis 매핑 추가
   var gauges = {};
   var gIds = Object.keys(gaugeValues);
