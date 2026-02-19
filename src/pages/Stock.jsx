@@ -122,21 +122,23 @@ function StockView({stock:s,lang,onBack}){
   const toggleGauge=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
   const [liveFlow,setLiveFlow]=useState(null);
+  const [liveSignals,setLiveSignals]=useState(null);
   const [liveChart,setLiveChart]=useState(null);
   const [chartRange,setChartRange]=useState('6mo');
 
-  // API에서 시설/델타/게이지/건강도/가격/플로우 로드
+  // API에서 시설/델타/게이지/건강도/가격/플로우/시그널 로드
   useEffect(()=>{
     let c=false;
     (async()=>{
       try{
-        const [facRes,deltaRes,gaugeRes,profileRes,priceRes,flowRes]=await Promise.allSettled([
+        const [facRes,deltaRes,gaugeRes,profileRes,priceRes,flowRes,sigRes]=await Promise.allSettled([
           API.stockFacilities(s.sid),
           API.stockDelta(s.sid),
           API.stockGauges(s.sid),
           API.stockProfile(s.sid),
           API.stockPrice(s.sid),
           API.stockFlow(s.sid),
+          API.stockSignals(s.sid),
         ]);
         if(c)return;
         if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
@@ -145,6 +147,7 @@ function StockView({stock:s,lang,onBack}){
         if(profileRes.status==='fulfilled'&&profileRes.value?.health) setLiveHealth(profileRes.value.health);
         if(priceRes.status==='fulfilled'&&priceRes.value?.price!=null) setLivePrice(priceRes.value);
         if(flowRes.status==='fulfilled'&&flowRes.value?.stages) setLiveFlow(flowRes.value);
+        if(sigRes.status==='fulfilled'&&sigRes.value?.flags) setLiveSignals(sigRes.value);
       }catch{/* fallback */}
     })();
     return()=>{c=true};
@@ -475,24 +478,36 @@ function StockView({stock:s,lang,onBack}){
 
     {/* ═══ TAB 4: 시그널 ═══ */}
     {tab==='signal'&&<>
-      {/* 4 Flags */}
+      {/* 4 Flags — API 실데이터 우선, 없으면 로컬 추정 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🚩 {t('svFlagTitle',L)}</div>
-        {[
-          {id:'cross',active:warnCnt>0,label:t('svFlagCross',L),desc:t('svFlagCrossDesc',L)},
-          {id:'dual',active:warnCnt>=2,label:t('svFlagDual',L),desc:t('svFlagDualDesc',L)},
-          {id:'delta',active:delta.state!=='ALIGNED',label:t('svFlagDelta',L),desc:t('svFlagDeltaDesc',L)},
-          {id:'trend',active:false,label:t('svFlagTrend',L),desc:t('svFlagTrendDesc',L)},
-        ].map((fl,i)=>(
-          <div key={fl.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<3?`1px solid ${LT.border}`:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🚩 {t('svFlagTitle',L)}</div>
+          {liveSignals&&<span style={{fontSize:13,padding:"2px 8px",borderRadius:4,fontWeight:600,
+            background:liveSignals.riskLevel==='HIGH'?LT.danger:liveSignals.riskLevel==='MEDIUM'?'#f59e0b':LT.good,
+            color:'#fff'}}>{liveSignals.riskLevel}</span>}
+        </div>
+        {(liveSignals?.flags||[
+          {id:'CROSS_SIGNAL',name:t('svFlagCross',L),active:warnCnt>0,desc:t('svFlagCrossDesc',L)},
+          {id:'DUAL_LOCK',name:t('svFlagDual',L),active:warnCnt>=2,desc:t('svFlagDualDesc',L)},
+          {id:'DELTA_DIVERGENCE',name:t('svFlagDelta',L),active:delta.state!=='ALIGNED',desc:t('svFlagDeltaDesc',L)},
+          {id:'TREND_REVERSAL',name:t('svFlagTrend',L),active:false,desc:t('svFlagTrendDesc',L)},
+        ]).map((fl,i,arr)=>(
+          <div key={fl.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<arr.length-1?`1px solid ${LT.border}`:"none"}}>
             <span style={{width:8,height:8,borderRadius:4,marginTop:6,flexShrink:0,background:fl.active?LT.danger:LT.good}}/>
             <div>
-              <div style={{fontSize:15,fontWeight:700,color:fl.active?LT.danger:LT.text}}>{fl.label}</div>
+              <div style={{fontSize:15,fontWeight:700,color:fl.active?LT.danger:LT.text}}>{fl.name}</div>
               <div style={{fontSize:15,color:LT.textDim,marginTop:2}}>{fl.desc}</div>
             </div>
           </div>
         ))}
       </div>
+      {/* contextNote — 글로벌 환경 맥락 */}
+      {(liveSignals?.contextNote||liveHealth?.contextNote)&&(
+        <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginBottom:12}}>
+          <div style={{fontSize:14,fontWeight:700,color:LT.text,marginBottom:6}}>🌐 {L==='ko'?'글로벌 환경 맥락':'Global Context'}</div>
+          <div style={{fontSize:14,color:LT.textMid,lineHeight:1.6}}>{liveSignals?.contextNote||liveHealth?.contextNote}</div>
+        </div>
+      )}
       {/* DIAH-7M Edge */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🔭 {t('svEdgeTitle',L)}</div>

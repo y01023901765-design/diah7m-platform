@@ -18,6 +18,17 @@ var profilesMod = require('../data/stock-profiles-100');
 var YAHOO_TIMEOUT = 8000;
 var YAHOO_BASE = 'https://query1.finance.yahoo.com';
 
+// ── 캐시 크기 제한 유틸 (메모리 누수 방지) ──
+var MAX_CACHE_SIZE = 150; // 100종목 + 여유분
+function _pruneCache(cache) {
+  var keys = Object.keys(cache);
+  if (keys.length <= MAX_CACHE_SIZE) return;
+  // 오래된 50% 제거
+  keys.sort(function(a, b) { return (cache[a].ts || 0) - (cache[b].ts || 0); });
+  var removeCount = Math.floor(keys.length / 2);
+  for (var i = 0; i < removeCount; i++) delete cache[keys[i]];
+}
+
 // ── 게이지 → 데이터소스 매핑 ─────────────────────────
 
 var STOCK_GAUGE_MAP = {
@@ -114,6 +125,7 @@ async function fetchYahooSummary(ticker) {
     var data = (result && result[0]) || null;
     if (data) {
       _summaryCache[ticker] = { data: data, ts: now };
+      _pruneCache(_summaryCache);
     }
     return data;
   } catch (err) {
@@ -153,6 +165,7 @@ async function fetchYahooChart(ticker, range) {
     var data = (chart && chart[0]) || null;
     if (data) {
       _chartCache[cKey] = { data: data, ts: now };
+      _pruneCache(_chartCache);
     }
     return data;
   } catch (err) {
@@ -426,6 +439,7 @@ async function fetchStockPrice(ticker, country) {
   };
 
   _priceCache[ticker] = { data: result, ts: now };
+  _pruneCache(_priceCache);
   return result;
 }
 

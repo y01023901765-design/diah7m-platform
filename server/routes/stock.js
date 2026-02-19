@@ -445,12 +445,10 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
         radiusKm: f.radiusKm || null,
         note: f.note || null,
         underConstruction: f.underConstruction || false,
-        metrics: {
-          viirs: metrics.ntl != null ? metrics.ntl : null,
-          no2: metrics.no2 != null ? metrics.no2 : null,
-          therm: metrics.thermal != null ? metrics.thermal : null,
-          sar: metrics.sar != null ? metrics.sar : null,
-        },
+        viirs: metrics.ntl != null ? metrics.ntl : null,
+        no2: metrics.no2 != null ? metrics.no2 : null,
+        therm: metrics.thermal != null ? metrics.thermal : null,
+        sar: metrics.sar != null ? metrics.sar : null,
         status,
         lastObserved: flowData ? flowData.updatedAt : new Date().toISOString(),
       };
