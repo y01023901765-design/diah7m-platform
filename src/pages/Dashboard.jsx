@@ -23,6 +23,9 @@ function assertNoMix(entityInfo, isKorea) {
   }
 }
 
+/** 서버 축ID → 프론트 축ID 정규화 (AX1→A1, AX2→A2, ...) */
+const normAxisKey = k => /^AX\d$/.test(k) ? 'A' + k.slice(2) : k;
+
 /** 서버 응답 → 프론트 렌더링 데이터 변환 (모든 엔티티 공용) */
 function buildEntityData(entityInfo, lang) {
   const L = lang || 'ko';
@@ -70,8 +73,9 @@ function buildEntityData(entityInfo, lang) {
     const scores = keys.map(k => gaugeData[k].g === '양호' ? 100 : gaugeData[k].g === '주의' ? 50 : 0);
     const sc = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     const g = sc >= 70 ? '양호' : sc >= 40 ? '주의' : '경보';
-    sysData[axId] = {
-      tK: ax.tierKey || axId,
+    const sysKey = ax.tierKey || normAxisKey(axId);
+    sysData[sysKey] = {
+      tK: sysKey,
       name: ax.name,
       icon: ax.icon || '📊',
       color: ax.color || '#888',
@@ -89,8 +93,9 @@ function reverseAxesFromGauges(gauges) {
   const axMap = {};
   for (const [gId, g] of Object.entries(gauges || {})) {
     if (!g.axis) continue;
-    if (!axMap[g.axis]) axMap[g.axis] = { keys: [] };
-    axMap[g.axis].keys.push(gId);
+    const ak = normAxisKey(g.axis);
+    if (!axMap[ak]) axMap[ak] = { keys: [] };
+    axMap[ak].keys.push(gId);
   }
   return axMap;
 }
