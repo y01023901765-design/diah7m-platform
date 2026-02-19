@@ -268,6 +268,23 @@ try {
   console.warn('  ⚠️ Satellite routes failed:', e.message);
 }
 
+// TEMP: GEE 환경변수 확인 (credentials 자체는 노출하지 않음)
+app.get('/api/gee-check', (req, res) => {
+  const b64 = process.env.GEE_CREDENTIALS_B64 || '';
+  let parseable = false;
+  if (b64) {
+    try { JSON.parse(Buffer.from(b64, 'base64').toString()); parseable = true; } catch {}
+  }
+  res.json({
+    GEE_CREDENTIALS_B64: !!b64,
+    GEE_CREDENTIALS_B64_len: b64.length,
+    GEE_CREDENTIALS_B64_parseable: parseable,
+    GEE_KEY_FILE: !!process.env.GEE_KEY_FILE,
+    GOOGLE_APPLICATION_CREDENTIALS: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    earthengine_installed: !!require('@google/earthengine'),
+  });
+});
+
 // ═══ 9. SPA Fallback ═══
 if (fs.existsSync(distPath)) {
   app.get('*', (req, res) => {
@@ -384,6 +401,38 @@ async function start() {
       } catch(e) {
         console.log('  ⚠️ Cron: node-cron not available —', e.message);
       }
+
+      // ── 위성 데이터 자동 수집 (부팅 60초 후) ──
+      setTimeout(async () => {
+        try {
+          const { fetchAllSatellite } = require('./lib/fetch-satellite');
+          const satRouter = require('./routes/satellite');
+          const snapshot = satRouter._snapshot;
+          if (!fetchAllSatellite || !snapshot) {
+            console.log('[Satellite] Auto-collect skipped: module not available');
+            return;
+          }
+          console.log('[Satellite] Auto-collect started...');
+          const { results, meta } = await fetchAllSatellite('KR', {});
+          for (const [id, data] of Object.entries(results)) {
+            if (data.status === 'OK') snapshot[id] = data;
+          }
+          snapshot.meta = {
+            last_collect_asof: meta.asof_kst,
+            last_success_asof: meta.collected > 0 ? meta.asof_kst : null,
+            last_run_id: meta.run_id,
+            status: meta.collected > 0 ? 'COLLECTED' : (meta.failed > 0 ? 'PARTIAL' : 'NO_CHANGE'),
+            duration_ms: meta.duration_ms,
+            collected: meta.collected,
+            skipped: meta.skipped,
+            failed: meta.failed,
+            failures: meta.failures,
+          };
+          console.log(`[Satellite] Auto-collect done: ${meta.collected} collected, ${meta.failed} failed (${meta.duration_ms}ms)`);
+        } catch (e) {
+          console.log(`[Satellite] Auto-collect failed: ${e.message}`);
+        }
+      }, 60000);
 
       console.log('══════════════════════════════════════\n');
     });
