@@ -268,57 +268,7 @@ try {
   console.warn('  ⚠️ Satellite routes failed:', e.message);
 }
 
-// TEMP: TradingEconomics 스크래핑 디버그
-app.get('/api/te-debug/:slug(*)', async (req, res) => {
-  try {
-    const axios = require('axios');
-    const slug = req.params.slug;
-    const resp = await axios.get(`https://tradingeconomics.com/${slug}`, {
-      timeout: 15000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    const html = resp.data;
-    const pMatch = html.match(/id="p"[^>]*>([0-9.,]+)</);
-    const metaMatch = html.match(/content="[^"]*(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
-    // Find context around id="p"
-    const pIdx = html.indexOf('id="p"');
-    const pContext = pIdx >= 0 ? html.substring(pIdx, pIdx + 200) : null;
-    // Meta desc
-    const descMatch = html.match(/name="description"\s+content="([^"]{0,300})"/i);
-    res.json({
-      status: resp.status,
-      htmlLen: html.length,
-      pMatch: pMatch ? pMatch[1] : null,
-      metaMatch: metaMatch ? metaMatch[1] : null,
-      hasIdP: html.includes('id="p"'),
-      pContext: pContext?.substring(0, 200),
-      metaDesc: descMatch ? descMatch[1]?.substring(0, 200) : null,
-    });
-  } catch (e) {
-    res.json({ error: e.message, status: e.response?.status });
-  }
-});
-
-// TEMP: GEE 환경변수 확인 (credentials 자체는 노출하지 않음)
-app.get('/api/gee-check', (req, res) => {
-  const b64 = process.env.GEE_CREDENTIALS_B64 || '';
-  let parseable = false;
-  if (b64) {
-    try { JSON.parse(Buffer.from(b64, 'base64').toString()); parseable = true; } catch {}
-  }
-  res.json({
-    GEE_CREDENTIALS_B64: !!b64,
-    GEE_CREDENTIALS_B64_len: b64.length,
-    GEE_CREDENTIALS_B64_parseable: parseable,
-    GEE_KEY_FILE: !!process.env.GEE_KEY_FILE,
-    GOOGLE_APPLICATION_CREDENTIALS: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    earthengine_installed: !!require('@google/earthengine'),
-  });
-});
+// (temp debug endpoints removed)
 
 // ═══ 9. SPA Fallback ═══
 if (fs.existsSync(distPath)) {
