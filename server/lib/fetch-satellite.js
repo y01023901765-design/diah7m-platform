@@ -21,8 +21,13 @@ try { ee = require('@google/earthengine'); } catch (e) {
 }
 const fs = require('fs');
 const path = require('path');
+const conc = require('./concurrency');
 
 let geeInitialized = false;
+
+// ── 동시접속 보호: GEE 동시 3개 제한 (레이트리밋 100/분 보호) ──
+var _geeSem = new conc.Semaphore(3);
+var _geeTimeout = 30000; // 30초 타임아웃 (GEE callback 무응답 방지)
 
 // ═══ 1. GEE 인증 ═══
 async function authenticateGEE() {
@@ -629,12 +634,20 @@ async function fetchFacilitySensors(facility) {
   var radius = facility.radiusKm || 5;
   var results = {};
 
-  // 순차 실행 (GEE rate limit 방지)
+  // 세마포어 + 타임아웃: GEE 동시 3개 제한, 30초 타임아웃
   for (var i = 0; i < sensors.length; i++) {
     var s = sensors[i];
     if (sensorFns[s]) {
       try {
-        results[s] = await sensorFns[s](facility.lat, facility.lng, radius);
+        var fn = sensorFns[s];
+        var lat = facility.lat, lng = facility.lng;
+        results[s] = await _geeSem.run(function() {
+          return conc.withTimeout(
+            fn(lat, lng, radius),
+            _geeTimeout,
+            'GEE ' + s + ' ' + facility.name
+          );
+        });
       } catch (err) {
         results[s] = { sensor: s, status: 'ERROR', error: err.message };
       }

@@ -100,17 +100,44 @@ app.use((req, res, next) => {
 // 요청 카운터
 app.use((req, res, next) => { state.totalRequests++; next(); });
 
-// Rate Limit (간이 + 메모리 정리)
+// Rate Limit (슬라이딩 윈도우 + stock 엔드포인트 별도 제한)
 const rateMap = new Map();
-setInterval(() => { const now = Date.now(); for (const [ip, hits] of rateMap) { const fresh = hits.filter(t => now - t < 60000); if (fresh.length === 0) rateMap.delete(ip); else rateMap.set(ip, fresh); } }, 5 * 60 * 1000);
+const stockRateMap = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, hits] of rateMap) {
+    const fresh = hits.filter(t => now - t < 60000);
+    if (fresh.length === 0) rateMap.delete(ip); else rateMap.set(ip, fresh);
+  }
+  for (const [ip, hits] of stockRateMap) {
+    const fresh = hits.filter(t => now - t < 60000);
+    if (fresh.length === 0) stockRateMap.delete(ip); else stockRateMap.set(ip, fresh);
+  }
+  // 메모리 안전: 최대 2000 IP 보관
+  if (rateMap.size > 2000) rateMap.clear();
+  if (stockRateMap.size > 2000) stockRateMap.clear();
+}, 60 * 1000);
+
 app.use((req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
   const now = Date.now();
+
+  // 글로벌 100/분
   const hits = rateMap.get(ip) || [];
   const recent = hits.filter(t => now - t < 60000);
   if (recent.length >= 100) return res.status(429).json({ error: 'Too many requests' });
   recent.push(now);
   rateMap.set(ip, recent);
+
+  // stock 엔드포인트 추가 제한 30/분 (Yahoo/GEE 보호)
+  if (req.path.includes('/stock/')) {
+    const sHits = stockRateMap.get(ip) || [];
+    const sRecent = sHits.filter(t => now - t < 60000);
+    if (sRecent.length >= 30) return res.status(429).json({ error: 'Stock API rate limit exceeded' });
+    sRecent.push(now);
+    stockRateMap.set(ip, sRecent);
+  }
+
   next();
 });
 
@@ -386,16 +413,28 @@ async function start() {
         const kosisKey = process.env.KOSIS_API_KEY;
         if (pipeline && dataStore && ecosKey) {
           // 21:00 UTC = 06:00 KST
+          let _cronRunning = false;
           cron.schedule('0 6 * * *', async () => {
+            if (_cronRunning) { console.log('[Cron] Already running — skip'); return; }
+            _cronRunning = true;
             console.log(`[Cron] ${new Date().toISOString()} — Daily refresh started`);
             try {
               const { results, stats } = await pipeline.fetchAll(ecosKey, kosisKey || '');
-              await dataStore.store(results);
-              dataStore.setLastRun(stats);
+              // 논블로킹: setImmediate으로 스토어 업데이트를 이벤트루프에 양보
+              await new Promise((resolve) => {
+                setImmediate(async () => {
+                  try {
+                    await dataStore.store(results);
+                    dataStore.setLastRun(stats);
+                  } catch (e) { console.error('[Cron] Store error:', e.message); }
+                  resolve();
+                });
+              });
               console.log(`[Cron] Done: ${stats.ok}/${stats.total} OK`);
             } catch(e) {
               console.error(`[Cron] Failed: ${e.message}`);
             }
+            _cronRunning = false;
           }, { timezone: 'Asia/Seoul' });
           console.log('  ⏰ Cron: daily 06:00 KST refresh scheduled');
         } else {

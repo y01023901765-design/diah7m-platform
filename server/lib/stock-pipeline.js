@@ -12,11 +12,25 @@
  */
 
 var axios = require('axios');
+var http = require('http');
+var https = require('https');
 var fetchSat = require('./fetch-satellite');
 var profilesMod = require('../data/stock-profiles-100');
+var conc = require('./concurrency');
 
 var YAHOO_TIMEOUT = 8000;
 var YAHOO_BASE = 'https://query1.finance.yahoo.com';
+
+// ── HTTP 커넥션 풀링 (EMFILE 방지, keep-alive 재사용) ──
+var httpAgent = new http.Agent({ keepAlive: true, maxSockets: 20 });
+var httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 20 });
+
+// ── 동시접속 보호: coalescer + semaphore + singleton crumb ──
+var _yahooSem = new conc.Semaphore(5);       // Yahoo 동시 5개 제한
+var _summaryCoalescer = new conc.RequestCoalescer(); // 동일 종목 중복 방지
+var _chartCoalescer = new conc.RequestCoalescer();
+var _gaugeCoalescer = new conc.RequestCoalescer();
+var _crumbSingleton = new conc.SingletonRefresh();   // crumb 갱신 1회 보호
 
 // ── 캐시 크기 제한 유틸 (메모리 누수 방지) ──
 var MAX_CACHE_SIZE = 150; // 100종목 + 여유분
@@ -65,15 +79,13 @@ var _crumbCookies = null;
 var _crumbTs = 0;
 var _crumbTTL = 3600 * 1000; // 1시간 유효
 
-async function ensureCrumb() {
-  var now = Date.now();
-  if (_crumb && _crumbCookies && (now - _crumbTs < _crumbTTL)) return;
-
+async function _doFetchCrumb() {
   try {
     // 1) fc.yahoo.com → Set-Cookie 수집
     var cookieRes = await axios.get('https://fc.yahoo.com', {
       timeout: 5000,
       headers: { 'User-Agent': 'Mozilla/5.0' },
+      httpsAgent: httpsAgent,
       maxRedirects: 0,
       validateStatus: function (s) { return s < 400 || s === 404; },
     });
@@ -83,13 +95,14 @@ async function ensureCrumb() {
     // 2) crumb 토큰 가져오기
     var crumbRes = await axios.get('https://query2.finance.yahoo.com/v1/test/getcrumb', {
       timeout: 5000,
+      httpsAgent: httpsAgent,
       headers: {
         'User-Agent': 'Mozilla/5.0',
         'Cookie': _crumbCookies,
       },
     });
     _crumb = crumbRes.data;
-    _crumbTs = now;
+    _crumbTs = Date.now();
   } catch (err) {
     console.error('[StockPipeline] crumb fetch error:', err.message);
     _crumb = null;
@@ -97,12 +110,19 @@ async function ensureCrumb() {
   }
 }
 
+async function ensureCrumb() {
+  var now = Date.now();
+  if (_crumb && _crumbCookies && (now - _crumbTs < _crumbTTL)) return;
+  // 1000명 동시 갱신 요청 → SingletonRefresh로 1회만 실행
+  await _crumbSingleton.refresh(_doFetchCrumb);
+}
+
 // ── Yahoo quoteSummary API ──────────────────────────
 
 var _summaryCache = {};
 var _summaryTTL = 24 * 3600 * 1000; // 24h
 
-async function fetchYahooSummary(ticker) {
+async function _doFetchYahooSummary(ticker) {
   var now = Date.now();
   var cached = _summaryCache[ticker];
   if (cached && (now - cached.ts < _summaryTTL)) return cached.data;
@@ -111,33 +131,44 @@ async function fetchYahooSummary(ticker) {
   var modules = 'defaultKeyStatistics,financialData,summaryDetail';
   var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
 
-  try {
-    var headers = { 'User-Agent': 'Mozilla/5.0' };
-    if (_crumbCookies) headers['Cookie'] = _crumbCookies;
+  // semaphore: Yahoo 동시 5개 제한 (레이트리밋 보호)
+  return _yahooSem.run(async function() {
+    try {
+      var headers = { 'User-Agent': 'Mozilla/5.0' };
+      if (_crumbCookies) headers['Cookie'] = _crumbCookies;
 
-    var res = await axios.get(url, {
-      params: { modules: modules, crumb: _crumb || '' },
-      timeout: YAHOO_TIMEOUT,
-      headers: headers,
-    });
+      var res = await axios.get(url, {
+        params: { modules: modules, crumb: _crumb || '' },
+        timeout: YAHOO_TIMEOUT,
+        headers: headers,
+        httpsAgent: httpsAgent,
+      });
 
-    var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
-    var data = (result && result[0]) || null;
-    if (data) {
-      _summaryCache[ticker] = { data: data, ts: now };
-      _pruneCache(_summaryCache);
+      var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
+      var data = (result && result[0]) || null;
+      if (data) {
+        _summaryCache[ticker] = { data: data, ts: now };
+        _pruneCache(_summaryCache);
+      }
+      return data;
+    } catch (err) {
+      // crumb 만료 시 재시도 1회
+      if (err.response && err.response.status === 401 && _crumb) {
+        _crumb = null;
+        _crumbTs = 0;
+        return _doFetchYahooSummary(ticker);
+      }
+      console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
+      return null;
     }
-    return data;
-  } catch (err) {
-    // crumb 만료 시 재시도 1회
-    if (err.response && err.response.status === 401 && _crumb) {
-      _crumb = null;
-      _crumbTs = 0;
-      return fetchYahooSummary(ticker);
-    }
-    console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
-    return null;
-  }
+  });
+}
+
+// coalescer: TSLA 50명 동시 → Yahoo 1회 호출
+async function fetchYahooSummary(ticker) {
+  return _summaryCoalescer.run('summary:' + ticker, function() {
+    return _doFetchYahooSummary(ticker);
+  });
 }
 
 // ── Yahoo chart API (가격 히스토리) ──────────────────
@@ -145,7 +176,7 @@ async function fetchYahooSummary(ticker) {
 var _chartCache = {};
 var _chartTTL = 15 * 60 * 1000; // 15분
 
-async function fetchYahooChart(ticker, range) {
+async function _doFetchYahooChart(ticker, range) {
   var rng = range || '1y';
   var cKey = ticker + ':' + rng;
   var now = Date.now();
@@ -154,24 +185,34 @@ async function fetchYahooChart(ticker, range) {
 
   var url = YAHOO_BASE + '/v8/finance/chart/' + encodeURIComponent(ticker);
 
-  try {
-    var res = await axios.get(url, {
-      params: { interval: '1d', range: rng },
-      timeout: YAHOO_TIMEOUT,
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
+  return _yahooSem.run(async function() {
+    try {
+      var res = await axios.get(url, {
+        params: { interval: '1d', range: rng },
+        timeout: YAHOO_TIMEOUT,
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        httpsAgent: httpsAgent,
+      });
 
-    var chart = res.data && res.data.chart && res.data.chart.result;
-    var data = (chart && chart[0]) || null;
-    if (data) {
-      _chartCache[cKey] = { data: data, ts: now };
-      _pruneCache(_chartCache);
+      var chart = res.data && res.data.chart && res.data.chart.result;
+      var data = (chart && chart[0]) || null;
+      if (data) {
+        _chartCache[cKey] = { data: data, ts: now };
+        _pruneCache(_chartCache);
+      }
+      return data;
+    } catch (err) {
+      console.error('[StockPipeline] Yahoo chart error for', ticker, ':', err.message);
+      return null;
     }
-    return data;
-  } catch (err) {
-    console.error('[StockPipeline] Yahoo chart error for', ticker, ':', err.message);
-    return null;
-  }
+  });
+}
+
+async function fetchYahooChart(ticker, range) {
+  var rng = range || '1y';
+  return _chartCoalescer.run('chart:' + ticker + ':' + rng, function() {
+    return _doFetchYahooChart(ticker, rng);
+  });
 }
 
 // ── DERIVED 계산 함수들 ─────────────────────────────
@@ -316,7 +357,7 @@ async function fetchStockGauge(gaugeId, ticker, summaryData, chartData) {
 
 // ── 종목 전체 게이지 수집 ────────────────────────────
 
-async function fetchAllStockGauges(ticker, opts) {
+async function _doFetchAllStockGauges(ticker, opts) {
   opts = opts || {};
   var summaryData = await fetchYahooSummary(ticker);
   var chartData = await fetchYahooChart(ticker, '1y');
@@ -356,6 +397,13 @@ async function fetchAllStockGauges(ticker, opts) {
     summary: { total: gaugeIds.length, ok: ok, errors: errors },
     timestamp: new Date().toISOString(),
   };
+}
+
+// coalescer: 동일 종목 동시 요청 → 1회만 수집
+async function fetchAllStockGauges(ticker, opts) {
+  return _gaugeCoalescer.run('gauges:' + ticker, function() {
+    return _doFetchAllStockGauges(ticker, opts);
+  });
 }
 
 // ── 배치 수집 (Killer 10 / All) ──────────────────────
