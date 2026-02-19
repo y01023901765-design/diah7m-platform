@@ -283,15 +283,20 @@ app.get('/api/te-debug/:slug(*)', async (req, res) => {
     });
     const html = resp.data;
     const pMatch = html.match(/id="p"[^>]*>([0-9.,]+)</);
-    const metaMatch = html.match(/content="[^"]*(?:increased|decreased|unchanged|remained)\s+to\s+([0-9.,]+)/i);
+    const metaMatch = html.match(/content="[^"]*(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
+    // Find context around id="p"
+    const pIdx = html.indexOf('id="p"');
+    const pContext = pIdx >= 0 ? html.substring(pIdx, pIdx + 200) : null;
+    // Meta desc
+    const descMatch = html.match(/name="description"\s+content="([^"]{0,300})"/i);
     res.json({
       status: resp.status,
       htmlLen: html.length,
       pMatch: pMatch ? pMatch[1] : null,
       metaMatch: metaMatch ? metaMatch[1] : null,
       hasIdP: html.includes('id="p"'),
-      titleMatch: (html.match(/<title>([^<]*)<\/title>/) || [])[1]?.substring(0, 100),
-      first500: html.substring(0, 500),
+      pContext: pContext?.substring(0, 200),
+      metaDesc: descMatch ? descMatch[1]?.substring(0, 200) : null,
     });
   } catch (e) {
     res.json({ error: e.message, status: e.response?.status });
