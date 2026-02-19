@@ -66,14 +66,11 @@ const GAUGE_MAP = {
 
   O2_PMI: {
     id: 'O2_PMI',
-    source: 'FRED',
-    params: { series: 'NAPM' },
-    transform: (data) => {
-      if (!data || data.length < 1) return null;
-      const latest = parseFloat(data[0].value);
-      if (isNaN(latest)) return null;
-      return latest;
-    }
+    source: 'TRADINGECONOMICS',
+    teSlug: 'south-korea/manufacturing-pmi',
+    transform: (val) => val,
+    name: '한국 제조업 PMI',
+    unit: 'pt',
   },
 
   O3_IP: {
