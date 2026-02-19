@@ -49,6 +49,14 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     console.warn('  ⚠️  stock-thresholds load failed:', e.message);
   }
 
+  // supply-chain-monitor (공급망 물리 흐름)
+  let supplyChainMonitor = null;
+  try {
+    supplyChainMonitor = require('../lib/supply-chain-monitor');
+  } catch (e) {
+    console.warn('  ⚠️  supply-chain-monitor load failed:', e.message);
+  }
+
   // Auth middleware (optional — 토큰 있으면 파싱, 없으면 통과)
   const optAuth = (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -301,23 +309,32 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
     const facilities = (profile.facilities || []).map((f, i) => {
-      // seed 기반 결정적 메트릭 (위성 파이프라인 연결 전)
+      // seed 기반 결정적 메트릭 (GEE 실데이터 연결 전 fallback)
       const seed = profile.ticker.charCodeAt(0) + i * 7;
       const viirs = ((seed * 13) % 31) - 15;
       const no2 = ((seed * 17) % 41) - 20;
       const therm = ((seed * 11) % 21) - 10;
-      const status = viirs < -10 && no2 < -10 ? 'warning' : viirs > 15 ? 'construction' : 'normal';
+      const status = f.underConstruction ? 'construction'
+        : viirs < -10 && no2 < -10 ? 'warning' : 'normal';
       return {
         name: f.name,
         lat: f.lat,
         lng: f.lng,
         type: f.type || 'general',
+        stage: f.stage || null,
+        sensors: f.sensors || [],
+        radiusKm: f.radiusKm || null,
         note: f.note || null,
+        underConstruction: f.underConstruction || false,
         metrics: { viirs, no2, therm },
         status,
         lastObserved: '2026-01-15T06:00:00Z',
       };
     });
+
+    // 구간별 요약
+    const byStage = { input: 0, process: 0, output: 0 };
+    facilities.forEach(f => { if (f.stage && byStage[f.stage] != null) byStage[f.stage]++; });
 
     const warnings = facilities.filter(f => f.status === 'warning').length;
     const normals = facilities.filter(f => f.status === 'normal').length;
@@ -326,7 +343,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       ticker: profile.ticker,
       name: profile.name,
       totalFacilities: facilities.length,
-      summary: { normal: normals, warning: warnings },
+      summary: { normal: normals, warning: warnings, byStage },
       facilities,
     });
   });
@@ -378,55 +395,35 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     });
   });
 
-  // ── 공급망 플로우 (Tab3 플로우) ──
-  const FLOW_TEMPLATES = {
-    A: ['rawInput','inspect','feed','process','assemble','test','pack','ship','transport','deliver','install'],
-    B: ['booking','pickup','load','depart','transit','customs','unload','sort','deliver','confirm','return'],
-    C: ['receive','inspect','store','pick','pack','label','load','route','deliver','confirm','return'],
-    D: ['ingest','validate','transform','compute','aggregate','analyze','render','cache','serve','monitor','archive'],
-    E: ['survey','permit','excavate','foundation','structure','install','finish','inspect','commission','handover','maintain'],
-    F: ['explore','drill','extract','crush','sort','wash','transport','refine','store','ship','deliver'],
-  };
-
-  router.get('/stock/:ticker/flow', optAuth, (req, res) => {
+  // ── 공급망 플로우 (Tab3 플로우) — 실 위성 + DualLock + 스토리 ──
+  router.get('/stock/:ticker/flow', optAuth, async (req, res) => {
     const profile = byTicker[req.params.ticker.toUpperCase()];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
-    const arch = profile.archetype || 'A';
+    // 재무 Dual Lock (엔진에서)
     const health = getHealthFromCache(profile.ticker, profile);
+    const financialDL = health && health.dualLock ? health.dualLock : { isDualLocked: false };
 
-    const steps = (FLOW_TEMPLATES[arch] || FLOW_TEMPLATES.A).map((step, i) => {
-      const seed = profile.ticker.charCodeAt(0) + i * 5;
-      const bottleneck = (seed % 11 === 0 && i > 2 && i < 9);
-      return {
-        step: i + 1,
-        id: step,
-        status: bottleneck ? 'warning' : 'normal',
-        throughput: bottleneck ? Math.round(40 + (seed % 30)) : Math.round(70 + (seed % 25)),
-      };
-    });
-
-    // Dual Lock: 엔진 계산 우선, fallback seed
-    let dualLock = null;
-    if (health && health.dualLock) {
-      dualLock = health.dualLock;
-    } else {
-      const warningCount = steps.filter(s => s.status === 'warning').length;
-      dualLock = {
-        input: warningCount >= 1 ? 'BLOCKED' : 'OK',
-        output: warningCount >= 2 ? 'BLOCKED' : 'OK',
-        isDualLocked: warningCount >= 2,
-      };
+    if (!supplyChainMonitor) {
+      return res.status(503).json({ error: 'Supply chain monitor not available' });
     }
 
-    res.json({
-      ticker: profile.ticker,
-      archetype: arch,
-      archetypeName: ARCHETYPES[arch]?.nameEn || arch,
-      totalSteps: steps.length,
-      steps,
-      dualLock,
-    });
+    // live GEE vs dry 모드 선택
+    const mode = req.query.mode || 'dry'; // ?mode=live 로 GEE 실호출
+    let result;
+
+    if (mode === 'live') {
+      try {
+        result = await supplyChainMonitor.analyzeSupplyChain(profile, financialDL);
+      } catch (e) {
+        console.warn('[Flow] live analysis failed, falling back to dry:', e.message);
+        result = supplyChainMonitor.analyzeSupplyChainDry(profile, financialDL);
+      }
+    } else {
+      result = supplyChainMonitor.analyzeSupplyChainDry(profile, financialDL);
+    }
+
+    res.json(result);
   });
 
   // ── 4-Flag 시그널 (Tab4 시그널) ──

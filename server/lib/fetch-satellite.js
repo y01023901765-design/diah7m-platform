@@ -376,6 +376,282 @@ async function fetchAllSatellite(regionCode, lastSuccessMap) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 5. Facility-level 위성 수집 (공급망 모니터용)
+// ═══════════════════════════════════════════════════════════════
+
+// ── 시설 캐시: (lat,lng,radius,sensor) → { data, timestamp } ──
+// 같은 항만을 여러 종목이 공유할 때 GEE 중복 호출 방지
+var _facilityCache = {};
+var CACHE_TTL_MS = 6 * 3600 * 1000; // 6시간
+
+function _cacheKey(lat, lng, radiusKm, sensor) {
+  return sensor + ':' + lat.toFixed(3) + ',' + lng.toFixed(3) + ':' + radiusKm;
+}
+
+function _getFromCache(key) {
+  var entry = _facilityCache[key];
+  if (entry && (Date.now() - entry.timestamp) < CACHE_TTL_MS) return entry.data;
+  return null;
+}
+
+function _setCache(key, data) {
+  _facilityCache[key] = { data: data, timestamp: Date.now() };
+  // 캐시 크기 제한 (500개 초과 시 오래된 50% 제거)
+  var keys = Object.keys(_facilityCache);
+  if (keys.length > 500) {
+    keys.sort(function(a, b) { return _facilityCache[a].timestamp - _facilityCache[b].timestamp; });
+    for (var i = 0; i < 250; i++) delete _facilityCache[keys[i]];
+  }
+}
+
+/** lat/lng → GEE bbox 변환 (radiusKm 기반) */
+function _facilityBbox(lat, lng, radiusKm) {
+  var dLat = radiusKm / 111.32;
+  var dLng = radiusKm / (111.32 * Math.cos(lat * Math.PI / 180));
+  return [lng - dLng, lat - dLat, lng + dLng, lat + dLat];
+}
+
+/**
+ * fetchFacilityVIIRS — 시설 단위 야간광 수집
+ * 반환: { mean_7d, mean_60d, baseline_365d, anomaly, anomPct, quality }
+ * 단위: nW/cm²/sr (NTL 원본), anomPct = % (anomaly × 100)
+ */
+async function fetchFacilityVIIRS(lat, lng, radiusKm) {
+  radiusKm = radiusKm || 5;
+  var key = _cacheKey(lat, lng, radiusKm, 'NTL');
+  var cached = _getFromCache(key);
+  if (cached) return cached;
+
+  var t0 = Date.now();
+  await authenticateGEE();
+
+  var bbox = _facilityBbox(lat, lng, radiusKm);
+  var geometry = ee.Geometry.Rectangle(bbox);
+  var endDate = new Date();
+  var endStr = endDate.toISOString().split('T')[0];
+
+  // 7일 평균
+  var d7 = new Date(); d7.setDate(d7.getDate() - 7);
+  // 60일 평균
+  var d60 = new Date(); d60.setDate(d60.getDate() - 60);
+  // 365일 baseline
+  var d365 = new Date(); d365.setDate(d365.getDate() - 365);
+
+  var col = 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG';
+
+  function _meanReduce(startDate) {
+    return new Promise(function(resolve) {
+      ee.ImageCollection(col)
+        .filterBounds(geometry)
+        .filterDate(startDate.toISOString().split('T')[0], endStr)
+        .select('avg_rad')
+        .mean()
+        .reduceRegion({ reducer: ee.Reducer.mean(), geometry: geometry, scale: 500, maxPixels: 1e8 })
+        .evaluate(function(stats, err) {
+          resolve((stats && stats.avg_rad != null) ? Math.round(stats.avg_rad * 100) / 100 : null);
+        });
+    });
+  }
+
+  var results = await Promise.all([_meanReduce(d7), _meanReduce(d60), _meanReduce(d365)]);
+  var mean7d = results[0], mean60d = results[1], baseline365 = results[2];
+
+  var anomaly = (baseline365 && baseline365 > 0) ? (mean60d - baseline365) / baseline365 : null;
+  var anomPct = (anomaly != null) ? Math.round(anomaly * 10000) / 100 : null; // %
+
+  // quality 판정
+  var coverageDays = mean7d != null ? 1 : 0; // VIIRS 월간이라 간략화
+  var quality = (mean7d != null && mean60d != null && baseline365 != null) ? 'GOOD'
+    : (mean60d != null) ? 'PARTIAL' : 'LOW_QUALITY';
+
+  var result = {
+    sensor: 'NTL', unit: 'anomPct',
+    mean_7d: mean7d, mean_60d: mean60d, baseline_365d: baseline365,
+    anomaly: anomaly != null ? Math.round(anomaly * 10000) / 10000 : null,
+    anomPct: anomPct,
+    quality: { status: quality, coverageDays: coverageDays, cloudPct: null },
+    duration_ms: Date.now() - t0,
+  };
+
+  _setCache(key, result);
+  return result;
+}
+
+/**
+ * fetchFacilityNO2 — 시설 단위 이산화질소 수집 (Sentinel-5P)
+ * cloud_fraction < 0.2 필터 + 7일 이동평균
+ * 반환: { mean_7d, mean_30d, baseline_180d, anomaly, anomPct, quality }
+ * 단위: mol/m² → anomPct = %
+ */
+async function fetchFacilityNO2(lat, lng, radiusKm) {
+  radiusKm = radiusKm || 5;
+  var key = _cacheKey(lat, lng, radiusKm, 'NO2');
+  var cached = _getFromCache(key);
+  if (cached) return cached;
+
+  var t0 = Date.now();
+  await authenticateGEE();
+
+  var bbox = _facilityBbox(lat, lng, radiusKm);
+  var geometry = ee.Geometry.Rectangle(bbox);
+  var endDate = new Date();
+  var endStr = endDate.toISOString().split('T')[0];
+
+  var d7 = new Date(); d7.setDate(d7.getDate() - 7);
+  var d30 = new Date(); d30.setDate(d30.getDate() - 30);
+  var d180 = new Date(); d180.setDate(d180.getDate() - 180);
+
+  var dataset = 'COPERNICUS/S5P/OFFL/L3_NO2';
+
+  function _no2Mean(startDate) {
+    return new Promise(function(resolve) {
+      ee.ImageCollection(dataset)
+        .filterBounds(geometry)
+        .filterDate(startDate.toISOString().split('T')[0], endStr)
+        .filter(ee.Filter.lt('SENSING_ORBIT_DIRECTION', 2)) // descending orbit
+        .map(function(img) {
+          // cloud_fraction < 0.2 마스킹
+          var cloudMask = img.select('cloud_fraction').lt(0.2);
+          return img.select('tropospheric_NO2_column_number_density')
+            .updateMask(cloudMask);
+        })
+        .mean()
+        .reduceRegion({ reducer: ee.Reducer.mean(), geometry: geometry, scale: 1000, maxPixels: 1e8 })
+        .evaluate(function(stats, err) {
+          var val = stats && stats.tropospheric_NO2_column_number_density;
+          resolve(val != null ? val : null);
+        });
+    });
+  }
+
+  var results = await Promise.all([_no2Mean(d7), _no2Mean(d30), _no2Mean(d180)]);
+  var mean7d = results[0], mean30d = results[1], baseline180d = results[2];
+
+  // 값을 µmol/m²로 변환 (×1e6) 후 반올림
+  var toMicro = function(v) { return v != null ? Math.round(v * 1e6 * 100) / 100 : null; };
+  mean7d = toMicro(mean7d); mean30d = toMicro(mean30d); baseline180d = toMicro(baseline180d);
+
+  var anomaly = (baseline180d && baseline180d > 0) ? (mean30d - baseline180d) / baseline180d : null;
+  var anomPct = anomaly != null ? Math.round(anomaly * 10000) / 100 : null;
+
+  var quality = (mean7d != null && mean30d != null && baseline180d != null) ? 'GOOD'
+    : (mean30d != null) ? 'PARTIAL' : 'LOW_QUALITY';
+
+  var result = {
+    sensor: 'NO2', unit: 'anomPct',
+    mean_7d: mean7d, mean_30d: mean30d, baseline_180d: baseline180d,
+    anomaly: anomaly != null ? Math.round(anomaly * 10000) / 10000 : null,
+    anomPct: anomPct,
+    quality: { status: quality, coverageDays: null, cloudPct: null },
+    duration_ms: Date.now() - t0,
+  };
+
+  _setCache(key, result);
+  return result;
+}
+
+/**
+ * fetchFacilityThermal — 시설 단위 열적외선 수집 (Landsat-9 ST_B10)
+ * cloud < 30% 필터
+ * 반환: { tempC, baseline_tempC, anomaly_degC, quality }
+ * 단위: °C (anomaly_degC = °C 차이)
+ */
+async function fetchFacilityThermal(lat, lng, radiusKm) {
+  radiusKm = radiusKm || 5;
+  var key = _cacheKey(lat, lng, radiusKm, 'THERMAL');
+  var cached = _getFromCache(key);
+  if (cached) return cached;
+
+  var t0 = Date.now();
+  await authenticateGEE();
+
+  var bbox = _facilityBbox(lat, lng, radiusKm);
+  var geometry = ee.Geometry.Rectangle(bbox);
+  var endDate = new Date();
+  var endStr = endDate.toISOString().split('T')[0];
+
+  // 최근 60일 평균 (Landsat 16일 주기)
+  var d60 = new Date(); d60.setDate(d60.getDate() - 60);
+  // 365일 baseline
+  var d365 = new Date(); d365.setDate(d365.getDate() - 365);
+
+  var dataset = 'LANDSAT/LC09/C02/T1_L2';
+
+  function _thermalMean(startDate, endDateStr) {
+    return new Promise(function(resolve) {
+      ee.ImageCollection(dataset)
+        .filterBounds(geometry)
+        .filterDate(startDate.toISOString().split('T')[0], endDateStr)
+        .filter(ee.Filter.lt('CLOUD_COVER', 30))
+        .select('ST_B10')
+        .mean()
+        .reduceRegion({ reducer: ee.Reducer.mean(), geometry: geometry, scale: 100, maxPixels: 1e8 })
+        .evaluate(function(stats, err) {
+          if (stats && stats.ST_B10 != null) {
+            var tempC = Math.round((stats.ST_B10 * 0.00341802 + 149.0 - 273.15) * 10) / 10;
+            resolve(tempC);
+          } else {
+            resolve(null);
+          }
+        });
+    });
+  }
+
+  var results = await Promise.all([_thermalMean(d60, endStr), _thermalMean(d365, endStr)]);
+  var tempC = results[0], baselineTempC = results[1];
+
+  var anomalyDegC = (tempC != null && baselineTempC != null) ? Math.round((tempC - baselineTempC) * 10) / 10 : null;
+
+  var quality = (tempC != null && baselineTempC != null) ? 'GOOD'
+    : (tempC != null) ? 'PARTIAL' : 'LOW_QUALITY';
+
+  var result = {
+    sensor: 'THERMAL', unit: 'anomDegC',
+    tempC: tempC, baseline_tempC: baselineTempC,
+    anomaly_degC: anomalyDegC,
+    quality: { status: quality, coverageDays: null, cloudPct: null },
+    duration_ms: Date.now() - t0,
+  };
+
+  _setCache(key, result);
+  return result;
+}
+
+/**
+ * fetchFacilitySensors — 시설 1개에 대해 선언된 센서 모두 수집
+ * @param {Object} facility - { lat, lng, radiusKm, sensors: ['NTL','NO2','THERMAL'] }
+ * @returns {{ NTL?: object, NO2?: object, THERMAL?: object }}
+ */
+async function fetchFacilitySensors(facility) {
+  var sensorFns = { NTL: fetchFacilityVIIRS, NO2: fetchFacilityNO2, THERMAL: fetchFacilityThermal };
+  var sensors = facility.sensors || ['NTL'];
+  var radius = facility.radiusKm || 5;
+  var results = {};
+
+  // 순차 실행 (GEE rate limit 방지)
+  for (var i = 0; i < sensors.length; i++) {
+    var s = sensors[i];
+    if (sensorFns[s]) {
+      try {
+        results[s] = await sensorFns[s](facility.lat, facility.lng, radius);
+      } catch (err) {
+        results[s] = { sensor: s, status: 'ERROR', error: err.message };
+      }
+    }
+  }
+  return results;
+}
+
+// ═══ 캐시 관리 ═══
+function clearFacilityCache() {
+  _facilityCache = {};
+}
+
+function getFacilityCacheSize() {
+  return Object.keys(_facilityCache).length;
+}
+
 if (require.main === module) {
   console.log('=== DIAH-7M Satellite Test ===\n');
   fetchAllSatellite('KR').then(function(r) { console.log(JSON.stringify(r, null, 2)); process.exit(0); })
@@ -387,6 +663,13 @@ module.exports = {
   fetchVIIRS: fetchVIIRS,
   fetchLandsat: fetchLandsat,
   fetchAllSatellite: fetchAllSatellite,
+  // facility-level
+  fetchFacilityVIIRS: fetchFacilityVIIRS,
+  fetchFacilityNO2: fetchFacilityNO2,
+  fetchFacilityThermal: fetchFacilityThermal,
+  fetchFacilitySensors: fetchFacilitySensors,
+  clearFacilityCache: clearFacilityCache,
+  getFacilityCacheSize: getFacilityCacheSize,
   REGIONS: REGIONS,
   SENSOR_CONFIG: SENSOR_CONFIG,
 };

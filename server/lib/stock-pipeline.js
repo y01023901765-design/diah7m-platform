@@ -12,6 +12,8 @@
  */
 
 var axios = require('axios');
+var fetchSat = require('./fetch-satellite');
+var profilesMod = require('../data/stock-profiles-100');
 
 var YAHOO_TIMEOUT = 8000;
 var YAHOO_BASE = 'https://query1.finance.yahoo.com';
@@ -277,7 +279,8 @@ async function fetchStockGauge(gaugeId, ticker, summaryData, chartData) {
     }
 
     if (map.source === 'SATELLITE') {
-      // 위성 데이터는 추후 연결 — skeleton에서는 NEEDS_SATELLITE 반환
+      // 위성 데이터는 fetchSatelliteGauges()로 별도 수집
+      // 개별 gauge 단위로는 수집하지 않음 (facility 단위 배치)
       return { id: gaugeId, value: null, status: 'NEEDS_SATELLITE' };
     }
 
@@ -413,6 +416,77 @@ async function fetchStockPrices(profiles) {
   return results;
 }
 
+// ── 위성 게이지 수집 (SG_S1/SG_S2 = facility V2 수축 평균) ──
+
+/**
+ * V2 수축 평균 (score-engine.js와 동일)
+ */
+function _shrinkageMean(values, k) {
+  k = k || 4;
+  var valid = values.filter(function(v) { return v != null; });
+  if (valid.length === 0) return null;
+  var sum = 0;
+  for (var i = 0; i < valid.length; i++) sum += valid[i];
+  var raw = sum / valid.length;
+  return Math.round(((valid.length * raw + k * 0) / (valid.length + k)) * 100) / 100;
+}
+
+/**
+ * fetchSatelliteGauges — 종목의 process 시설에서 위성 데이터 수집
+ * SG_S1 = NTL anomPct의 V2 수축 평균 (%)
+ * SG_S2 = THERMAL anomaly_degC의 V2 수축 평균 (°C)
+ *
+ * @param {string} ticker - 종목 ticker
+ * @returns {{ SG_S1: {id, value, status}, SG_S2: {id, value, status} }}
+ */
+async function fetchSatelliteGauges(ticker) {
+  var profile = profilesMod.getProfile(ticker);
+  if (!profile) return {
+    SG_S1: { id: 'SG_S1', value: null, status: 'NO_PROFILE' },
+    SG_S2: { id: 'SG_S2', value: null, status: 'NO_PROFILE' },
+  };
+
+  // process 시설만 (공장/정유/데이터센터 등)
+  var processFacilities = (profile.facilities || []).filter(function(f) {
+    return f.stage === 'process' && !f.underConstruction;
+  });
+
+  if (processFacilities.length === 0) {
+    // stage 미지정 시 전체 시설 사용
+    processFacilities = (profile.facilities || []).filter(function(f) {
+      return !f.underConstruction && f.type !== 'port';
+    });
+  }
+
+  var ntlAnomalies = [];
+  var thermalAnomalies = [];
+
+  for (var i = 0; i < processFacilities.length; i++) {
+    var f = processFacilities[i];
+    try {
+      var sensorData = await fetchSat.fetchFacilitySensors(f);
+
+      if (sensorData.NTL && sensorData.NTL.anomPct != null) {
+        ntlAnomalies.push(sensorData.NTL.anomPct);
+      }
+      if (sensorData.THERMAL && sensorData.THERMAL.anomaly_degC != null) {
+        thermalAnomalies.push(sensorData.THERMAL.anomaly_degC);
+      }
+    } catch (err) {
+      console.warn('[StockPipeline] satellite gauge error for', f.name, ':', err.message);
+    }
+  }
+
+  // V2 수축 평균으로 단일 값 산출
+  var s1Val = _shrinkageMean(ntlAnomalies, 3);
+  var s2Val = _shrinkageMean(thermalAnomalies, 3);
+
+  return {
+    SG_S1: { id: 'SG_S1', value: s1Val, status: s1Val != null ? 'OK' : 'NO_DATA' },
+    SG_S2: { id: 'SG_S2', value: s2Val, status: s2Val != null ? 'OK' : 'NO_DATA' },
+  };
+}
+
 module.exports = {
   STOCK_GAUGE_MAP: STOCK_GAUGE_MAP,
   toYahooSymbol: toYahooSymbol,
@@ -423,4 +497,5 @@ module.exports = {
   fetchStockBatch: fetchStockBatch,
   fetchStockPrice: fetchStockPrice,
   fetchStockPrices: fetchStockPrices,
+  fetchSatelliteGauges: fetchSatelliteGauges,
 };

@@ -152,17 +152,20 @@ function StockView({stock:s,lang,onBack}){
   const getName=x=>L==='ko'?x.n:(x.ne||x.n);
   const toggleGauge=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
-  // API에서 시설/델타/게이지/건강도/가격 로드
+  const [liveFlow,setLiveFlow]=useState(null);
+
+  // API에서 시설/델타/게이지/건강도/가격/플로우 로드
   useEffect(()=>{
     let c=false;
     (async()=>{
       try{
-        const [facRes,deltaRes,gaugeRes,profileRes,priceRes]=await Promise.allSettled([
+        const [facRes,deltaRes,gaugeRes,profileRes,priceRes,flowRes]=await Promise.allSettled([
           API.stockFacilities(s.sid),
           API.stockDelta(s.sid),
           API.stockGauges(s.sid),
           API.stockProfile(s.sid),
           API.stockPrice(s.sid),
+          API.stockFlow(s.sid),
         ]);
         if(c)return;
         if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
@@ -170,6 +173,7 @@ function StockView({stock:s,lang,onBack}){
         if(gaugeRes.status==='fulfilled'&&gaugeRes.value?.gauges) setLiveGauges(gaugeRes.value.gauges);
         if(profileRes.status==='fulfilled'&&profileRes.value?.health) setLiveHealth(profileRes.value.health);
         if(priceRes.status==='fulfilled'&&priceRes.value?.price!=null) setLivePrice(priceRes.value);
+        if(flowRes.status==='fulfilled'&&flowRes.value?.stages) setLiveFlow(flowRes.value);
       }catch{/* fallback */}
     })();
     return()=>{c=true};
@@ -372,46 +376,124 @@ function StockView({stock:s,lang,onBack}){
       </div>
     </>}
 
-    {/* ═══ TAB 3: 플로우 ═══ */}
+    {/* ═══ TAB 3: 플로우 — 공급망 물리 흐름 ═══ */}
     {tab==='flow'&&<>
+      {/* 3-Stage 다이어그램 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🔄 {t('svFlowTitle',L)}</div>
-          <span style={{fontSize:14,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textDim,fontWeight:600}}>{ARCHETYPE_LABELS[s.a]?.[L==='ko'?'ko':'en']||s.a}</span>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🔄 {L==='ko'?'공급망 물리 흐름':'Supply Chain Physical Flow'}</div>
+          <span style={{fontSize:14,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textDim,fontWeight:600}}>{liveFlow?.archetypeName||ARCHETYPE_LABELS[s.a]?.[L==='ko'?'ko':'en']||s.a}</span>
         </div>
-        <div style={{fontSize:15,color:LT.textMid,marginBottom:16,lineHeight:1.6}}>{t('svFlowDesc',L)}</div>
-        {/* Flow Steps */}
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
-          {flowSteps.map((step,i)=>{
-            const isBottleneck=bottleneck===i;
-            const isPast=bottleneck!==null&&i<bottleneck;
-            const isFuture=bottleneck!==null&&i>bottleneck;
-            return(<div key={i} style={{display:"flex",alignItems:"center",gap:12}}>
-              {/* Step number + connector */}
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:32}}>
-                <div style={{width:24,height:24,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0,
-                  background:isBottleneck?LT.danger:isPast?LT.good:isFuture?LT.bg3:'#111',
-                  color:isBottleneck||isPast?'#fff':isFuture?LT.textDim:'#fff'}}>
-                  {i+1}
+
+        {/* 3-Stage Cards: INPUT → PROCESS → OUTPUT */}
+        {(()=>{
+          const flow = liveFlow;
+          const stages = flow?.stages || {};
+          const stageKeys = ['input','process','output'];
+          const stageLabels = {input:'INPUT',process:'PROCESS',output:'OUTPUT'};
+          const stageIcons = {input:'📦',process:'🏭',output:'🚢'};
+
+          const statusColor = (st) => st==='ALARM'?LT.danger:st==='WARN'?'#f59e0b':LT.good;
+          const statusBg = (st) => st==='ALARM'?`${LT.danger}15`:st==='WARN'?'#f59e0b15':`${LT.good}15`;
+
+          return(<>
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr auto 1fr",gap:0,alignItems:"stretch",marginBottom:16}}>
+              {stageKeys.map((stg,idx)=>{
+                const data = stages[stg] || {};
+                const score = data.score!=null ? Math.round(data.score) : '—';
+                const status = data.status || 'OK';
+                const evidence = data.evidence || [];
+
+                return(<>
+                  {/* Stage Card */}
+                  <div key={stg} style={{background:statusBg(status),borderRadius:10,padding:14,border:`1px solid ${statusColor(status)}30`,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{fontSize:13,fontWeight:700,color:statusColor(status)}}>{stageLabels[stg]}</span>
+                      <span style={{fontSize:22,fontWeight:900,color:statusColor(status),fontFamily:"monospace"}}>{score}</span>
+                    </div>
+                    <div style={{fontSize:14,fontWeight:600,color:LT.text,marginBottom:6}}>{stageIcons[stg]} {stg==='input'?(L==='ko'?'입고구간':'Inbound'):stg==='process'?(L==='ko'?'생산구간':'Process'):(L==='ko'?'출하구간':'Outbound')}</div>
+                    {/* Evidence 2개 */}
+                    {evidence.map((ev,ei)=>(
+                      <div key={ei} style={{fontSize:13,color:LT.textMid,marginTop:3,display:"flex",justifyContent:"space-between"}}>
+                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"60%"}}>{ev.nodeId}</span>
+                        <span style={{fontFamily:"monospace",fontWeight:700,color:ev.grade==='ALARM'?LT.danger:ev.grade==='WARN'?'#f59e0b':LT.good,flexShrink:0}}>
+                          {ev.sensor}: {ev.value!=null?(ev.value>0?'+':'')+ev.value+(ev.unit==='anomDegC'?'°C':'%'):'—'}
+                        </span>
+                      </div>
+                    ))}
+                    {evidence.length===0&&<div style={{fontSize:13,color:LT.textDim}}>—</div>}
+                    {data.blocked&&<div style={{fontSize:12,fontWeight:700,color:statusColor(status),marginTop:6}}>⚠ {L==='ko'?'봉쇄':'BLOCKED'}</div>}
+                  </div>
+                  {/* Arrow connector */}
+                  {idx<2&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"0 4px",fontSize:18,color:LT.textDim}}>→</div>}
+                </>);
+              })}
+            </div>
+
+            {/* Dual Lock Status Bar */}
+            {flow?.dualLock&&(()=>{
+              const dl = flow.dualLock;
+              const combined = dl.combined || {};
+              const stateColors = {BOTH:LT.danger,PHYS_ONLY:'#f59e0b',FIN_ONLY:'#f59e0b',NONE:LT.good};
+              const stateLabels = {BOTH:L==='ko'?'이중봉쇄 경보':'DUAL LOCK ALARM',PHYS_ONLY:L==='ko'?'물리적 봉쇄':'PHYSICAL LOCK',FIN_ONLY:L==='ko'?'재무 봉쇄':'FINANCIAL LOCK',NONE:L==='ko'?'정상':'NORMAL'};
+              const stateIcons = {BOTH:'🔒🔒',PHYS_ONLY:'🔒',FIN_ONLY:'💰',NONE:'✅'};
+
+              return(<div style={{background:LT.bg2,borderRadius:8,padding:14,border:`1px solid ${LT.border}`,marginBottom:4}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:16}}>{stateIcons[combined.state]||'❓'}</span>
+                    <span style={{fontSize:15,fontWeight:700,color:stateColors[combined.state]||LT.text}}>{stateLabels[combined.state]||combined.state}</span>
+                  </div>
+                  <div style={{display:"flex",gap:12,fontSize:13,color:LT.textDim}}>
+                    <span>{L==='ko'?'물리':'Phys'}: <b style={{color:dl.physical?.isDualLocked?LT.danger:LT.good}}>{dl.physical?.isDualLocked?(L==='ko'?'봉쇄':'LOCKED'):'OK'}</b></span>
+                    <span>{L==='ko'?'재무':'Fin'}: <b style={{color:dl.financial?.isDualLocked?LT.danger:LT.good}}>{dl.financial?.isDualLocked?(L==='ko'?'봉쇄':'LOCKED'):'OK'}</b></span>
+                    {combined.confidence!=null&&<span>{L==='ko'?'신뢰도':'Conf'}: <b>{combined.confidence}%</b></span>}
+                  </div>
                 </div>
-                {i<flowSteps.length-1&&<div style={{width:2,height:20,background:isBottleneck?LT.danger:isPast?LT.good:LT.border}}/>}
-              </div>
-              {/* Step label */}
-              <div style={{flex:1,padding:"6px 0"}}>
-                <span style={{fontSize:15,fontWeight:isBottleneck?700:400,color:isBottleneck?LT.danger:isFuture?LT.textDim:LT.text}}>
-                  {t('svFlow_'+step,L)}
-                </span>
-                {isBottleneck&&<span style={{fontSize:14,color:LT.danger,fontWeight:700,marginLeft:8}}>⚠ {t('svBottleneck',L)}</span>}
-              </div>
-            </div>);
-          })}
-        </div>
+                {combined.reason&&<div style={{fontSize:13,color:LT.textMid,marginTop:6}}>{combined.reason}</div>}
+              </div>);
+            })()}
+          </>);
+        })()}
       </div>
-      {/* Dual Lock */}
-      {warnCnt>0&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.danger,marginBottom:8}}>🔒 {t('svDualLock',L)}</div>
-        <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7}}>{t('svDualLockDesc',L)}</div>
-      </div>}
+
+      {/* 6문장 스토리 */}
+      {liveFlow?.story&&liveFlow.story.lines&&(()=>{
+        const st = liveFlow.story;
+        const lines = st.lines;
+        const lineKeys = ['factor','onset','cause','manifest','result','price'];
+        const lineIcons = {factor:'🔍',onset:'📅',cause:'⚙️',manifest:'📡',result:'📊',price:'💰'};
+        const isNormal = liveFlow.dualLock?.combined?.state==='NONE';
+
+        return(<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>📖 {L==='ko'?'공급망 스토리':'Supply Chain Story'}</div>
+          {lineKeys.map((k,i)=>(
+            <div key={k} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 0",borderBottom:i<5?`1px solid ${LT.border}`:'none'}}>
+              <span style={{fontSize:14,flexShrink:0,width:20,textAlign:"center"}}>{lineIcons[k]}</span>
+              <span style={{fontSize:14,color:k==='price'&&!isNormal?LT.danger:k==='result'&&!isNormal?'#f59e0b':LT.textMid,fontWeight:k==='price'||k==='result'?700:400,lineHeight:1.6}}>
+                {lines[k]}
+              </span>
+            </div>
+          ))}
+          {/* 가격 임팩트 요약 */}
+          {st.impactRangePct&&st.impactRangePct[0]!==0&&(
+            <div style={{marginTop:12,padding:12,background:LT.bg2,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:LT.danger,fontFamily:"monospace"}}>{st.impactRangePct[0]}% ~ {st.impactRangePct[1]}%</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'가격 압력 범위':'Price pressure range'}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{st.leadTimeDays?st.leadTimeDays[0]+'~'+st.leadTimeDays[1]+'d':'-'}</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'리드타임':'Lead time'}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{st.confidence||'-'}%</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'신뢰도':'Confidence'}</div>
+              </div>
+            </div>
+          )}
+        </div>);
+      })()}
     </>}
 
     {/* ═══ TAB 4: 시그널 ═══ */}

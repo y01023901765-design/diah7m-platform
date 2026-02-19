@@ -58,6 +58,77 @@ const ARCHETYPES = {
   },
 };
 
+// ── Archetype별 구간(stage) 센서 매핑 ─────────────────────────
+// sensors = 계약: 이 archetype의 각 구간에서 어떤 센서를 수집/신뢰할지 선언
+// MVP 센서: NTL(VIIRS), NO2(Sentinel-5P), THERMAL(Landsat)
+// Phase 3 센서: SAR(Sentinel-1) — MVP에서는 보조/confidence 상향용
+const ARCHETYPE_SENSORS = {
+  A: { // 제조: 공장 NTL+NO₂+열, 항만 NTL
+    input:   ['NTL'],
+    process: ['NTL', 'NO2', 'THERMAL'],
+    output:  ['NTL'],
+    crossValidation: { sensors: ['NTL', 'NO2'], confidence: 90 },
+    singleSensorConfidence: 60,
+  },
+  B: { // 물류: 모든 구간 NTL (항만/허브)
+    input:   ['NTL'],
+    process: ['NTL'],
+    output:  ['NTL'],
+    crossValidation: null, // 단일 센서 체계, SAR 추가 시 Phase 3
+    singleSensorConfidence: 65,
+  },
+  C: { // 유통: 모든 구간 NTL (창고/배송허브)
+    input:   ['NTL'],
+    process: ['NTL'],
+    output:  ['NTL'],
+    crossValidation: null,
+    singleSensorConfidence: 65,
+  },
+  D: { // 처리: THERMAL 주력 + NTL 보조
+    input:   ['NTL'],
+    process: ['THERMAL', 'NTL'],
+    output:  ['NTL'],
+    crossValidation: { sensors: ['THERMAL', 'NTL'], confidence: 90 },
+    singleSensorConfidence: 60,
+  },
+  E: { // 현장: NTL 야간공사 추적
+    input:   ['NTL'],
+    process: ['NTL'],
+    output:  ['NTL'],
+    crossValidation: null,
+    singleSensorConfidence: 60,
+  },
+  F: { // 추출: NTL + NO₂ (중장비 배기)
+    input:   ['NTL', 'NO2'],
+    process: ['NTL'],
+    output:  ['NTL'],
+    crossValidation: { sensors: ['NTL', 'NO2'], confidence: 90 },
+    singleSensorConfidence: 60,
+  },
+};
+
+// ── Archetype별 스토리 cause 템플릿 ───────────────────────────
+const CAUSE_TEMPLATES = {
+  A: '{sensor}↓ → 생산라인 가동률 하락 추정',
+  B: '{sensor}↓ → 항만 물동량 감소, 항로 지연 추정',
+  C: '{sensor}↓ → 물류센터 처리량 감소, 배송 지연 추정',
+  D: '{sensor}↓ → 서버 가동률 하락, 서비스 용량 감소 추정',
+  E: '{sensor}↓ → 공사 활동 둔화, 공정 지연 추정',
+  F: '{sensor}↓ → 채굴/정제 활동 감소, 공급 차질 추정',
+};
+
+// ── 시설 타입별 기본 radiusKm ──────────────────────────────────
+const FACILITY_RADIUS = {
+  fab: 5, assembly: 5, battery: 5, manufacturing: 5,
+  steelworks: 8, chemical: 8, refinery: 8, distillery: 5,
+  processing: 5,
+  port: 10, hub: 3, sortcenter: 3,
+  fulfillment: 3, distribution: 3,
+  mine: 15, oilfield: 15, solar: 10,
+  datacenter: 3, office: 2, design: 2,
+  construction: 10, theme_park: 5,
+};
+
 // flow_11: Input→Process→Output 11단계 흐름
 const FLOW_TEMPLATES = {
   A: ['원자재입고','검수','투입','가공','조립','테스트','포장','출하','운송','납품','설치'],
@@ -74,63 +145,117 @@ const PROFILES = [
   // ═══════════════════════════════════════════════
   { id:1,  ticker:'TSLA',  name:'Tesla',           country:'US', archetype:'A', sector:'EV',
     facilities:[
-      { name:'Fremont Factory',    lat:37.4945,lng:-121.9441, type:'assembly' },
-      { name:'Gigafactory Texas',  lat:30.2218,lng:-97.6170,  type:'assembly' },
-      { name:'Gigafactory Nevada', lat:39.5380,lng:-118.4454, type:'battery' },
-      { name:'Gigafactory Shanghai',lat:30.8910,lng:121.8133, type:'assembly' },
-      { name:'Gigafactory Berlin', lat:52.3950,lng:13.7878,   type:'assembly' },
+      // ── input (항만/원자재) ──
+      { name:'Port of Long Beach',  lat:33.7540,lng:-118.2160, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      { name:'Port of Shanghai',    lat:30.6300,lng:122.0700,  type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process (공장) ──
+      { name:'Fremont Factory',     lat:37.4945,lng:-121.9441, type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Gigafactory Texas',   lat:30.2218,lng:-97.6170,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Gigafactory Nevada',  lat:39.5380,lng:-118.4454, type:'battery',  stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Gigafactory Shanghai',lat:30.8910,lng:121.8133,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Gigafactory Berlin',  lat:52.3950,lng:13.7878,   type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      // ── output (출하항) ──
+      { name:'Port of LA (출하)',    lat:33.7405,lng:-118.2723, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
+      { name:'Bremerhaven (출하)',   lat:53.5396,lng:8.5809,    type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:2,  ticker:'TSM',   name:'TSMC',            country:'TW', archetype:'A', sector:'Semiconductor',
     facilities:[
-      { name:'Fab 18 Tainan',     lat:23.0570,lng:120.2970,  type:'fab', note:'3nm' },
-      { name:'Fab 15 Taichung',   lat:24.2070,lng:120.6180,  type:'fab', note:'7nm' },
-      { name:'Arizona Fab (건설중)', lat:33.6670,lng:-112.0060, type:'fab', note:'4nm, 2025 가동예정', underConstruction:true },
+      // ── input ──
+      { name:'Kaohsiung Port (입고)', lat:22.6133,lng:120.2867, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process ──
+      { name:'Fab 18 Tainan',     lat:23.0570,lng:120.2970,  type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, note:'3nm' },
+      { name:'Fab 15 Taichung',   lat:24.2070,lng:120.6180,  type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, note:'7nm' },
+      { name:'Arizona Fab (건설중)', lat:33.6670,lng:-112.0060, type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, note:'4nm, 2025 가동예정', underConstruction:true },
+      // ── output ──
+      { name:'Kaohsiung Port (출하)', lat:22.6133,lng:120.2867, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:3,  ticker:'005930', name:'삼성전자',        country:'KR', archetype:'A', sector:'Semiconductor',
     facilities:[
-      { name:'평택 캠퍼스',        lat:36.9920,lng:127.1120,  type:'fab' },
-      { name:'화성 캠퍼스',        lat:37.2340,lng:126.9780,  type:'fab' },
-      { name:'기흥 캠퍼스',        lat:37.2280,lng:127.0530,  type:'fab' },
-      { name:'Taylor Texas (건설중)', lat:30.5710,lng:-97.4080, type:'fab', underConstruction:true },
+      // ── input ──
+      { name:'부산항 (입고)',       lat:35.1028,lng:129.0403,  type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      { name:'인천항 (입고)',       lat:37.4563,lng:126.5963,  type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process ──
+      { name:'평택 캠퍼스',        lat:36.9920,lng:127.1120,  type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'화성 캠퍼스',        lat:37.2340,lng:126.9780,  type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'기흥 캠퍼스',        lat:37.2280,lng:127.0530,  type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Taylor Texas (건설중)', lat:30.5710,lng:-97.4080, type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, underConstruction:true },
+      // ── output ──
+      { name:'부산항 (출하)',       lat:35.1028,lng:129.0403,  type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
+      { name:'인천항 (출하)',       lat:37.4563,lng:126.5963,  type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:4,  ticker:'AMZN',  name:'Amazon',          country:'US', archetype:'C', sector:'E-Commerce',
     facilities:[
-      { name:'JFK8 Staten Island', lat:40.5900,lng:-74.1670,  type:'fulfillment' },
-      { name:'BFI4 Kent WA',      lat:47.4160,lng:-122.2540,  type:'fulfillment' },
-      { name:'DFW7 Dallas',       lat:32.8960,lng:-97.0440,   type:'fulfillment' },
+      // ── input (입고 허브) ──
+      { name:'LA Fulfillment (입고)', lat:33.9275,lng:-118.2500, type:'fulfillment', stage:'input', sensors:['NTL'], radiusKm:3 },
+      // ── process (물류센터) ──
+      { name:'JFK8 Staten Island', lat:40.5900,lng:-74.1670,  type:'fulfillment', stage:'process', sensors:['NTL'], radiusKm:3 },
+      { name:'BFI4 Kent WA',      lat:47.4160,lng:-122.2540,  type:'fulfillment', stage:'process', sensors:['NTL'], radiusKm:3 },
+      { name:'DFW7 Dallas',       lat:32.8960,lng:-97.0440,   type:'fulfillment', stage:'process', sensors:['NTL'], radiusKm:3 },
+      // ── output (배송 허브) ──
+      { name:'JFK Hub (출하)',     lat:40.6413,lng:-73.7781,   type:'hub', stage:'output', sensors:['NTL'], radiusKm:3 },
     ]},
   { id:5,  ticker:'AAPL',  name:'Apple',           country:'US', archetype:'A', sector:'Tech Hardware',
     facilities:[
-      { name:'Foxconn Zhengzhou',  lat:34.7190,lng:113.8550,  type:'assembly', operator:'Foxconn' },
-      { name:'Foxconn Shenzhen',   lat:22.6600,lng:114.0580,  type:'assembly', operator:'Foxconn' },
-      { name:'Tata Chennai (건설중)', lat:12.8050,lng:80.2270, type:'assembly', operator:'Tata', underConstruction:true },
+      // ── input ──
+      { name:'Shanghai Port (입고)', lat:30.6300,lng:122.0700, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process ──
+      { name:'Foxconn Zhengzhou',  lat:34.7190,lng:113.8550,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, operator:'Foxconn' },
+      { name:'Foxconn Shenzhen',   lat:22.6600,lng:114.0580,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, operator:'Foxconn' },
+      { name:'Tata Chennai (건설중)', lat:12.8050,lng:80.2270, type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, operator:'Tata', underConstruction:true },
+      // ── output ──
+      { name:'Shenzhen Yantian Port (출하)', lat:22.5750,lng:114.2860, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:6,  ticker:'NVDA',  name:'NVIDIA',          country:'US', archetype:'A', sector:'Semiconductor',
     facilities:[
-      { name:'TSMC Fab 18 (위탁)',  lat:23.0570,lng:120.2970, type:'fab', note:'위탁생산' },
-      { name:'Santa Clara HQ',    lat:37.3700,lng:-121.9630,  type:'design', note:'R&D only' },
+      // ── input ──
+      { name:'Kaohsiung Port (입고)', lat:22.6133,lng:120.2867, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process ──
+      { name:'TSMC Fab 18 (위탁)',  lat:23.0570,lng:120.2970, type:'fab', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5, note:'위탁생산' },
+      { name:'Santa Clara HQ',    lat:37.3700,lng:-121.9630,  type:'design', stage:'process', sensors:['NTL'], radiusKm:2, note:'R&D only' },
+      // ── output ──
+      { name:'Kaohsiung Port (출하)', lat:22.6133,lng:120.2867, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:7,  ticker:'BYD',   name:'BYD',             country:'CN', archetype:'A', sector:'EV',
     facilities:[
-      { name:'Shenzhen HQ Factory',lat:22.6530,lng:114.0300,  type:'assembly' },
-      { name:'Changsha Factory',   lat:28.2920,lng:113.0070,  type:'assembly' },
-      { name:'Hefei Factory',      lat:31.8200,lng:117.2270,  type:'battery' },
+      // ── input ──
+      { name:'Shenzhen Yantian (입고)', lat:22.5750,lng:114.2860, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process ──
+      { name:'Shenzhen HQ Factory',lat:22.6530,lng:114.0300,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Changsha Factory',   lat:28.2920,lng:113.0070,  type:'assembly', stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      { name:'Hefei Factory',      lat:31.8200,lng:117.2270,  type:'battery',  stage:'process', sensors:['NTL','NO2','THERMAL'], radiusKm:5 },
+      // ── output ──
+      { name:'Shanghai Port (출하)', lat:30.6300,lng:122.0700, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:8,  ticker:'VALE',  name:'Vale',            country:'BR', archetype:'F', sector:'Mining',
     facilities:[
-      { name:'Carajás Mine',       lat:-6.0750,lng:-50.1530,  type:'mine', note:'세계 최대 철광석' },
-      { name:'Itabira Complex',    lat:-19.6190,lng:-43.2260, type:'mine' },
+      // ── input (광산 = 추출의 시작점) ──
+      { name:'Carajás Mine',       lat:-6.0750,lng:-50.1530,  type:'mine', stage:'input', sensors:['NTL','NO2'], radiusKm:15, note:'세계 최대 철광석' },
+      { name:'Itabira Complex',    lat:-19.6190,lng:-43.2260, type:'mine', stage:'input', sensors:['NTL','NO2'], radiusKm:15 },
+      // ── process (정제/가공) ──
+      { name:'Tubarão Complex',    lat:-20.2863,lng:-40.2387, type:'refinery', stage:'process', sensors:['NTL'], radiusKm:8 },
+      // ── output (적출항) ──
+      { name:'Tubarão Port (출하)', lat:-20.2863,lng:-40.2387, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
+      { name:'Qingdao Port (도착)', lat:36.0671,lng:120.3826, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:9,  ticker:'MAERSK', name:'Maersk',         country:'DK', archetype:'B', sector:'Shipping',
     facilities:[
-      { name:'Port of Rotterdam',  lat:51.9530,lng:4.0600,    type:'port' },
-      { name:'Port of Shanghai',   lat:30.6300,lng:122.0700,  type:'port' },
-      { name:'Port of Singapore',  lat:1.2640,lng:103.8170,   type:'port' },
+      // ── input (출발항) ──
+      { name:'Port of Rotterdam (출발)', lat:51.9530,lng:4.0600, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      { name:'Port of Shanghai (출발)',  lat:30.6300,lng:122.0700, type:'port', stage:'input', sensors:['NTL'], radiusKm:10 },
+      // ── process (환적항) ──
+      { name:'Port of Singapore (환적)', lat:1.2640,lng:103.8170, type:'port', stage:'process', sensors:['NTL'], radiusKm:10 },
+      // ── output (도착항) ──
+      { name:'Port of Busan (도착)',     lat:35.1028,lng:129.0403, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
+      { name:'Port of LA (도착)',        lat:33.7405,lng:-118.2723, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
   { id:10, ticker:'2222.SR',name:'Saudi Aramco',   country:'SA', archetype:'F', sector:'Oil & Gas',
     facilities:[
-      { name:'Ghawar Oil Field',   lat:24.3000,lng:49.3000,   type:'oilfield', note:'세계 최대 유전' },
-      { name:'Ras Tanura Refinery',lat:26.6400,lng:50.1500,   type:'refinery' },
+      // ── input (유전) ──
+      { name:'Ghawar Oil Field',   lat:24.3000,lng:49.3000,   type:'oilfield', stage:'input', sensors:['NTL','NO2'], radiusKm:15, note:'세계 최대 유전' },
+      // ── process (정유) ──
+      { name:'Ras Tanura Refinery',lat:26.6400,lng:50.1500,   type:'refinery', stage:'process', sensors:['NTL'], radiusKm:8 },
+      // ── output (수출항) ──
+      { name:'Ras Tanura Port (출하)', lat:26.6540,lng:50.1610, type:'port', stage:'output', sensors:['NTL'], radiusKm:10 },
     ]},
 
   // ═══════════════════════════════════════════════
@@ -423,8 +548,18 @@ const STATS = {
   underConstruction: PROFILES.filter(p => p.facilities.some(f => f.underConstruction)).length,
 };
 
+// ── stage별 시설 추출 유틸 ──────────────────────────────────
+function getFacilitiesByStage(ticker, stage) {
+  const p = getProfile(ticker);
+  if (!p) return [];
+  return p.facilities.filter(f => f.stage === stage);
+}
+
 module.exports = {
   ARCHETYPES,
+  ARCHETYPE_SENSORS,
+  CAUSE_TEMPLATES,
+  FACILITY_RADIUS,
   FLOW_TEMPLATES,
   PROFILES,
   STATS,
@@ -434,4 +569,5 @@ module.exports = {
   getBySector,
   getUnderConstruction,
   getAllFacilities,
+  getFacilitiesByStage,
 };
