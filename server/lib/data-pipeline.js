@@ -682,6 +682,21 @@ async function fetchGauge(gaugeId) {
     const validation = validateGaugeValue(value, gaugeId);
     value = validation.value;
 
+    // value가 null이면 NO_DATA로 분류 (수집 성공이지만 유효 데이터 없음)
+    if (value === null || value === undefined) {
+      console.log(`[${new Date().toISOString()}] ⚠️  ${gaugeId} = null (API 응답은 있으나 값 산출 불가)`);
+      return {
+        id: gaugeId,
+        gaugeId,
+        value: null,
+        status: 'NO_DATA',
+        source: gauge.source,
+        name: gauge.name || gaugeId,
+        unit: gauge.unit || '',
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     console.log(`[${new Date().toISOString()}] ✅ ${gaugeId} = ${value}`);
 
     return {
@@ -756,10 +771,12 @@ async function fetchAll(ecosKey, kosisKey) {
 
   const success = collected.filter(g => g.status === 'OK').length;
   const failed = collected.filter(g => g.status === 'ERROR').length;
+  const noData = collected.filter(g => g.status === 'NO_DATA').length;
   const manual = collected.filter(g => g.status === 'MANUAL').length;
 
   console.log(`[${new Date().toISOString()}] 📊 Collection complete:`);
   console.log(`  ✅ Success: ${success}/${gaugeIds.length}`);
+  console.log(`  ⚠️  No Data: ${noData}`);
   console.log(`  ❌ Failed: ${failed}`);
   console.log(`  ⚠️  Manual: ${manual}`);
 
@@ -789,7 +806,7 @@ async function fetchAll(ecosKey, kosisKey) {
   // 신규: fetchAll() → { gauges, summary, timestamp }
   return {
     gauges: collected,
-    summary: { success, failed, manual, total: gaugeIds.length },
+    summary: { success, failed, noData, manual, total: gaugeIds.length },
     timestamp: new Date().toISOString(),
   };
 }

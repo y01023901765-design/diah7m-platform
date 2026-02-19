@@ -71,6 +71,7 @@ class DataStore {
     const start = Date.now();
     let okCount = 0;
     let preserved = 0;
+    let noDataCount = 0;
 
     for (const [id, data] of Object.entries(pipelineResults)) {
       if (data.status === 'OK' && data.value !== null && data.value !== undefined) {
@@ -97,6 +98,13 @@ class DataStore {
             );
           } catch (e) { /* ignore individual save errors */ }
         }
+      } else if (data.status === 'NO_DATA') {
+        // API 호출 성공이지만 값 산출 불가 → 이전 캐시 유지
+        noDataCount++;
+        if (this.memCache[id]?.status === 'OK') {
+          this.memCache[id].stale = true;
+          preserved++;
+        }
       } else if (this.memCache[id]?.status === 'OK') {
         // 새 데이터 실패 + 이전 캐시 있음 → 이전 캐시 유지, stale 표시
         this.memCache[id].stale = true;
@@ -106,7 +114,7 @@ class DataStore {
 
     const duration = Date.now() - start;
     this.lastFetch = new Date().toISOString();
-    this.lastRefreshResult = { ok: okCount, preserved, failed: Object.keys(pipelineResults).length - okCount - preserved, duration };
+    this.lastRefreshResult = { ok: okCount, preserved, noData: noDataCount, failed: Object.keys(pipelineResults).length - okCount - preserved - noDataCount, duration };
 
     // ── 관측성: lastRun 상세 저장 ──
     this.lastRun = null; // 호출측에서 setLastRun으로 설정
