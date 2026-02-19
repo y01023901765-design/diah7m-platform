@@ -6,14 +6,14 @@
  * Pipeline → Store (캐시) → Engine (진단)
  *
  * 복합키: (ticker, gauge_id)
- * TTL 계층: 재무 24h / 모멘텀 15m / 위성 6h
+ * TTL 계층: 재무 24h / 모멘텀 15m / 위성 7d
  * DataStore 패턴 재사용 (memCache + SQLite)
  */
 
 var TTL = {
   FUNDAMENTAL: 24 * 3600 * 1000,  // 24시간
   MOMENTUM: 15 * 60 * 1000,       // 15분
-  SATELLITE: 6 * 3600 * 1000,     // 6시간
+  SATELLITE: 7 * 24 * 3600 * 1000, // 7일 (VIIRS 월간 발행, 2-3개월 지연)
 };
 
 // 게이지 → TTL 그룹 매핑

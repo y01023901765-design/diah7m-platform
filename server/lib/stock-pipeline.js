@@ -215,15 +215,26 @@ function calcVolumeTrend(volumes) {
 }
 
 // OPM 추세 (영업이익률 변화, bps) — summaryData에서 추출
+// 전략: earningsGrowth - revenueGrowth 로 마진 방향 추정
+//   양수 = 이익성장 > 매출성장 → 마진 확대 (긍정)
+//   음수 = 이익성장 < 매출성장 → 마진 축소 (부정)
+//   둘 다 없으면 operatingMargins 현재값 bps 반환 (fallback)
 function calcOpmTrend(summaryData) {
-  // Yahoo financialData에는 operatingMargins가 현재값만 있음
-  // 추세는 quarterly 비교 필요 → 현재는 단순값 반환 (향후 확장)
   if (!summaryData || !summaryData.financialData) return null;
-  var raw = summaryData.financialData.operatingMargins;
-  var val = (raw && raw.raw != null) ? raw.raw : null;
-  if (val == null) return null;
-  // 현재 margin을 bps 단위로 (추세 = 0으로 가정, 실 데이터 확보 시 교체)
-  return Math.round(val * 10000); // 비율 → bps
+  var fd = summaryData.financialData;
+
+  var earnGr = (fd.earningsGrowth && fd.earningsGrowth.raw != null) ? fd.earningsGrowth.raw : null;
+  var revGr = (fd.revenueGrowth && fd.revenueGrowth.raw != null) ? fd.revenueGrowth.raw : null;
+
+  // 두 성장률 모두 있으면 차이로 마진 방향 추정 (bps 단위)
+  if (earnGr != null && revGr != null) {
+    return Math.round((earnGr - revGr) * 10000); // 예: 0.15 - 0.10 = 500bps
+  }
+
+  // fallback: 현재 영업이익률 bps (추세 대신 수준)
+  var opm = (fd.operatingMargins && fd.operatingMargins.raw != null) ? fd.operatingMargins.raw : null;
+  if (opm != null) return Math.round(opm * 10000);
+  return null;
 }
 
 // FCF 마진 (%) — freeCashflow / totalRevenue

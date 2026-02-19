@@ -8,37 +8,6 @@ import { STOCKS, ARCHETYPE_LABELS, TIER_LABELS } from '../data/stocks';
 import * as API from '../api';
 
 // ═══ 가격 포맷 (API 실데이터 기반) ═══
-const DUMMY_FAC={
-  'TSLA':[
-    {name:'Giga Texas',loc:'Austin, TX',status:'normal',viirs:12,no2:8,therm:5},
-    {name:'Giga Shanghai',loc:'Shanghai, CN',status:'warning',viirs:-15,no2:-20,therm:-12},
-    {name:'Giga Berlin',loc:'Berlin, DE',status:'collecting',viirs:null,no2:null,therm:null},
-    {name:'Fremont Factory',loc:'Fremont, CA',status:'normal',viirs:3,no2:2,therm:1},
-    {name:'Giga Nevada',loc:'Sparks, NV',status:'normal',viirs:8,no2:6,therm:4},
-    {name:'Megapack Lathrop',loc:'Lathrop, CA',status:'normal',viirs:18,no2:10,therm:7},
-  ],
-  '005930':[
-    {name:'평택 캠퍼스',loc:'Pyeongtaek, KR',status:'normal',viirs:5,no2:3,therm:2},
-    {name:'화성 캠퍼스',loc:'Hwaseong, KR',status:'normal',viirs:2,no2:1,therm:0},
-    {name:'기흥 캠퍼스',loc:'Giheung, KR',status:'warning',viirs:-8,no2:-5,therm:-3},
-    {name:'Taylor Texas',loc:'Taylor, TX',status:'construction',viirs:null,no2:null,therm:null},
-    {name:'Xi\'an Fab',loc:'Xi\'an, CN',status:'normal',viirs:4,no2:2,therm:1},
-  ],
-};
-// Delta dummy: satellite vs market divergence
-const DUMMY_DELTA={
-  'TSLA':{satIdx:72,mktIdx:85,gap:-13,state:'NEG_GAP',desc:'svDeltaNeg'},
-  '005930':{satIdx:68,mktIdx:65,gap:3,state:'ALIGNED',desc:'svDeltaAligned'},
-};
-// Flow dummy: archetype step + bottleneck
-const FLOW_TEMPLATES={
-  MFG:['rawInput','inspect','feed','process','assemble','test','pack','ship','transport','deliver','install'],
-  EXT:['explore','drill','mine','crush','sort','wash','transport','refine','store','ship','deliver'],
-  LOG:['order','pickup','load','linehaul','transship','lastMile','unload','inspect','deliver','sign','complete'],
-  PRC:['request','auth','route','process','compute','store','sync','cache','respond','log','settle'],
-  DST:['receive','inspect','store','pick','pack','sort','load','deliver','arrive','receipt','return'],
-  SIT:['design','permit','excavate','foundation','frame','finish','install','inspect','complete','handover','operate'],
-};
 
 function fmtPrice(sid, livePrices){
   const d = livePrices && livePrices[sid];
@@ -193,14 +162,11 @@ function StockView({stock:s,lang,onBack}){
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
 
-  const facs=liveFacs||DUMMY_FAC[s.sid]||[];
+  const facs=liveFacs||[];
   const normalCnt=facs.filter(f=>f.status==='normal').length;
-  const warnCnt=facs.filter(f=>f.status==='warning').length;
-  const rawDelta=liveDelta||DUMMY_DELTA[s.sid]||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
+  const warnCnt=facs.filter(f=>f.status==='warning'||f.status==='alarm').length;
+  const rawDelta=liveDelta||{satIdx:50,mktIdx:50,gap:0,state:'ALIGNED',desc:'svDeltaAligned'};
   const delta={satIdx:rawDelta.ssScore||rawDelta.satIdx||50,mktIdx:rawDelta.smScore||rawDelta.mktIdx||50,gap:rawDelta.gap||0,state:rawDelta.state||'ALIGNED',desc:rawDelta.description?'':rawDelta.desc||'svDeltaAligned'};
-  const archKey=s.a==='MFG'?'MFG':s.a==='EXT'?'EXT':s.a==='LOG'?'LOG':s.a==='PRC'?'PRC':s.a==='DST'?'DST':'SIT';
-  const flowSteps=FLOW_TEMPLATES[archKey]||FLOW_TEMPLATES['MFG'];
-  const bottleneck=warnCnt>0?Math.floor(flowSteps.length*0.6):null; // dummy bottleneck
 
   const tabs=[
     {id:'diag',label:t('svTabDiag',L)},

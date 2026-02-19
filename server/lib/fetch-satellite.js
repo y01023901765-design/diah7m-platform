@@ -383,7 +383,7 @@ async function fetchAllSatellite(regionCode, lastSuccessMap) {
 // ── 시설 캐시: (lat,lng,radius,sensor) → { data, timestamp } ──
 // 같은 항만을 여러 종목이 공유할 때 GEE 중복 호출 방지
 var _facilityCache = {};
-var CACHE_TTL_MS = 6 * 3600 * 1000; // 6시간
+var CACHE_TTL_MS = 7 * 24 * 3600 * 1000; // 7일 (VIIRS 월간 발행, 2-3개월 지연)
 
 function _cacheKey(lat, lng, radiusKm, sensor) {
   return sensor + ':' + lat.toFixed(3) + ',' + lng.toFixed(3) + ':' + radiusKm;

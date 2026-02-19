@@ -19,7 +19,7 @@
 const express = require('express');
 const router = express.Router();
 
-module.exports = function createStockRouter({ db, auth, stockStore, stockPipeline }) {
+module.exports = function createStockRouter({ db, auth, stockStore, stockPipeline, dataStore }) {
   // stock-profiles-100.js 로드
   let PROFILES = [];
   let ARCHETYPES = {};
@@ -79,13 +79,42 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     next();
   };
 
+  // ── 헬퍼: 국가 DataStore에서 GL-* 환경보정 데이터 추출 ──
+  function buildGlContext() {
+    if (!dataStore || !dataStore.memCache) return null;
+    var mc = dataStore.memCache;
+
+    // E5_BALTIC → BDI, E3_VIX → VIX, E4_DOLLAR_INDEX → DXY
+    var bdiVal = mc.E5_BALTIC && mc.E5_BALTIC.value;
+    var bdiPrev = mc.E5_BALTIC && mc.E5_BALTIC.prevValue;
+    var vixVal = mc.E3_VIX && mc.E3_VIX.value;
+    var dxyVal = mc.E4_DOLLAR_INDEX && mc.E4_DOLLAR_INDEX.value;
+    var dxyPrev = mc.E4_DOLLAR_INDEX && mc.E4_DOLLAR_INDEX.prevValue;
+
+    if (bdiVal == null && vixVal == null && dxyVal == null) return null;
+
+    return {
+      bdi: bdiVal != null ? {
+        value: bdiVal,
+        trend: (bdiPrev != null && bdiVal < bdiPrev * 0.95) ? 'down'
+          : (bdiPrev != null && bdiVal > bdiPrev * 1.05) ? 'up' : 'flat',
+      } : null,
+      vix: vixVal != null ? { value: vixVal } : null,
+      dxy: dxyVal != null ? {
+        value: dxyVal,
+        trend: (dxyPrev != null && dxyVal > dxyPrev * 1.02) ? 'up'
+          : (dxyPrev != null && dxyVal < dxyPrev * 0.98) ? 'down' : 'flat',
+      } : null,
+    };
+  }
+
   // ── 헬퍼: 캐시에서 health 조회 (빠름) ──
   function getHealthFromCache(ticker, profile) {
     if (!stockStore || !stockEngine) return null;
     var gaugeData = stockStore.toGaugeData(ticker);
     if (!gaugeData || Object.keys(gaugeData).length === 0) return null;
     try {
-      return stockEngine.buildStockHealth(profile, gaugeData, null);
+      return stockEngine.buildStockHealth(profile, gaugeData, buildGlContext());
     } catch (e) {
       return null;
     }
