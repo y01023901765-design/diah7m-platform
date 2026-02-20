@@ -518,6 +518,146 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     });
   });
 
+  // ── 시설 위성 이미지 (Tab2 위성 Before/After) ──
+  // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
+  // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
+  const _satImgCache = {};
+  const _satImgTTL = 7 * 24 * 3600 * 1000;
+
+  router.get('/stock/:ticker/satellite', optAuth, async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    const profile = byTicker[ticker];
+    if (!profile) return res.status(404).json({ error: 'Stock not found' });
+
+    // 캐시 확인
+    const cached = _satImgCache[ticker];
+    if (cached && (Date.now() - cached.ts) < _satImgTTL) {
+      return res.json({ ticker, fromCache: true, facilities: cached.data });
+    }
+
+    // GEE 모듈 확인
+    let fetchSat = null;
+    try { fetchSat = require('../lib/fetch-satellite'); } catch (e) { /* */ }
+    if (!fetchSat) {
+      return res.json({ ticker, facilities: [], error: 'GEE module not available' });
+    }
+
+    // process 시설 최대 3개 (UI 표시 한도)
+    const facilities = (profile.facilities || [])
+      .filter(f => f.stage === 'process' && !f.underConstruction)
+      .slice(0, 3);
+
+    // stage 미지정 fallback
+    if (facilities.length === 0) {
+      const PROD = ['fab','assembly','manufacturing','battery','steelworks',
+        'chemical','refinery','datacenter','mine','plant','factory','fulfillment','hub','campus'];
+      (profile.facilities || [])
+        .filter(f => !f.underConstruction && PROD.includes(f.type))
+        .slice(0, 3)
+        .forEach(f => facilities.push(f));
+    }
+
+    if (facilities.length === 0) {
+      return res.json({ ticker, facilities: [] });
+    }
+
+    // GEE 수집 (순차, 세마포어는 fetch-satellite 내부에서 처리)
+    const results = [];
+    for (const f of facilities) {
+      try {
+        const sensors = f.sensors || ['NTL'];
+        const sensorData = await fetchSat.fetchFacilitySensors({
+          name: f.name, lat: f.lat, lng: f.lng,
+          radiusKm: f.radiusKm || 5, sensors,
+        });
+
+        // VIIRS 썸네일 이미지 생성 (NTL 있을 때)
+        let viirsImg = null;
+        if (sensors.includes('NTL') && f.lat && f.lng) {
+          try {
+            const ntl = sensorData.NTL;
+            // fetchFacilityVIIRS는 수치만 반환 — 이미지는 별도로 GEE getThumbURL 호출
+            // Before: 90~365d, After: 최신
+            await fetchSat.authenticateGEE();
+            const ee = require('@google/earthengine');
+            const bbox = [
+              f.lng - (f.radiusKm||5)/111.32 / Math.cos(f.lat*Math.PI/180),
+              f.lat - (f.radiusKm||5)/111.32,
+              f.lng + (f.radiusKm||5)/111.32 / Math.cos(f.lat*Math.PI/180),
+              f.lat + (f.radiusKm||5)/111.32,
+            ];
+            const geometry = ee.Geometry.Rectangle(bbox);
+            const endStr = new Date().toISOString().split('T')[0];
+            const d90 = new Date(); d90.setDate(d90.getDate() - 90);
+            const d365 = new Date(); d365.setDate(d365.getDate() - 365);
+            const VIIRS_PARAMS = {
+              bands: 'avg_rad',
+              palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
+              min: 0, max: 80, dimensions: '400x280',
+              paletteLabels: { min: '0 nW', max: '80 nW' },
+            };
+
+            const afterCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+              .filterBounds(geometry)
+              .filterDate(d90.toISOString().split('T')[0], endStr)
+              .select('avg_rad').sort('system:time_start', false);
+            const beforeCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+              .filterBounds(geometry)
+              .filterDate(d365.toISOString().split('T')[0], d90.toISOString().split('T')[0])
+              .select('avg_rad').sort('system:time_start', false);
+
+            const [afterUrl, beforeUrl] = await Promise.all([
+              new Promise(r => {
+                try { afterCol.first().getThumbURL({ region: geometry, dimensions: VIIRS_PARAMS.dimensions, palette: VIIRS_PARAMS.palette, min: VIIRS_PARAMS.min, max: VIIRS_PARAMS.max, format: 'png' }, (u, e) => r(e||!u ? null : u)); } catch { r(null); }
+              }),
+              new Promise(r => {
+                try { beforeCol.first().getThumbURL({ region: geometry, dimensions: VIIRS_PARAMS.dimensions, palette: VIIRS_PARAMS.palette, min: VIIRS_PARAMS.min, max: VIIRS_PARAMS.max, format: 'png' }, (u, e) => r(e||!u ? null : u)); } catch { r(null); }
+              }),
+            ]);
+
+            if (afterUrl || beforeUrl) {
+              viirsImg = {
+                afterUrl,
+                beforeUrl,
+                afterDate: endStr,
+                beforeDate: d90.toISOString().split('T')[0],
+                palette: VIIRS_PARAMS.palette,
+                paletteLabels: VIIRS_PARAMS.paletteLabels,
+              };
+            }
+          } catch (imgErr) {
+            console.warn('[Satellite] VIIRS image skipped for', f.name, ':', imgErr.message);
+          }
+        }
+
+        results.push({
+          name: f.name,
+          lat: f.lat, lng: f.lng,
+          stage: f.stage,
+          sensors: f.sensors || [],
+          radiusKm: f.radiusKm || 5,
+          ntl: sensorData.NTL || null,
+          no2: sensorData.NO2 || null,
+          thermal: sensorData.THERMAL || null,
+          images: viirsImg,
+        });
+      } catch (err) {
+        console.warn('[Satellite] facility error:', f.name, err.message);
+        results.push({
+          name: f.name, lat: f.lat, lng: f.lng,
+          stage: f.stage, sensors: f.sensors || [],
+          ntl: null, no2: null, thermal: null, images: null,
+          error: err.message,
+        });
+      }
+    }
+
+    // 캐시 저장
+    _satImgCache[ticker] = { data: results, ts: Date.now() };
+
+    res.json({ ticker, facilities: results });
+  });
+
   // ── 공급망 플로우 (Tab3 플로우) — 실 위성 + DualLock + 스토리 ──
   router.get('/stock/:ticker/flow', optAuth, async (req, res) => {
     const profile = byTicker[req.params.ticker.toUpperCase()];

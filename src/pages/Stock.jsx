@@ -124,6 +124,8 @@ function StockView({stock:s,lang,onBack}){
   const [liveFlow,setLiveFlow]=useState(null);
   const [liveSignals,setLiveSignals]=useState(null);
   const [liveChart,setLiveChart]=useState(null);
+  const [liveSatImg,setLiveSatImg]=useState(null);
+  const [satImgLoading,setSatImgLoading]=useState(false);
   const [chartRange,setChartRange]=useState('6mo');
   const [loading,setLoading]=useState(true);
 
@@ -164,6 +166,17 @@ function StockView({stock:s,lang,onBack}){
     }).catch(()=>{});
     return()=>{c=true};
   },[s.sid,chartRange]);
+
+  // 위성 이미지 — 위성 탭 진입 시 lazy load (GEE 수집 최대 30초 소요)
+  useEffect(()=>{
+    if(tab!=='sat'||liveSatImg||satImgLoading) return;
+    let c=false;
+    setSatImgLoading(true);
+    API.stockSatellite(s.sid).then(d=>{
+      if(!c&&d&&d.facilities) setLiveSatImg(d.facilities);
+    }).catch(()=>{}).finally(()=>{if(!c) setSatImgLoading(false);});
+    return()=>{c=true};
+  },[tab,s.sid,liveSatImg,satImgLoading]);
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
@@ -301,26 +314,49 @@ function StockView({stock:s,lang,onBack}){
       {/* Before/After 비교 — 시설별 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🛰️ {t('svSatCompare',L)}</div>
-        {(facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]).map((f,i)=>(
+        {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
+        {!satImgLoading&&(facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]).map((f,i)=>{
+          // liveSatImg에서 시설명으로 매칭
+          const satFac=liveSatImg&&liveSatImg.find(sf=>sf.name===f.name);
+          const imgs=satFac?.images||null;
+          const ntl=satFac?.ntl||null;
+          const anomPct=ntl?.anomaly??f.viirs??null;
+          const beforeUrl=imgs?.beforeUrl||null;
+          const afterUrl=imgs?.afterUrl||null;
+          const beforeDate=imgs?.beforeDate||null;
+          const afterDate=imgs?.afterDate||null;
+          return(
           <div key={i} style={{marginBottom:i<2?16:0}}>
             <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc}</span></div>
             <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svBefore',L)}</div>
-                <div style={{background:LT.bg3,borderRadius:6,height:100,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 30d ago</div>
-                <div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>108.1 nW</div>
+                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svBefore',L)}{beforeDate&&<span style={{fontSize:12,marginLeft:6,color:LT.textDim}}>{beforeDate}</span>}</div>
+                {beforeUrl
+                  ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:100,objectFit:"cover",borderRadius:6,display:"block"}}/>
+                  :<div style={{background:LT.bg3,borderRadius:6,height:100,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ {t('svBefore',L)}</div>}
+                <div style={{display:"none",background:LT.bg3,borderRadius:6,height:100,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
+                {ntl?.mean_60d!=null&&<div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>{ntl.mean_60d.toFixed(1)} nW/cm²/sr</div>}
               </div>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svAfter',L)}</div>
-                <div style={{background:LT.bg3,borderRadius:6,height:100,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14,border:f.viirs!=null&&f.viirs<0?`2px solid ${LT.danger}`:'none'}}>🛰️ {t('svLatest',L)}</div>
+                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svAfter',L)}{afterDate&&<span style={{fontSize:12,marginLeft:6,color:LT.textDim}}>{afterDate}</span>}</div>
+                {afterUrl
+                  ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:100,objectFit:"cover",borderRadius:6,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:'none',display:"block"}}/>
+                  :<div style={{background:LT.bg3,borderRadius:6,height:100,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14,border:anomPct!=null&&anomPct<0?`2px solid ${LT.danger}`:'none'}}>🛰️ {t('svLatest',L)}</div>}
+                <div style={{display:"none",background:LT.bg3,borderRadius:6,height:100,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{f.viirs!=null?(108.1*(1+f.viirs/100)).toFixed(1):'—'} nW</span>
-                  {f.viirs!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:f.viirs>0?LT.good:LT.danger}}>{f.viirs>0?'+':''}{f.viirs}%</span>}
+                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW`:'—'}</span>
+                  {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{anomPct.toFixed(1)}%</span>}
                 </div>
               </div>
             </div>
+            {/* 팔레트 범례 */}
+            {(beforeUrl||afterUrl)&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:6}}>
+              <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
+              <span style={{fontSize:11,color:LT.textDim}}>NTL 강도</span>
+            </div>}
           </div>
-        ))}
+          );
+        })}
       </div>
       {/* Delta 괴리 차트 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
