@@ -157,6 +157,11 @@ export async function getDiagnoses(limit = 20) {
   return api(`/api/v1/diagnoses?limit=${limit}`);
 }
 
+// ── 한국 진단 (core-engine: crossSignals + dualLock + Level) ──
+export async function getKrDiagnosis() {
+  return api('/api/v1/diagnosis/kr');
+}
+
 // ── Mileage ──
 export async function getMileage() {
   return api('/api/v1/me/mileage');

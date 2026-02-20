@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import T, { L as LT } from '../theme';
 import { t, gc } from '../i18n';
-import { RadarChart, DualLockIndicator, StateIndicator, DeltaAnalysis } from '../components/Charts';
+import { RadarChart, DualLockIndicator, CrossSignalPanel, StateIndicator, DeltaAnalysis } from '../components/Charts';
 import { GaugeRow, SystemSection } from '../components/Gauges';
 import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN, SAT_XREF, TP } from '../components/TierLock';
 import { TIER_ACCESS } from '../data/gauges';
@@ -213,6 +213,7 @@ function DashboardPage({user,onNav,lang,country,city}){
   const [worldData,setWorldData]=useState(null); // 세계경제 펄스 (world score + 대륙)
   const [commoditiesData,setCommoditiesData]=useState(null); // 32개 공통지표
   const [stockAgg,setStockAgg]=useState(null); // 국가별 주식 건강도 aggregate
+  const [krDiagnosis,setKrDiagnosis]=useState(null); // 한국 core-engine 진단 (crossSignals + dualLock)
   const [showOnboard,setShowOnboard]=useState(()=>{try{return !localStorage.getItem('diah7m_onboard')}catch{return true}});
   const dismissOnboard=()=>{setShowOnboard(false);try{localStorage.setItem('diah7m_onboard','1')}catch{/* localStorage unavailable */}};
 
@@ -269,6 +270,19 @@ function DashboardPage({user,onNav,lang,country,city}){
     })();
     return () => { cancelled = true; };
   },[iso3, isKorea]);
+
+  // ── 한국 core-engine 진단 (crossSignals + dualLock + Level) ──
+  useEffect(()=>{
+    if (!isKorea) return;
+    let cancelled = false;
+    (async()=>{
+      try {
+        const res = await API.getKrDiagnosis();
+        if (!cancelled && res?.data) setKrDiagnosis(res.data);
+      } catch { /* 진단 API 없어도 정상 동작 */ }
+    })();
+    return () => { cancelled = true; };
+  },[isKorea]);
 
   // 위성 데이터 독립 로드 — 한국 모드 전용 (경제 데이터와 독립 실행)
   useEffect(()=>{
@@ -508,15 +522,19 @@ function DashboardPage({user,onNav,lang,country,city}){
               );
             })}
           </div>
-          <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L}/></div>
+          <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L} levelInfo={levelInfo}/></div>
         </div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <RadarChart lang={L} sysData={activeSys}/>
         </div>
       </div>
-      {/* Dual Lock + Delta */}
+      {/* 교차신호 + 이중봉쇄 (정본 core-engine 기준) */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
-        <DualLockIndicator lang={L}/>
+        <DualLockIndicator lang={L} dualLock={krDiagnosis?.dualLock}/>
+        <CrossSignalPanel lang={L} crossSignals={krDiagnosis?.crossSignals}/>
+      </div>
+      {/* Delta */}
+      <div style={{marginBottom:LT.sp['2xl']}}>
         <DeltaAnalysis lang={L}/>
       </div>
       {/* Key Actions */}
