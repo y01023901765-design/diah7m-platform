@@ -409,7 +409,10 @@ function StockView({stock:s,lang,onBack}){
           const afterDate=imgs?.afterDate||null;
           return(
           <div key={i} style={{marginBottom:i<2?16:0}}>
-            <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc||f.stage||''}</span></div>
+            <div style={{marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
+              <div style={{fontSize:15,fontWeight:600,color:LT.text,whiteSpace:'nowrap'}}>{f.name} <span style={{color:LT.textDim,fontWeight:400,fontSize:13}}>{f.stage||''}</span></div>
+              {f.desc&&<div style={{fontSize:12,color:LT.textDim,textAlign:'right',lineHeight:1.4}}>{f.desc}</div>}
+            </div>
             <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{beforeDate||t('svBefore',L)}</div>
@@ -435,7 +438,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW`:'—'}</span>
+                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW/cm²/sr`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW/cm²/sr`:'—'}</span>
                   {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
                 {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>

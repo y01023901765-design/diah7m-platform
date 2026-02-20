@@ -663,6 +663,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
           name: f.name,
           lat: f.lat, lng: f.lng,
           stage: f.stage,
+          type: f.type || null,
+          desc: f.desc || null,
           sensors: f.sensors || [],
           radiusKm: f.radiusKm || 5,
           ntl: sensorData.NTL || null,
@@ -674,7 +676,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
         console.warn('[Satellite] facility error:', f.name, err.message);
         results.push({
           name: f.name, lat: f.lat, lng: f.lng,
-          stage: f.stage, sensors: f.sensors || [],
+          stage: f.stage, type: f.type || null, desc: f.desc || null,
+          sensors: f.sensors || [],
           ntl: null, no2: null, thermal: null, images: null,
           error: err.message,
         });
