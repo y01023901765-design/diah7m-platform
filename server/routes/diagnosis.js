@@ -612,168 +612,79 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         }
       }
 
-      // demo 폴백
-      let diagnosis;
-      if (Object.keys(gaugeData).length === 0) {
-        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
-        diagnosis = DEMO_DIAGNOSIS;
-        diagnosis._demo = true;
-      } else {
-        if (engine && engine.diagnose) {
-          diagnosis = engine.diagnose(gaugeData);
-        } else {
-          diagnosis = { overall: { score: 0 }, axes: {}, crossSignals: [], dualLock: {} };
+      // ── 정본 파이프라인: gauge-adapter → ssot_engine → report_renderer ──
+      const { toDataJson } = require('../lib/gauge-adapter');
+      const { transform }  = require('../lib/ssot_engine');
+      const reportRenderer = require('../lib/report_renderer');
+      const template       = require('../lib/report_template.json');
+
+      // 1) gauge-adapter: 평탄 게이지 맵 → data.json 형식
+      const dataJson = toDataJson(
+        Object.keys(gaugeData).length > 0 ? gaugeData : {},
+        { period, mode, country }
+      );
+
+      // 2) ssot_engine: 등급/서사 자동산출
+      const ssotData = transform(dataJson);
+
+      // 2-1) ssot_engine 결과로 수집완료_요약 판정 분류 갱신
+      {
+        const goodList = [], cautionList = [], alertList = [];
+        const allKeys = ['sec2_gauges','sec3_gauges','axis2_gauges','axis3_gauges',
+          'axis4_gauges','axis5_gauges','axis6_gauges','axis7_gauges','axis8_gauges','axis9_gauges'];
+        for (const k of allKeys) {
+          for (const g of (ssotData[k] || [])) {
+            const id = (g.code || '').split(' ')[0];
+            if (!id) continue;
+            const gr = g.grade || '';
+            if (gr.includes('경보') || gr.includes('★')) alertList.push(id);
+            else if (gr.includes('주의') || gr.includes('●')) cautionList.push(id);
+            else goodList.push(id);
+          }
         }
+        ssotData['수집완료_요약'] = {
+          총게이지: goodList.length + cautionList.length + alertList.length,
+          판정_양호: goodList,
+          판정_주의: cautionList,
+          판정_경보: alertList,
+        };
       }
 
-      // 서사엔진 실행
-      let D_obj = {};
-      try {
-        const narrativeEng = require('../lib/narrative-engine');
-        const countryNames = { KR: '대한민국', US: '미국', CN: '중국', JP: '일본' };
-        D_obj = narrativeEng.generateNarrative(diagnosis, gaugeData, {
-          period,
-          country: countryNames[country] || country,
-          mode,
-        });
-      } catch (ne) {
-        console.warn('[DOCX] 서사엔진 오류 (무시):', ne.message);
+      // 3) miniJSON (재현키) 구성
+      const miniJSON = {
+        engine: 'DIAH-7M판정엔진v5.1+SSOTv1.0',
+        mode,
+        period,
+        country,
+        profile_hash: 'KR-STD-59',
+        repro_key: `${country}-${mode}-${period}`,
+        stage: ssotData.sec5_current || '0M',
+        confidence: ssotData.freshnessAlert?.startsWith('✅') ? '높음' : '중간',
+      };
+
+      // 4) diagnosis 객체 (report_renderer용 — 있으면 엔진 결과, 없으면 ssot 요약)
+      let diagnosis = {
+        overall: { stage: '0M', score: 0, label: '정상' },
+        dualLock: { active: false, contributors: { input_top3: [], output_top3: [] } },
+        crossSignals: [],
+        axes: {},
+      };
+      if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
+        try { diagnosis = engine.diagnose(gaugeData); } catch (_) { /* ignore */ }
       }
+      // dualLock.contributors 누락 방지
+      if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, contributors: { input_top3: [], output_top3: [] } };
+      if (!diagnosis.dualLock.contributors) diagnosis.dualLock.contributors = { input_top3: [], output_top3: [] };
 
-      // DOCX 생성 (jszip 기반 raw XML — 외부 패키지 의존 없음)
-      const JSZip = require('jszip');
-
-      const modeTitles = {
-        D: '일간 경제속보', W: '주간 경제검진',
-        M: '월간 경제건강검진', Q: '분기 경제진단', A: '연간 경제진단',
-      };
-      const countryLabel = country === 'KR' ? '대한민국' : country;
-
-      // XML 특수문자 이스케이프
-      const esc = s => String(s ?? '—')
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
-
-      // 단락 빌더
-      const wPara = (text, { bold=false, size=24, heading=false }={}) => {
-        const rPr = bold ? '<w:rPr><w:b/></w:rPr>' : '';
-        const pPr = heading
-          ? `<w:pPr><w:pStyle w:val="${heading}"/></w:pPr>`
-          : '';
-        return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
-      };
-
-      const axisRows = Object.entries(diagnosis.axes || {}).map(([axId, ax]) =>
-        wPara(`${axId} ${ax.metaphor ?? ''}(${ax.name ?? axId}): ${ax.score ?? '—'}점  |  ${ax.gaugeCount ?? 0}개 게이지`)
-      ).join('');
-
-      const csRows = (diagnosis.crossSignals || []).slice(0, 15).map(cs =>
-        wPara(`${cs.pair ?? ''} ${cs.name ?? ''}: Lv.${cs.level?.level ?? '?'}`)
-      ).join('');
-
-      // 서사엔진 D 객체 실제 키 매핑 (narrative-engine.js v2.8 기준)
-      const overall    = D_obj._v28_overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`;
-      const coverGrade = D_obj._v28_coverGrade || '';
-      const dualLockTxt = D_obj.sec4_verdict || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동');
-      const diahTxt    = D_obj.sec4_summary || '해당 없음';
-      const m7Txt      = D_obj.sec5_currentText || '해당 없음';
-      const progTxt    = (D_obj.sec6_paths || []).map(p => `${p.label}(${p.prob}): ${p.text}`).join('\n') || '해당 없음';
-      const familyTxt  = D_obj.sec8_common || '해당 없음';
-      const prescTxt   = (D_obj.sec9_prescriptions || []).map(p => `${p.title}: ${p.text}`).join('\n') || '해당 없음';
-      const disclaimer = D_obj.sec10_disclaimer || '본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.';
-
-      // 축 서사 (9축)
-      const axisNarrRows = [1,2,3,4,5,6,7,8,9].map(i => {
-        const title = D_obj[`axis${i}_title`] || '';
-        const narr  = D_obj[`axis${i}_summaryNarrative`] || D_obj[`axis${i}_summary`] || '';
-        return narr ? wPara(`${title}\n  → ${narr}`) : '';
-      }).filter(Boolean).join('');
-
-      // 교차신호 서사
-      const csNarrRows = (D_obj._v28_crossSignals || []).slice(0, 15).map(cs =>
-        wPara(`${cs.pair ?? ''} ${cs.name ?? ''} — ${cs.narrative ?? `Lv.${cs.level?.level ?? '?'}`}`)
-      ).join('') || csRows;
-
-      const bodyXml = [
-        wPara(`DIAH-7M ${modeTitles[mode] || '경제건강검진'} 보고서`, { heading:'Heading1', bold:true }),
-        coverGrade ? wPara(`종합등급: ${coverGrade}`) : '',
-        wPara(`기간: ${period}  |  대상: ${countryLabel}`),
-        wPara(`판정엔진: v5.1  |  서사엔진: v2.8  |  모드: ${mode}`),
-        wPara(`생성일시: ${new Date().toLocaleString('ko-KR')}`),
-        diagnosis._demo ? wPara('※ 실제 데이터 미수집, 데모 데이터 표시') : '',
-        '<w:p/>',
-        wPara('1. 종합판정', { heading:'Heading2', bold:true }),
-        ...overall.split('\n').map(line => wPara(line)),
-        '<w:p/>',
-        wPara('2. 9축 채점표', { heading:'Heading2', bold:true }),
-        axisRows,
-        '<w:p/>',
-        wPara('2-1. 9축 서사 요약', { heading:'Heading2', bold:true }),
-        axisNarrRows,
-        '<w:p/>',
-        wPara('3. 이중봉쇄 판정', { heading:'Heading2', bold:true }),
-        wPara(dualLockTxt),
-        '<w:p/>',
-        wPara('4. 교차신호', { heading:'Heading2', bold:true }),
-        csNarrRows,
-        '<w:p/>',
-        wPara('5. DIAH 트리거', { heading:'Heading2', bold:true }),
-        wPara(diahTxt),
-        '<w:p/>',
-        wPara('6. 7M 기전 분석', { heading:'Heading2', bold:true }),
-        wPara(D_obj.sec5_currentName ? `현재 기전: ${D_obj.sec5_currentName}` : ''),
-        wPara(m7Txt),
-        '<w:p/>',
-        wPara('7. 예후 3경로', { heading:'Heading2', bold:true }),
-        wPara(D_obj.sec6_intro || ''),
-        ...progTxt.split('\n').map(line => wPara(line)),
-        '<w:p/>',
-        wPara('8. 경제 가족력', { heading:'Heading2', bold:true }),
-        wPara(familyTxt),
-        '<w:p/>',
-        wPara('9. 명의 처방', { heading:'Heading2', bold:true }),
-        wPara(D_obj.sec9_intro || ''),
-        ...prescTxt.split('\n').map(line => wPara(line)),
-        '<w:p/>',
-        wPara('10. 면책고지', { heading:'Heading2', bold:true }),
-        wPara(disclaimer),
-        wPara('© 인체국가경제론 / DIAH-7M / 윤종원'),
-      ].join('');
-
-      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
-  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<w:body>${bodyXml}<w:sectPr/></w:body></w:document>`;
-
-      const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`;
-
-      const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-<Application>DIAH-7M</Application></Properties>`;
-
-      const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`;
-
-      const wordRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>`;
-
-      const zip = new JSZip();
-      zip.file('[Content_Types].xml', contentTypesXml);
-      zip.file('_rels/.rels', relsXml);
-      zip.file('docProps/app.xml', appXml);
-      zip.file('word/document.xml', documentXml);
-      zip.file('word/_rels/document.xml.rels', wordRelsXml);
-
-      const buf = await zip.generateAsync({ type:'nodebuffer', compression:'DEFLATE' });
+      // 5) report_renderer.render() → DOCX 버퍼
+      const buf = await reportRenderer.render({
+        template,
+        miniJSON,
+        diagnosis,
+        profile: { country, mode },
+        data: ssotData,
+        outputPath: null,   // null → Buffer 반환
+      });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
@@ -781,7 +692,7 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
       res.end(buf);
 
     } catch (e) {
-      console.error('[DOCX] 생성 오류:', e.message);
+      console.error('[DOCX] 생성 오류:', e.message, e.stack);
       if (!res.headersSent) res.status(500).json({ error: e.message });
     }
   });

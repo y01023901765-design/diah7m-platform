@@ -1,0 +1,157 @@
+{
+  "$schema": "diah7m-report-template-v1",
+  "id": "KR-ECON-MONTHLY-v1",
+  "description": "DIAH-7M 경제건강검진 결과서 — 건강검진 스타일 월간 양식",
+  "updated": "2026-02-08",
+
+  "page": {
+    "width": 12240,
+    "height": 15840,
+    "margin": { "top": 1440, "right": 1440, "bottom": 1440, "left": 1440 }
+  },
+
+  "styles": {
+    "font": "Malgun Gothic",
+    "sizes": { "cover_title": 20, "cover_sub": 11, "cover_period": 18, "section": 14, "sub": 12, "body": 11, "table": 10 },
+    "fills": { "header": "D9D9D9", "ok": "E8F5E9", "warn": "FFF9C4", "alert": "FFCDD2" },
+    "separator": "━━━━━━━━━━━━━━━━━━━━━━━━━"
+  },
+
+  "gauge_table": {
+    "columns": [
+      { "key": "cat",    "label": "분류",   "width": 1200, "center": true },
+      { "key": "code",   "label": "게이지", "width": 1800 },
+      { "key": "raw",    "label": "원자료", "width": 1600, "center": true },
+      { "key": "change", "label": "변동",   "width": 1400, "center": true },
+      { "key": "grade",  "label": "등급",   "width": 1200, "center": true, "color_by_grade": true },
+      { "key": "judge",  "label": "판정",   "width": 1200, "center": true, "color_by_grade": true }
+    ]
+  },
+
+  "sections": [
+    { "type": "cover" },
+    { "type": "separator" },
+
+    { "type": "static_text", "id": "sec0",
+      "title": "0. 이 보고서의 작동 원리",
+      "content_key": "sec0_content" },
+    { "type": "separator" },
+
+    { "type": "overall_vitals", "id": "sec1",
+      "title": "1. 종합 판정 (Overall Vital Sign)",
+      "main_gauges_key": "gauges",
+      "aux_gauges_key": "auxGauges",
+      "aux_label": "▶ 보조 게이지 (5게이지)",
+      "alert_key": "sec1_alertNarrative",
+      "detail_key": "sec1_detail" },
+    { "type": "separator" },
+
+    { "type": "axis_detail", "id": "sec2",
+      "title_key": "sec2_title",
+      "gauges_key": "sec2_gauges",
+      "summary_key": "sec2_summary",
+      "summary_narrative_key": "sec2_summaryNarrative" },
+    { "type": "separator" },
+
+    { "type": "axis_detail", "id": "sec3",
+      "title_key": "sec3_title",
+      "gauges_key": "sec3_gauges",
+      "summary_key": "sec3_summary",
+      "summary_narrative_key": "sec3_summaryNarrative" },
+    { "type": "separator" },
+
+    { "type": "axis_with_table", "id": "axis2",
+      "available_key": "axis2_available",
+      "title_key": "axis2_title",
+      "gauge_table_key": "axis2_gaugeTable",
+      "gauges_key": "axis2_gauges",
+      "summary_key": "axis2_summary",
+      "summary_narrative_key": "axis2_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis3",
+      "available_key": "axis3_available",
+      "title_key": "axis3_title",
+      "gauge_table_key": "axis3_gaugeTable",
+      "gauges_key": "axis3_gauges",
+      "summary_key": "axis3_summary",
+      "summary_narrative_key": "axis3_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis4",
+      "available_key": "axis4_available",
+      "title_key": "axis4_title",
+      "gauge_table_key": "axis4_gaugeTable",
+      "gauges_key": "axis4_gauges",
+      "summary_key": "axis4_summary",
+      "summary_narrative_key": "axis4_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis5",
+      "available_key": "axis5_available",
+      "title_key": "axis5_title",
+      "gauge_table_key": "axis5_gaugeTable",
+      "gauges_key": "axis5_gauges",
+      "summary_key": "axis5_summary",
+      "summary_narrative_key": "axis5_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis6",
+      "available_key": "axis6_available",
+      "title_key": "axis6_title",
+      "gauge_table_key": "axis6_gaugeTable",
+      "gauges_key": "axis6_gauges",
+      "summary_key": "axis6_summary",
+      "summary_narrative_key": "axis6_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis7",
+      "available_key": "axis7_available",
+      "title_key": "axis7_title",
+      "gauge_table_key": "axis7_gaugeTable",
+      "gauges_key": "axis7_gauges",
+      "summary_key": "axis7_summary",
+      "summary_narrative_key": "axis7_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis8",
+      "available_key": "axis8_available",
+      "title_key": "axis8_title",
+      "gauge_table_key": "axis8_gaugeTable",
+      "gauges_key": "axis8_gauges",
+      "summary_key": "axis8_summary",
+      "summary_narrative_key": "axis8_summaryNarrative" },
+
+    { "type": "axis_with_table", "id": "axis9",
+      "available_key": "axis9_available",
+      "title_key": "axis9_title",
+      "gauge_table_key": "axis9_gaugeTable",
+      "gauges_key": "axis9_gauges",
+      "summary_key": "axis9_summary",
+      "summary_narrative_key": "axis9_summaryNarrative" },
+
+    { "type": "separator" },
+    { "type": "diah_triggers", "id": "sec4",
+      "title_key": "sec4_title",
+      "verdict_key": "sec4_verdict",
+      "triggers_key": "sec4_triggers",
+      "summary_key": "sec4_summary" },
+    { "type": "separator" },
+
+    { "type": "mechanism_7m", "id": "sec5" },
+    { "type": "separator" },
+
+    { "type": "prognosis", "id": "sec6" },
+    { "type": "separator" },
+
+    { "type": "timeseries", "id": "sec7" },
+    { "type": "separator" },
+
+    { "type": "family_history", "id": "sec8" },
+    { "type": "separator" },
+
+    { "type": "prescription", "id": "sec9" },
+    { "type": "separator" },
+
+    { "type": "sources", "id": "sec10" },
+    { "type": "separator" },
+
+    { "type": "appendix" },
+    { "type": "separator" },
+    { "type": "endmark" }
+  ]
+}
