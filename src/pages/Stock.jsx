@@ -520,98 +520,124 @@ function StockView({stock:s,lang,onBack}){
           };
           const sensors=f.sensors||['NTL'];
           return(
-          <div key={i} style={{marginBottom:i<2?20:0}}>
-            {/* 헤더: 시설명 + stage + desc */}
-            <div style={{marginBottom:4,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
-              <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:6}}>
-                <span style={{fontSize:16,fontWeight:600,color:LT.text}}>{stageIcon} {f.name}</span>
-                <span style={{fontSize:13,color:LT.textDim}}>{f.stage||''}</span>
-                {qStatus&&<span style={{fontSize:12}}>{qIcon} {qLabel}</span>}
-                {/* ① 센서 방향 일치 */}
-                {alignIcon&&<span style={{fontSize:12,fontWeight:600}}>{alignIcon.icon} {alignIcon.label}{alignIcon.detail&&<span style={{fontWeight:400,color:LT.textDim}}> — {alignIcon.detail}</span>}</span>}
+          <div key={i} style={{marginBottom:i<2?28:0,paddingBottom:i<2?28:0,borderBottom:i<2?`1px solid ${LT.border}`:'none'}}>
+
+            {/* ── 시설 헤더 ── */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:18,fontWeight:800,color:LT.text}}>{stageIcon} {f.name}</span>
+                <span style={{fontSize:13,padding:'2px 8px',borderRadius:4,background:LT.bg3,color:LT.textMid,fontWeight:600}}>{f.stage?.toUpperCase()||''}</span>
               </div>
-              {f.desc&&<div style={{fontSize:13,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'50%'}}>{f.desc}</div>}
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                {qStatus&&<span style={{fontSize:13,fontWeight:600,color:qStatus==='good'||qStatus==='GOOD'?LT.good:qStatus==='ok'||qStatus==='PARTIAL'?'#b35e00':LT.danger}}>{qIcon} {qLabel}</span>}
+                {alignIcon&&<span style={{fontSize:13,fontWeight:700,padding:'3px 10px',borderRadius:6,
+                  background:alignIcon.icon==='🟢'?`${LT.good}18`:alignIcon.icon==='🔴'?`${LT.danger}18`:'#f0f0f0',
+                  color:alignIcon.icon==='🟢'?LT.good:alignIcon.icon==='🔴'?LT.danger:'#555'}}>
+                  {alignIcon.icon} {alignIcon.label}
+                </span>}
+              </div>
             </div>
-            {/* ③ 운영 패턴 태그 */}
-            {patternTag&&<div style={{fontSize:13,fontWeight:600,color:patternTag.color,background:patternTag.bg,border:`1px solid ${patternTag.color}44`,borderRadius:6,padding:'6px 12px',marginBottom:6}}>
-              {patternTag.label}<br/><span style={{fontWeight:400,fontSize:12,lineHeight:1.6}}>{patternTag.sub}</span>
-            </div>}
-            {/* 센서 뱃지 + 실수치 + ② 민감도 구간 */}
-            <div style={{display:'flex',gap:6,marginBottom:6,flexWrap:'wrap'}}>
-              {sensors.map(s=>{
-                const b=SENSOR_BADGE[s];
+            {alignIcon?.detail&&<div style={{fontSize:13,color:LT.textMid,marginBottom:8,paddingLeft:4}}>{alignIcon.detail}</div>}
+
+            {/* ── 센서 패널 (세로 카드) — 핵심 데이터 ── */}
+            <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+              {sensors.map(sk=>{
+                const b=SENSOR_BADGE[sk];
                 if(!b) return null;
+                const hasData = b.val!=null;
                 return(
-                  <div key={s} style={{padding:'6px 10px',borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
-                    {/* ③ 아이콘 + 설명 */}
-                    <div style={{fontSize:12,color:LT.text,marginBottom:b.val!=null?4:0}}>
-                      <span style={{marginRight:4}}>{b.icon}</span>{b.desc}
+                  <div key={sk} style={{display:'flex',alignItems:'center',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:10,overflow:'hidden',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
+                    {/* 왼쪽: 아이콘 + 위성명 레이블 */}
+                    <div style={{width:96,minWidth:96,padding:'14px 12px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,borderRight:`1px solid ${LT.border}`,alignSelf:'stretch'}}>
+                      <span style={{fontSize:22}}>{b.icon}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:LT.textMid,textAlign:'center',lineHeight:1.3}}>
+                        {sk==='NTL'?'VIIRS':sk==='NO2'?'S-5P':sk==='THERMAL'?'LS-9':sk==='SAR'?'S-1':sk}
+                      </span>
                     </div>
-                    {b.val!=null&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{fontSize:14,fontWeight:700,color:b.valColor,fontFamily:'monospace'}}>{b.val}</span>
-                      <span style={{fontSize:12,color:LT.textDim}}>{b.valLabel}</span>
-                      {/* ② 민감도 구간 — 툴팁 포함 */}
-                      {b.band&&<span title={b.band.tip} style={{fontSize:11,fontWeight:600,color:b.band.color,background:b.band.bg,padding:'2px 7px',borderRadius:3,cursor:'help',borderBottom:`1px dashed ${b.band.color}`}}>{b.band.label} 👉</span>}
-                    </div>}
-                    {b.val==null&&<div style={{fontSize:12,color:LT.textDim,marginTop:2}}>— 수집 대기</div>}
+                    {/* 중앙: 수치 강조 */}
+                    <div style={{width:100,minWidth:100,padding:'14px 12px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`,alignSelf:'stretch'}}>
+                      {hasData
+                        ?<><span style={{fontSize:22,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
+                          <span style={{fontSize:12,color:LT.textDim,marginTop:3,lineHeight:1.3}}>{b.valLabel}</span></>
+                        :<span style={{fontSize:14,color:LT.textDim}}>— 대기</span>}
+                    </div>
+                    {/* 오른쪽: 설명 + 민감도 */}
+                    <div style={{flex:1,padding:'14px 14px',display:'flex',flexDirection:'column',justifyContent:'center',gap:5}}>
+                      <span style={{fontSize:13,color:LT.textMid,lineHeight:1.5}}>{b.desc}</span>
+                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:12,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'2px 9px',borderRadius:4,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
+                        {b.band.label}
+                      </span>}
+                      {!hasData&&<span style={{fontSize:12,color:LT.textDim}}>데이터 수집 대기 중</span>}
+                    </div>
                   </div>
                 );
               })}
             </div>
-            {/* 이미지 2컬럼 */}
+
+            {/* ── 운영 패턴 태그 (센서 패널 아래 전폭 배너) ── */}
+            {patternTag&&<div style={{borderRadius:8,padding:'12px 16px',marginBottom:12,background:patternTag.bg,border:`1px solid ${patternTag.color}55`}}>
+              <div style={{fontSize:15,fontWeight:700,color:patternTag.color,marginBottom:4}}>{patternTag.label}</div>
+              <div style={{fontSize:13,color:patternTag.color,opacity:0.85,lineHeight:1.6}}>{patternTag.sub}</div>
+            </div>}
+
+            {/* ── 이미지 2컬럼 ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {/* 왼쪽: before */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>🕰 이전 &nbsp;<span style={{fontSize:12}}>{beforeDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>🕰 이전 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
                   :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 이전</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
-                <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
+                <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:8,fontFamily:"monospace"}}>
                   {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
                 </div>
-                {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:6}}>
                   <span style={{fontSize:12,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:5,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
                   <span style={{fontSize:12,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
               {/* 오른쪽: after */}
-              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>📡 최신 &nbsp;<span style={{fontSize:12}}>{afterDate||'—'}</span></div>
-                <div style={{borderRadius:6,overflow:"hidden",height:140,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:'none'}}>
+              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:`1px solid ${LT.border}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>📡 최신 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
+                <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
                   :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 최신</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
                   <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
-                  {anomPct!=null&&<span style={{fontSize:14,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
+                  {anomPct!=null&&<span style={{fontSize:16,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
-                {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:6}}>
                   <span style={{fontSize:12,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:5,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
                   <span style={{fontSize:12,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
             </div>
-            {/* ③ 한줄 해석 */}
-            {flowText&&<div style={{fontSize:13,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.textDim,marginTop:6,padding:'6px 10px',background:LT.bg2,borderRadius:4,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
+
+            {/* ── 한줄 해석 ── */}
+            {flowText&&<div style={{fontSize:14,fontWeight:600,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:'#444',marginTop:10,padding:'10px 14px',background:anomPct!=null&&anomPct<-8?`${LT.danger}08`:anomPct!=null&&anomPct>5?`${LT.good}08`:LT.bg2,borderRadius:6,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
               {flowText}
             </div>}
-            {/* ⑥ 약신호 안내 */}
-            {isLowSignal&&<div style={{fontSize:12,color:LT.textDim,marginTop:4,padding:'5px 10px',background:LT.bg2,borderRadius:4}}>
+
+            {/* ── 약신호 안내 ── */}
+            {isLowSignal&&<div style={{fontSize:13,color:LT.textMid,marginTop:8,padding:'8px 12px',background:LT.bg2,borderRadius:6,border:`1px solid ${LT.border}`}}>
               ℹ️ 야간조도 기반 분석 적합도 낮음 — 실내 생산 공정 또는 야간 운영 비중이 적은 시설
             </div>}
-            {/* 색상 범례 */}
-            {(beforeUrl||afterUrl)&&<div style={{fontSize:12,color:LT.textDim,marginTop:5,lineHeight:1.6}}>
-              <span style={{background:"#222",padding:"1px 5px",borderRadius:2,color:"#ccc"}}>검정</span> 무광(사막·바다) &nbsp;
-              <span style={{color:"#0077bb"}}>■</span> 파랑=외곽 &nbsp;
-              <span style={{color:"#cc9900"}}>■</span> 노랑=핵심·고가동 &nbsp;
-              <span style={{background:"#555",padding:"1px 4px",borderRadius:2,color:"#fff"}}>흰색</span> 극강 밀집
+
+            {/* ── 색상 범례 ── */}
+            {(beforeUrl||afterUrl)&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10,fontSize:13,color:LT.textDim,alignItems:'center'}}>
+              <span style={{fontWeight:600,color:LT.textMid}}>색상 범례</span>
+              <span style={{background:"#222",padding:"2px 7px",borderRadius:3,color:"#ccc",fontSize:12}}>■ 무광(사막·바다)</span>
+              <span style={{color:"#0077bb",fontWeight:700}}>■</span><span>외곽·저밀도</span>
+              <span style={{color:"#cc9900",fontWeight:700}}>■</span><span>핵심·고가동</span>
+              <span style={{background:"#555",padding:"2px 7px",borderRadius:3,color:"#fff",fontSize:12}}>■ 극강 밀집</span>
             </div>}
           </div>
           );
