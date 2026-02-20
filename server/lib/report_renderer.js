@@ -43,9 +43,21 @@ const PAGE_SIZES = {
   LETTER: { width: 12240, height: 15840 },
 };
 
+// 기본 색상 팔레트 — template.styles.colors 없을 때 폴백
+const DEFAULT_COLORS = {
+  primary: "2C5F8A", accent: "D4463A", dark: "1B2A4A",
+  green: "2E7D32", red: "C62828", border: "BDBDBD",
+  gray: "757575", white: "FFFFFF",
+};
+
+function getColors(template) {
+  return (template && template.styles && template.styles.colors) || DEFAULT_COLORS;
+}
+
 function getContentWidth(template) {
-  const ps = PAGE_SIZES[template.page.size] || PAGE_SIZES.A4;
-  return ps.width - template.page.margin.left - template.page.margin.right;
+  const ps = PAGE_SIZES[(template.page && template.page.size)] || PAGE_SIZES.A4;
+  const margin = (template.page && template.page.margin) || { left: 1440, right: 1440 };
+  return ps.width - margin.left - margin.right;
 }
 
 function resolveColor(key, colors) {
@@ -53,9 +65,10 @@ function resolveColor(key, colors) {
 }
 
 function statusColor(status, template) {
-  const sm = template.styles.status_map;
+  const sm = template.styles && template.styles.status_map;
+  if (!sm) return "333333";
   const entry = sm[status];
-  if (entry) return resolveColor(entry.color_key, template.styles.colors);
+  if (entry) return resolveColor(entry.color_key, getColors(template));
   return "333333";
 }
 
@@ -736,10 +749,7 @@ async function render(opts) {
   const narratives = generateNarratives(mini, diagnosis, gaugeRows, profile, data);
 
   // ── 색상 맵 ──
-  const colors = (template.styles && template.styles.colors) || {
-    primary: "2C5F8A", accent: "D4463A", dark: "1B2A4A",
-    green: "2E7D32", red: "C62828", border: "BDBDBD", gray: "757575", white: "FFFFFF"
-  };
+  const colors = getColors(template);
 
   // ── 컨텍스트 객체 ──
   const ctx = { template, mini, diagnosis, profile, data, gaugeRows, auxRows, narratives, colors, vars };
@@ -752,15 +762,17 @@ async function render(opts) {
   }
 
   // ── 문서 생성 ──
-  const ps = PAGE_SIZES[template.page.size] || PAGE_SIZES.A4;
-  const headerText = interpolate(template.header.format, { engine_id: mini.engine, 기준월: data["기준월"] });
+  const ps = PAGE_SIZES[(template.page && template.page.size)] || PAGE_SIZES.A4;
+  const _fonts = (template.styles && template.styles.fonts) || { body: "Malgun Gothic", heading: "Malgun Gothic" };
+  const _header = (template.header && template.header.format) || 'DIAH-7M | {{기준월}}';
+  const headerText = interpolate(_header, { engine_id: mini.engine, 기준월: data["기준월"] || '' });
 
   const doc = new Document({
     styles: {
-      default: { document: { run: { font: template.styles.fonts.body, size: 20 } } },
+      default: { document: { run: { font: _fonts.body || "Malgun Gothic", size: 20 } } },
       paragraphStyles: [
         { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
-          run: { size: 32, bold: true, font: template.styles.fonts.heading, color: colors.dark },
+          run: { size: 32, bold: true, font: _fonts.heading || "Malgun Gothic", color: colors.dark },
           paragraph: { spacing: { before: 300, after: 150 }, outlineLevel: 0 } },
         { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
           run: { size: 26, bold: true, font: template.styles.fonts.heading, color: colors.primary },
@@ -771,10 +783,10 @@ async function render(opts) {
       properties: {
         page: {
           size: { width: ps.width, height: ps.height },
-          margin: template.page.margin
+          margin: (template.page && template.page.margin) || { top: 1440, right: 1440, bottom: 1440, left: 1440 }
         }
       },
-      headers: template.header.show ? {
+      headers: (template.header && template.header.show) ? {
         default: new Header({
           children: [new Paragraph({
             alignment: AlignmentType.RIGHT,
@@ -782,7 +794,7 @@ async function render(opts) {
           })]
         })
       } : undefined,
-      footers: template.footer.show ? {
+      footers: (template.footer && template.footer.show) ? {
         default: new Footer({
           children: [new Paragraph({
             alignment: AlignmentType.CENTER,
