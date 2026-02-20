@@ -439,10 +439,10 @@ function StockView({stock:s,lang,onBack}){
           const isLowSignal=afterVal!=null&&afterVal<1;
           // 센서 → 위성 뱃지 매핑
           const SENSOR_BADGE={
-            NTL:    {label:'VIIRS · NTL',   title:'NASA Suomi NPP/NOAA-20 · 야간광(avg_rad) · 500m/월'},
-            NO2:    {label:'Sentinel-5P · NO₂', title:'ESA Copernicus Sentinel-5P · 이산화질소 · 5.5km/일'},
-            THERMAL:{label:'Landsat-9 · 열',title:'NASA/USGS Landsat-9 · 지표온도 ST_B10 · 30m/16일'},
-            SAR:    {label:'Sentinel-1 · SAR', title:'ESA Copernicus Sentinel-1 · C-band SAR · 10m (Phase3)'},
+            NTL:    {label:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)'},
+            NO2:    {label:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·차량 배기의 이산화질소 농도를 일 단위로 측정)'},
+            THERMAL:{label:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)'},
+            SAR:    {label:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 여부 감지, Phase 3 예정)'},
           };
           const sensors=f.sensors||['NTL'];
           return(
