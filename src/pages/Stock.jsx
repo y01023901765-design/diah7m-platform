@@ -437,65 +437,99 @@ function StockView({stock:s,lang,onBack}){
           const stageIcon=f.stage==='input'?'📥':f.stage==='output'?'📤':'⚙️';
           // ⑥ 약신호 판정 (NTL < 1 nW = 사막/외곽)
           const isLowSignal=afterVal!=null&&afterVal<1;
-          // 센서별 실제 수치 (API satFac에서)
+          // ── 센서 실수치 ──
           const no2Data   = satFac?.no2    || null;
           const thermData = satFac?.thermal|| null;
-          // NTL anomPct: imgs.deltaPct 이미 계산됨 (anomPct)
-          // NO2: anomPct 필드
-          const no2Pct  = no2Data?.anomPct ?? no2Data?.anomaly ?? null;
-          // Thermal: anomaly_degC
-          const thermDeg = thermData?.anomaly_degC ?? thermData?.anomaly ?? null;
-          // 센서 → 위성 뱃지 매핑 (설명 + 실수치)
-          const _fmtPct = v => v==null ? null : `${v>0?'+':''}${v.toFixed(1)}%`;
-          const _fmtDeg = v => v==null ? null : `${v>0?'+':''}${v.toFixed(1)}°C`;
-          const _valColor = v => v==null ? LT.textDim : v > 5 ? LT.good : v < -5 ? LT.danger : LT.text;
+          const no2Pct    = no2Data?.anomPct  ?? no2Data?.anomaly  ?? null;
+          const thermDeg  = thermData?.anomaly_degC ?? thermData?.anomaly ?? null;
+
+          // ② 변화 민감도 구간 판정 (pct 기준, thermal은 degC)
+          const _band = (v, isDeg) => {
+            if(v==null) return null;
+            const a=Math.abs(v);
+            const t1=isDeg?1:3, t2=isDeg?3:10;
+            if(a<=t1) return {label:'정상 변동',  color:'#666',  bg:'#f5f5f5'};
+            if(a<=t2) return {label:'변화 신호',  color:'#b35e00', bg:'#fff3e0'};
+            return       {label:'구조 변화 가능', color:'#c00000', bg:'#ffebeb'};
+          };
+          const ntlBand  = _band(anomPct, false);
+          const no2Band  = _band(no2Pct,  false);
+          const thermBand= _band(thermDeg, true);
+
+          // ① 센서 방향 일치 판정 (수집된 센서 중 방향이 같은지)
+          const _dir = v => v==null?0 : v>3?1 : v<-3?-1 : 0; // 1=상승, -1=하락, 0=중립
+          const dirs = [_dir(anomPct), _dir(no2Pct), _dir(thermDeg)].filter((_,idx)=>{
+            const ss=f.sensors||['NTL'];
+            return (idx===0&&ss.includes('NTL'))||(idx===1&&ss.includes('NO2'))||(idx===2&&ss.includes('THERMAL'));
+          });
+          const activeDirs = dirs.filter(d=>d!==0);
+          const allSame = activeDirs.length>1 && activeDirs.every(d=>d===activeDirs[0]);
+          const allOpposite = activeDirs.length>1 && !allSame && activeDirs.some(d=>d!==activeDirs[0]);
+          const alignIcon  = activeDirs.length===0 ? null
+            : allSame && activeDirs[0]>0  ? {icon:'🟢', label:'센서 방향 일치 — 가동 상승'}
+            : allSame && activeDirs[0]<0  ? {icon:'🔴', label:'센서 방향 일치 — 가동 하락'}
+            : allOpposite                 ? {icon:'🟡', label:'혼합 신호 — 센서 방향 불일치'}
+            : null;
+
+          // ③ 운영 패턴 태그 (조합 판정)
+          const _patternTag = () => {
+            const ntlD=_dir(anomPct), no2D=_dir(no2Pct), thermD=_dir(thermDeg);
+            const hasBoth=(a,b)=>a!==0&&b!==0;
+            if(hasBoth(ntlD,no2D) && ntlD<0 && no2D>0)
+              return {label:'⚠️ 운영 패턴 변화 가능', sub:'야간광↓ + NO₂↑ — 야간→주간 전환 또는 연료 전환 추정', color:'#7c3aed', bg:'#f5f0ff'};
+            if(hasBoth(ntlD,thermD) && ntlD<0 && thermD>0)
+              return {label:'⚠️ 운영 패턴 변화 가능', sub:'야간광↓ + 지표온도↑ — 공정 변경 또는 설비 교체 추정', color:'#7c3aed', bg:'#f5f0ff'};
+            if(hasBoth(ntlD,no2D) && ntlD>0 && no2D>0)
+              return {label:'📈 생산 확대 신호', sub:'야간광↑ + NO₂↑ — 가동률 동반 상승', color:'#166534', bg:'#f0fdf4'};
+            if(hasBoth(ntlD,no2D) && ntlD<0 && no2D<0)
+              return {label:'📉 생산 축소 신호', sub:'야간광↓ + NO₂↓ — 가동률 동반 하락', color:'#991b1b', bg:'#fff1f2'};
+            return null;
+          };
+          const patternTag = _patternTag();
+
+          // 뱃지 포맷 유틸
+          const _fmtPct = v => v==null?null:`${v>0?'+':''}${v.toFixed(1)}%`;
+          const _fmtDeg = v => v==null?null:`${v>0?'+':''}${v.toFixed(1)}°C`;
+          const _valColor = v => v==null?LT.textDim:v>5?LT.good:v<-5?LT.danger:LT.text;
+
           const SENSOR_BADGE={
-            NTL:    {
-              desc:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)',
-              val: _fmtPct(anomPct), valColor: _valColor(anomPct),
-              valLabel: anomPct==null?null:'전년 대비 밝기 변화',
-            },
-            NO2:    {
-              desc:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·차량 배기의 이산화질소 농도를 일 단위로 측정)',
-              val: _fmtPct(no2Pct), valColor: _valColor(no2Pct),
-              valLabel: no2Pct==null?null:'전년 대비 NO₂ 농도 변화',
-            },
-            THERMAL:{
-              desc:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)',
-              val: _fmtDeg(thermDeg), valColor: _valColor(thermDeg),
-              valLabel: thermDeg==null?null:'전년 대비 온도 변화',
-            },
-            SAR:    {
-              desc:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 여부 감지, Phase 3 예정)',
-              val: null, valColor: LT.textDim, valLabel: null,
-            },
+            NTL:    {desc:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)',     val:_fmtPct(anomPct), valColor:_valColor(anomPct), valLabel:'전년 대비 밝기 변화',  band:ntlBand},
+            NO2:    {desc:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·배기의 이산화질소 농도를 일 단위로 측정)', val:_fmtPct(no2Pct),  valColor:_valColor(no2Pct),  valLabel:'전년 대비 NO₂ 변화', band:no2Band},
+            THERMAL:{desc:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)',   val:_fmtDeg(thermDeg),valColor:_valColor(thermDeg),valLabel:'전년 대비 온도 변화', band:thermBand},
+            SAR:    {desc:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 감지, Phase 3 예정)', val:null, valColor:LT.textDim, valLabel:null, band:null},
           };
           const sensors=f.sensors||['NTL'];
           return(
           <div key={i} style={{marginBottom:i<2?20:0}}>
             {/* 헤더: 시설명 + stage + desc */}
             <div style={{marginBottom:4,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
-              <div>
+              <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:6}}>
                 <span style={{fontSize:16,fontWeight:600,color:LT.text}}>{stageIcon} {f.name}</span>
-                <span style={{fontSize:13,color:LT.textDim,marginLeft:6}}>{f.stage||''}</span>
-                {/* ④ 신뢰도 */}
-                {qStatus&&<span style={{fontSize:12,marginLeft:8}}>{qIcon} {qLabel}</span>}
+                <span style={{fontSize:13,color:LT.textDim}}>{f.stage||''}</span>
+                {qStatus&&<span style={{fontSize:12}}>{qIcon} {qLabel}</span>}
+                {/* ① 센서 방향 일치 */}
+                {alignIcon&&<span style={{fontSize:12,fontWeight:600}}>{alignIcon.icon} {alignIcon.label}</span>}
               </div>
-              {f.desc&&<div style={{fontSize:13,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'55%'}}>{f.desc}</div>}
+              {f.desc&&<div style={{fontSize:13,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'50%'}}>{f.desc}</div>}
             </div>
-            {/* 센서 뱃지 + 실수치 */}
+            {/* ③ 운영 패턴 태그 */}
+            {patternTag&&<div style={{fontSize:13,fontWeight:600,color:patternTag.color,background:patternTag.bg,border:`1px solid ${patternTag.color}44`,borderRadius:6,padding:'5px 10px',marginBottom:6}}>
+              {patternTag.label} <span style={{fontWeight:400,fontSize:12}}>{patternTag.sub}</span>
+            </div>}
+            {/* 센서 뱃지 + 실수치 + ② 민감도 구간 */}
             <div style={{display:'flex',gap:6,marginBottom:6,flexWrap:'wrap'}}>
               {sensors.map(s=>{
                 const b=SENSOR_BADGE[s];
                 if(!b) return null;
                 return(
-                  <div key={s} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
-                    <span style={{fontSize:12,color:LT.text}}>{b.desc}</span>
-                    {b.val!=null&&<>
-                      <span style={{fontSize:13,fontWeight:700,color:b.valColor,fontFamily:'monospace'}}>{b.val}</span>
-                      <span style={{fontSize:11,color:LT.textDim}}>{b.valLabel}</span>
-                    </>}
-                    {b.val==null&&<span style={{fontSize:12,color:LT.textDim}}>— 수집 대기</span>}
+                  <div key={s} style={{padding:'6px 10px',borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
+                    <div style={{fontSize:12,color:LT.text,marginBottom:b.val!=null?4:0}}>{b.desc}</div>
+                    {b.val!=null&&<div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{fontSize:14,fontWeight:700,color:b.valColor,fontFamily:'monospace'}}>{b.val}</span>
+                      <span style={{fontSize:12,color:LT.textDim}}>{b.valLabel}</span>
+                      {b.band&&<span style={{fontSize:11,fontWeight:600,color:b.band.color,background:b.band.bg,padding:'1px 6px',borderRadius:3}}>{b.band.label}</span>}
+                    </div>}
+                    {b.val==null&&<div style={{fontSize:12,color:LT.textDim,marginTop:2}}>— 수집 대기</div>}
                   </div>
                 );
               })}
