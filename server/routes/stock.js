@@ -580,8 +580,9 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
             const geometry = ee.Geometry.Rectangle(bbox);
             const endStr = new Date().toISOString().split('T')[0];
-            const d90 = new Date(); d90.setDate(d90.getDate() - 90);
-            const d365 = new Date(); d365.setDate(d365.getDate() - 365);
+            // VIIRS 월간 발행 2~3개월 지연 → After: 최근 180일, Before: 180~540일
+            const d180 = new Date(); d180.setDate(d180.getDate() - 180);
+            const d540 = new Date(); d540.setDate(d540.getDate() - 540);
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
               min: 0, max: 80, dimensions: '400x280',
@@ -589,11 +590,11 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
 
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry)
-              .filterDate(d90.toISOString().split('T')[0], endStr)
+              .filterDate(d180.toISOString().split('T')[0], endStr)
               .select('avg_rad').sort('system:time_start', false).first();
             const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry)
-              .filterDate(d365.toISOString().split('T')[0], d90.toISOString().split('T')[0])
+              .filterDate(d540.toISOString().split('T')[0], d180.toISOString().split('T')[0])
               .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
@@ -605,8 +606,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
               viirsImg = {
                 afterUrl,
                 beforeUrl,
-                afterDate: endStr,
-                beforeDate: d90.toISOString().split('T')[0],
+                afterDate: d180.toISOString().split('T')[0] + ' ~ ' + endStr,
+                beforeDate: d540.toISOString().split('T')[0] + ' ~ ' + d180.toISOString().split('T')[0],
                 palette: THUMB_PARAMS.palette,
                 paletteLabels: { min: '0 nW', max: '80 nW' },
               };
