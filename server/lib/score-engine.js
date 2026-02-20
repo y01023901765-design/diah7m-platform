@@ -431,14 +431,58 @@ function computeWorldScore(allCountryScores, gdpWeights) {
   return computeGdpWeightedScore(allCountryScores, gdpWeights);
 }
 
+// ── Score → Level 변환 (배포패키지 정본 기준) ────────────
+// 내부 0~100점 → 외부 출력 Level 1~5 (안정/주의/경계/심각/위기)
+// 사용자에게 보여주는 모든 출력은 이 Level을 사용
+
+var LEVEL_MAP = [
+  { level: 5, name: '위기',  nameEn: 'Crisis',   color: '#991b1b', min: 0,  max: 19  },
+  { level: 4, name: '심각',  nameEn: 'Severe',   color: '#ef4444', min: 20, max: 39  },
+  { level: 3, name: '경계',  nameEn: 'Caution',  color: '#f97316', min: 40, max: 59  },
+  { level: 2, name: '주의',  nameEn: 'Watch',    color: '#eab308', min: 60, max: 79  },
+  { level: 1, name: '안정',  nameEn: 'Stable',   color: '#22c55e', min: 80, max: 100 },
+];
+
+function scoreToLevel(score) {
+  var s = Math.max(0, Math.min(100, Math.round(score)));
+  for (var i = 0; i < LEVEL_MAP.length; i++) {
+    if (s >= LEVEL_MAP[i].min && s <= LEVEL_MAP[i].max) {
+      return {
+        level: LEVEL_MAP[i].level,
+        name: LEVEL_MAP[i].name,
+        nameEn: LEVEL_MAP[i].nameEn,
+        color: LEVEL_MAP[i].color,
+        score: s,
+      };
+    }
+  }
+  return { level: 3, name: '경계', nameEn: 'Caution', color: '#f97316', score: s };
+}
+
+// ── 9축 인체명칭 매핑 (배포패키지 정본 기준) ────────────
+var AXIS_NAMES = {
+  A1: { ko: '순환계',   en: 'Circulatory',  metaphor: '통화/자금',    icon: '🫀' },
+  A2: { ko: '호흡계',   en: 'Respiratory',  metaphor: '무역/수출입',  icon: '🫁' },
+  A3: { ko: '소화계',   en: 'Digestive',    metaphor: '소비/내수',    icon: '🍽️' },
+  A4: { ko: '신경계',   en: 'Nervous',      metaphor: '심리/정책',    icon: '🧠' },
+  A5: { ko: '면역계',   en: 'Immune',       metaphor: '금융안정',     icon: '🛡️' },
+  A6: { ko: '내분비계', en: 'Endocrine',    metaphor: '물가/재정',    icon: '⚗️' },
+  A7: { ko: '근골격계', en: 'Musculoskeletal', metaphor: '산업/생산', icon: '🏗️' },
+  A8: { ko: '인구/취약', en: 'Demographic', metaphor: '인구/가계',    icon: '👥' },
+  A9: { ko: '재생/대외', en: 'External',    metaphor: '부동산/대외',  icon: '🌐' },
+};
+
 // ── Exports ─────────────────────────────────────────────
 
 module.exports = {
   CRITICAL_GAUGE_IDS: CRITICAL_GAUGE_IDS,
   GAUGE_THRESHOLDS: GAUGE_THRESHOLDS,
+  LEVEL_MAP: LEVEL_MAP,
+  AXIS_NAMES: AXIS_NAMES,
   scoreGauge: scoreGauge,
   gradeGauge: gradeGauge,
   shrinkScore: shrinkScore,
+  scoreToLevel: scoreToLevel,
   computeScoreV2: computeScoreV2,
   computeCountryScore: computeCountryScore,
   computeCountryScoreV2: computeCountryScoreV2,

@@ -1054,6 +1054,9 @@ async function fetchCountryData(iso3, options = {}) {
     systemScores: scoreResult.systemScores,
     alertGauges: scoreResult.alertGauges,
 
+    // ── Level 판정 (배포패키지 정본 기준 — 사용자 출력용) ──
+    level: scoreEngine.scoreToLevel(scoreResult.score),
+
     // ── Phase 2 예약 필드 ──
     parentId: null,
     childrenSummary: null,

@@ -342,6 +342,26 @@ function DashboardPage({user,onNav,lang,country,city}){
   const isPreliminary = isGlobalMode && coveragePct < 70;
   const scoreColor=compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger;
 
+  // ★ Level 판정 (배포패키지 정본 기준 — 사용자 출력용)
+  // 서버 level 우선 → 없으면 프론트 변환
+  const levelInfo = countryInfo?.level || (() => {
+    const s = Number(compositeScore);
+    if (s >= 80) return { level:1, name:'안정', nameEn:'Stable',  color:'#22c55e' };
+    if (s >= 60) return { level:2, name:'주의', nameEn:'Watch',   color:'#eab308' };
+    if (s >= 40) return { level:3, name:'경계', nameEn:'Caution', color:'#f97316' };
+    if (s >= 20) return { level:4, name:'심각', nameEn:'Severe',  color:'#ef4444' };
+    return              { level:5, name:'위기', nameEn:'Crisis',  color:'#991b1b' };
+  })();
+
+  // ★ 9축 인체명칭 매핑 (배포패키지 정본 기준)
+  const AXIS_NAMES = {
+    A1:{ko:'순환계',  icon:'🫀'}, A2:{ko:'호흡계',   icon:'🫁'},
+    A3:{ko:'소화계',  icon:'🍽️'}, A4:{ko:'신경계',   icon:'🧠'},
+    A5:{ko:'면역계',  icon:'🛡️'}, A6:{ko:'내분비계', icon:'⚗️'},
+    A7:{ko:'근골격계',icon:'🏗️'}, A8:{ko:'인구/취약',icon:'👥'},
+    A9:{ko:'재생/대외',icon:'🌐'},
+  };
+
   // ★ 글로벌 모드: 위성 탭 숨김
   const tabs=[
     {id:'overview',label:t('overview',L)},
@@ -442,17 +462,51 @@ function DashboardPage({user,onNav,lang,country,city}){
         <span style={{fontSize:LT.fs.sm,color:LT.textDim}}>· {t('cnt_'+iso3,L)||iso3}</span>
         <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.md}px`,borderRadius:LT.sp.lg,background:`${LT.warn}15`,color:LT.warn,fontWeight:LT.fw.semi,marginLeft:"auto"}}>{t('cmCityComingSoon',L)||'Coming Soon'}</span>
       </div>}
-      {/* Score + State + Radar */}
+      {/* ★ 종합판정 카드 (배포패키지 정본 기준 — Level 1~5) */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
-        <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`1px solid ${LT.border}`}}>
-          <div style={{fontSize:LT.fs.xl,color:LT.textDim}}>2026.02 · {t('cnt_'+iso3,L)||iso3}</div>
-          <div style={{display:"flex",alignItems:"baseline",gap:LT.sp.xs,marginTop:LT.sp.md}}>
-            <span className="score-big" style={{fontSize:LT.fs['4xl'],fontWeight:LT.fw.black,color:scoreColor,fontFamily:"monospace"}}>{compositeScore}</span>
-            <span style={{fontSize:LT.fs.xl,color:LT.textDim}}>/ 100</span>
-            {isPreliminary&&<span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}10`,marginLeft:LT.sp.xs}}>예비</span>}
+        <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`2px solid ${levelInfo.color}40`}}>
+          {/* 날짜 + 국가 */}
+          <div style={{fontSize:LT.fs.sm,color:LT.textDim,marginBottom:LT.sp.md}}>2026.02 · {t('cnt_'+iso3,L)||iso3}</div>
+          {/* Level 뱃지 */}
+          <div style={{display:"flex",alignItems:"center",gap:LT.sp.lg,marginBottom:LT.sp.xl}}>
+            <div style={{
+              width:56,height:56,borderRadius:12,
+              background:levelInfo.color,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:LT.fs['2xl'],fontWeight:LT.fw.black,color:"#fff",
+              boxShadow:`0 4px 12px ${levelInfo.color}60`,
+            }}>L{levelInfo.level}</div>
+            <div>
+              <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,color:levelInfo.color,lineHeight:1}}>
+                {levelInfo.name}
+                {isPreliminary&&<span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.warn}10`,marginLeft:LT.sp.sm}}>예비</span>}
+              </div>
+              <div style={{fontSize:LT.fs.md,color:LT.textDim,marginTop:2}}>{levelInfo.nameEn} · {compositeScore}pt</div>
+            </div>
           </div>
-          <div style={{display:"flex",gap:LT.sp['2xl'],marginTop:LT.sp.xl}}>
-            {[[t('good',L),good,LT.good],[t('caution',L),caution,LT.warn],[t('alert',L),alertCnt,LT.danger]].map(([l,c,col])=>(<div key={l}><span style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:col,fontFamily:"monospace"}}>{c}</span><span style={{fontSize:LT.fs.xl,color:LT.textDim,marginLeft:3}}>{l}</span></div>))}
+          {/* 게이지 요약 */}
+          <div style={{display:"flex",gap:LT.sp.xl,marginBottom:LT.sp.xl,padding:`${LT.sp.lg}px ${LT.sp.xl}px`,background:LT.bg2,borderRadius:LT.smRadius}}>
+            {[[t('good',L)||'양호',good,LT.good,'✓'],[t('caution',L)||'주의',caution,LT.warn,'△'],[t('alert',L)||'경보',alertCnt,LT.danger,'✕']].map(([l,c,col,ic])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:col}}>{ic} {c}</div>
+                <div style={{fontSize:LT.fs.xs,color:LT.textDim,marginTop:2}}>{l}</div>
+              </div>
+            ))}
+          </div>
+          {/* 9축 인체명칭 */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:LT.sp.sm}}>
+            {Object.entries(activeSys).slice(0,9).map(([k,v])=>{
+              const axKey = k.startsWith('A') ? k : 'A'+k.replace(/\D/g,'');
+              const axName = AXIS_NAMES[axKey];
+              const col = v.g==='양호'?LT.good:v.g==='주의'?LT.warn:LT.danger;
+              return (
+                <div key={k} style={{padding:`${LT.sp.sm}px ${LT.sp.md}px`,borderRadius:LT.sp.sm,background:LT.bg2,border:`1px solid ${col}30`,textAlign:"center"}}>
+                  <div style={{fontSize:LT.fs.md}}>{axName?.icon||'📊'}</div>
+                  <div style={{fontSize:LT.fs.xs,color:LT.text,fontWeight:LT.fw.semi,marginTop:2}}>{axName?.ko||k}</div>
+                  <div style={{fontSize:LT.fs.xs,color:col,fontWeight:LT.fw.bold}}>{v.g}</div>
+                </div>
+              );
+            })}
           </div>
           <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L}/></div>
         </div>

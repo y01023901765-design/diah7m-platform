@@ -77,6 +77,7 @@ async function collectAllScores() {
           iso3: iso3,
           name: COUNTRIES[iso3].name,
           score: result.score,
+          level: scoreEngine.scoreToLevel(result.score),
           confidence: result.confidence,
           breakdown: result.breakdown,
           tier: COUNTRIES[iso3].tier,
