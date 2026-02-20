@@ -531,39 +531,35 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const profile = byTicker[ticker];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
-    // range 파라미터: recent(최근 3개월 vs 1년전 동기) | yoy(올해 vs 작년) | 3y(3년 전 vs 최근)
-    const range = req.query.range || 'recent';
-
-    // VIIRS 발행 지연 기준점: 90일 전 (최신 발행월)
+    // 날짜 파라미터: afterYM(YYYY-MM), beforeYM(YYYY-MM) — 직접 지정 우선
+    // fallback: range=recent (최근 3개월 vs 1년전 동기)
     const now = new Date();
-    const pubOffset = 90; // VIIRS 발행 지연
+    const pubOffset = 90; // VIIRS 발행 지연 (90일)
     let afterStart, afterEnd, beforeStart, beforeEnd;
 
-    if (range === 'recent') {
-      // 최근 3개월 vs 정확히 1년 전 같은 3개월 (YoY 계절 보정)
+    const afterYM  = req.query.afterYM;   // e.g. '2025-10'
+    const beforeYM = req.query.beforeYM;  // e.g. '2024-10'
+
+    if (afterYM && beforeYM && /^\d{4}-\d{2}$/.test(afterYM) && /^\d{4}-\d{2}$/.test(beforeYM)) {
+      // 사용자 지정 연월 — 해당 월 전체 구간
+      const [aY, aM] = afterYM.split('-').map(Number);
+      const [bY, bM] = beforeYM.split('-').map(Number);
+      afterStart = new Date(aY, aM - 1, 1);
+      afterEnd   = new Date(aY, aM, 0); // 해당 월 마지막 날
+      beforeStart= new Date(bY, bM - 1, 1);
+      beforeEnd  = new Date(bY, bM, 0);
+    } else {
+      // 기본: 최근 3개월 vs 1년전 동기
       afterEnd   = new Date(now); afterEnd.setDate(afterEnd.getDate() - pubOffset);
       afterStart = new Date(afterEnd); afterStart.setDate(afterStart.getDate() - 90);
       beforeEnd  = new Date(afterEnd); beforeEnd.setFullYear(beforeEnd.getFullYear() - 1);
       beforeStart= new Date(afterStart); beforeStart.setFullYear(beforeStart.getFullYear() - 1);
-    } else if (range === 'yoy') {
-      // 올해 연평균 vs 작년 연평균
-      const refYear = now.getFullYear() - (now.getMonth() < 3 ? 2 : 1); // 발행지연 고려
-      afterStart = new Date(`${refYear}-01-01`);
-      afterEnd   = new Date(`${refYear}-12-31`);
-      beforeStart= new Date(`${refYear - 1}-01-01`);
-      beforeEnd  = new Date(`${refYear - 1}-12-31`);
-    } else { // 3y
-      // 3년 전 연평균 vs 작년 연평균
-      const refYear = now.getFullYear() - (now.getMonth() < 3 ? 2 : 1);
-      afterStart = new Date(`${refYear}-01-01`);
-      afterEnd   = new Date(`${refYear}-12-31`);
-      beforeStart= new Date(`${refYear - 3}-01-01`);
-      beforeEnd  = new Date(`${refYear - 3}-12-31`);
     }
     const fmt = d => d.toISOString().split('T')[0];
 
-    // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 또는 버전 다른 캐시 무효화)
-    const cacheKey = ticker + '_' + _SAT_IMG_VER + '_' + range;
+    // 캐시 키: afterYM+beforeYM 또는 기본값
+    const cacheRangeKey = afterYM && beforeYM ? `${afterYM}_${beforeYM}` : 'recent';
+    const cacheKey = ticker + '_' + _SAT_IMG_VER + '_' + cacheRangeKey;
     const cached = _satImgCache[cacheKey];
     const cachedHasImages = cached && cached.data && cached.data.some(f => f.images && (f.images.afterUrl || f.images.beforeUrl));
     if (cached && cachedHasImages && (Date.now() - cached.ts) < _satImgTTL) {

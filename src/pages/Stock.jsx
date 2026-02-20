@@ -126,7 +126,12 @@ function StockView({stock:s,lang,onBack}){
   const [liveChart,setLiveChart]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
-  const [satRange,setSatRange]=useState('recent');
+  // 위성 연월 피커: YYYY-MM 형식
+  const _now = new Date();
+  const _defAfter = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+  const _defBefore = `${_now.getFullYear()-1}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+  const [satAfterYM,setSatAfterYM]=useState(_defAfter);
+  const [satBeforeYM,setSatBeforeYM]=useState(_defBefore);
   const [chartRange,setChartRange]=useState('6mo');
   const [loading,setLoading]=useState(true);
 
@@ -168,15 +173,15 @@ function StockView({stock:s,lang,onBack}){
     return()=>{c=true};
   },[s.sid,chartRange]);
 
-  // 위성 이미지 — 위성 탭 진입 or satRange 변경 시 로드
+  // 위성 이미지 — 위성 탭 진입 or 연월 변경 시 로드
   useEffect(()=>{
     if(tab!=='sat'||satImgLoading) return;
     setSatImgLoading(true);
     setLiveSatImg(null);
-    API.stockSatellite(s.sid, satRange).then(d=>{
+    API.stockSatellite(s.sid,{afterYM:satAfterYM,beforeYM:satBeforeYM}).then(d=>{
       if(d&&d.facilities) setLiveSatImg(d.facilities);
     }).catch(()=>{}).finally(()=>{ setSatImgLoading(false); });
-  },[tab,s.sid,satRange]);// eslint-disable-line
+  },[tab,s.sid,satAfterYM,satBeforeYM]);// eslint-disable-line
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
@@ -313,14 +318,44 @@ function StockView({stock:s,lang,onBack}){
     {tab==='sat'&&<>
       {/* Before/After 비교 — 시설별 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🛰️ {t('svSatCompare',L)}</div>
-          <div style={{display:"flex",gap:4}}>
-            {[{v:'recent',l:'최근 3개월'},{v:'yoy',l:'전년 동기'},{v:'3y',l:'3년 비교'}].map(({v,l})=>(
-              <button key={v} onClick={()=>setSatRange(v)} style={{padding:'4px 10px',fontSize:12,fontWeight:satRange===v?700:400,borderRadius:6,border:`1px solid ${satRange===v?LT.text:LT.border}`,background:satRange===v?LT.text:'transparent',color:satRange===v?LT.surface:LT.textDim,cursor:'pointer'}}>{l}</button>
-            ))}
-          </div>
-        </div>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🛰️ {t('svSatCompare',L)}</div>
+        {/* 연/월 피커 */}
+        {(()=>{
+          const selStyle={padding:'4px 8px',fontSize:12,borderRadius:6,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,cursor:'pointer',outline:'none'};
+          const now2=new Date();
+          // 선택 가능 연도: 2012~현재 (VIIRS 시작 2012)
+          const years=[];for(let y=now2.getFullYear();y>=2012;y--)years.push(y);
+          const months=[1,2,3,4,5,6,7,8,9,10,11,12];
+          const [aY,aM]=satAfterYM.split('-').map(Number);
+          const [bY,bM]=satBeforeYM.split('-').map(Number);
+          const setAY=v=>setSatAfterYM(`${v}-${String(aM).padStart(2,'0')}`);
+          const setAM=v=>setSatAfterYM(`${aY}-${String(v).padStart(2,'0')}`);
+          const setBY=v=>setSatBeforeYM(`${v}-${String(bM).padStart(2,'0')}`);
+          const setBM=v=>setSatBeforeYM(`${bY}-${String(v).padStart(2,'0')}`);
+          return(
+            <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <span style={{fontSize:12,color:LT.textDim,whiteSpace:"nowrap"}}>비교기준</span>
+                <select value={bY} onChange={e=>setBY(Number(e.target.value))} style={selStyle}>
+                  {years.map(y=><option key={y} value={y}>{y}년</option>)}
+                </select>
+                <select value={bM} onChange={e=>setBM(Number(e.target.value))} style={selStyle}>
+                  {months.map(m=><option key={m} value={m}>{m}월</option>)}
+                </select>
+              </div>
+              <span style={{fontSize:14,color:LT.textDim}}>→</span>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <span style={{fontSize:12,color:LT.textDim,whiteSpace:"nowrap"}}>최신</span>
+                <select value={aY} onChange={e=>setAY(Number(e.target.value))} style={selStyle}>
+                  {years.map(y=><option key={y} value={y}>{y}년</option>)}
+                </select>
+                <select value={aM} onChange={e=>setAM(Number(e.target.value))} style={selStyle}>
+                  {months.map(m=><option key={m} value={m}>{m}월</option>)}
+                </select>
+              </div>
+            </div>
+          );
+        })()}
         {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
         {!satImgLoading&&(()=>{
           // liveSatImg 있으면 이미지 있는 시설 우선, 없으면 facs.slice(0,3)
