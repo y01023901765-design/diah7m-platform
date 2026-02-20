@@ -360,7 +360,7 @@ function StockView({stock:s,lang,onBack}){
           <div style={{borderRadius:10,padding:'18px 20px',marginBottom:4,background:stateBg,border:`1px solid ${stateBorder}`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:700,color:stateColor,letterSpacing:'0.08em',marginBottom:6,textTransform:'uppercase'}}>공급망 조기경보 · 최근 확인 물리 신호 기준</div>
+                <div style={{fontSize:13,fontWeight:700,color:stateColor,letterSpacing:'0.06em',marginBottom:6,textTransform:'uppercase'}}>공급망 조기경보 · 최근 확인 물리 신호 기준</div>
                 <div style={{fontSize:22,fontWeight:900,color:stateColor,marginBottom:6}}>
                   {stateLabel}
                   {/* 추세 경고 툴팁 */}
@@ -376,7 +376,7 @@ function StockView({stock:s,lang,onBack}){
                   if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
                     <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:90}}>
-                      <div style={{fontSize:12,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:11,fontWeight:700}}>{c.fresh}</span></div>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
                       <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
                     </div>
                   ));
@@ -388,7 +388,7 @@ function StockView({stock:s,lang,onBack}){
       })()}
 
       {/* ── 경보 철학 한 줄 ── */}
-      <div style={{fontSize:12,color:LT.textDim,marginBottom:10,marginTop:4,padding:'0 4px'}}>
+      <div style={{fontSize:13,color:LT.textDim,marginBottom:10,marginTop:4,padding:'0 4px'}}>
         경보는 최근 관측 가능한 물리 신호 기준입니다. 미래 주가를 예측하지 않습니다.
       </div>
 
@@ -411,7 +411,7 @@ function StockView({stock:s,lang,onBack}){
         </div>
       </div>
       {/* 모드 설명 */}
-      <div style={{fontSize:12,color:LT.textDim,marginBottom:12,padding:'0 4px'}}>
+      <div style={{fontSize:13,color:LT.textDim,marginBottom:12,padding:'0 4px'}}>
         {satMode==='now'
           ?'지금 경보: NO₂(D-5)+Thermal(D-16) — 급성 공급망 막힘 확인.'
           :'구조 추세: VIIRS 야간광(D-90) — 장기 구조 변화 확인.'}
@@ -602,13 +602,13 @@ function StockView({stock:s,lang,onBack}){
             {alignIcon?.detail&&<div style={{fontSize:13,color:LT.textMid,marginBottom:8,paddingLeft:4}}>{alignIcon.detail}</div>}
 
             {/* ── 이미지 2컬럼 ── */}
-            <div style={{fontSize:12,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
+            <div style={{fontSize:13,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
               해당 기간 평균 신호(추세) — 실시간 사진 아님
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {/* 왼쪽: before */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:13,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
@@ -619,14 +619,14 @@ function StockView({stock:s,lang,onBack}){
                   {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
                 </div>
                 {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:6}}>
-                  <span style={{fontSize:12,color:LT.textDim}}>어두움</span>
+                  <span style={{fontSize:13,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:5,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-                  <span style={{fontSize:12,color:LT.textDim}}>밝음</span>
+                  <span style={{fontSize:13,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
               {/* 오른쪽: after */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:13,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
@@ -638,14 +638,14 @@ function StockView({stock:s,lang,onBack}){
                   {anomPct!=null&&<span style={{fontSize:16,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
                 {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:6}}>
-                  <span style={{fontSize:12,color:LT.textDim}}>어두움</span>
+                  <span style={{fontSize:13,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:5,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-                  <span style={{fontSize:12,color:LT.textDim}}>밝음</span>
+                  <span style={{fontSize:13,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
             </div>
             {/* ── 색상 범례 (이미지 아래) ── */}
-            {(beforeUrl||afterUrl)&&<div style={{display:'flex',gap:10,marginBottom:12,fontSize:12,color:LT.textDim,alignItems:'center',flexWrap:'wrap'}}>
+            {(beforeUrl||afterUrl)&&<div style={{display:'flex',gap:10,marginBottom:12,fontSize:13,color:LT.textDim,alignItems:'center',flexWrap:'wrap'}}>
               <span style={{fontWeight:600,color:LT.textMid}}>색상 범례</span>
               <span><span style={{color:'#222',fontWeight:700}}>■</span> 무광(사막·바다)</span>
               <span><span style={{color:'#0077bb',fontWeight:700}}>■</span> 외곽·저밀도</span>
@@ -676,7 +676,7 @@ function StockView({stock:s,lang,onBack}){
                       <span style={{fontSize:13,fontWeight:700,color:isPrimary?LT.good:LT.textMid,textAlign:'center'}}>
                         {sk==='NTL'?'VIIRS':sk==='NO2'?'Sentinel-5P':sk==='THERMAL'?'Landsat-9':sk==='SAR'?'Sentinel-1':sk}
                       </span>
-                      <span style={{fontSize:12,fontWeight:700,padding:'2px 7px',borderRadius:10,background:fresh.bg,color:fresh.color,border:`1px solid ${fresh.color}55`}}>{fresh.label}</span>
+                      <span style={{fontSize:13,fontWeight:700,padding:'2px 7px',borderRadius:10,background:fresh.bg,color:fresh.color,border:`1px solid ${fresh.color}55`}}>{fresh.label}</span>
                     </div>
                     {/* 중앙: 수치 */}
                     <div style={{width:140,minWidth:140,padding:'16px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
@@ -712,7 +712,7 @@ function StockView({stock:s,lang,onBack}){
             </div>}
 
             {/* ── 약신호 안내 ── */}
-            {isLowSignal&&<div style={{fontSize:12,color:LT.textDim,marginTop:6,padding:'0 2px'}}>
+            {isLowSignal&&<div style={{fontSize:13,color:LT.textDim,marginTop:6,padding:'0 2px'}}>
               야간조도 기반 분석 적합도 낮음 — 실내 생산 공정 또는 야간 운영 비중이 적은 시설
             </div>}
 
