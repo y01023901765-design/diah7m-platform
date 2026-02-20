@@ -259,155 +259,143 @@ function StockView({stock:s,lang,onBack}){
         <div style={{fontSize:15,color:LT.textDim}}>{L==='ko'?'진단 데이터 로딩 중...':'Loading diagnosis...'}</div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>}
-
-      {/* ① 결론 + 점수 통합 카드 (가장 먼저) */}
-      {stockEntity&&(()=>{
-        const sc=liveHealth?.score??null;
-        const sev=liveHealth?.severity??null;
-        const scColor=sc==null?LT.textDim:sc>=70?LT.good:sc>=40?LT.warn:LT.danger;
-        const scLabel=sc==null?'—':sc>=70?(L==='ko'?'양호':'Good'):sc>=40?(L==='ko'?'주의':'Caution'):(L==='ko'?'경보':'Alert');
-        const axSummary=Object.entries(stockEntity.sysData).map(([id,sys])=>({id,label:sys.name?.[L]||sys.name?.ko||id,sc:sys.sc,g:sys.g,hasAlert:sys.hasAlert}));
-        const alertAxes=axSummary.filter(a=>a.hasAlert);
-        return(
-          <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`2px solid ${scColor}44`,marginBottom:12}}>
-            {/* 점수 + 레이더 나란히 */}
-            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16,marginBottom:14,flexWrap:'wrap'}}>
-              <div style={{flex:1,minWidth:160}}>
-                <div style={{fontSize:14,fontWeight:700,color:LT.textDim,letterSpacing:'0.06em',marginBottom:6,textTransform:'uppercase'}}>{L==='ko'?'종합 건강도':'Overall Health'}</div>
-                <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:8}}>
-                  <span style={{fontSize:52,fontWeight:900,color:scColor,fontFamily:'monospace',lineHeight:1}}>{sc??'—'}</span>
-                  <span style={{fontSize:18,fontWeight:700,color:scColor}}>{scLabel}</span>
-                </div>
-                {sev!=null&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'리스크':'Risk'}</span>
-                  <div style={{width:80,height:5,background:LT.bg3,borderRadius:3,overflow:'hidden'}}>
-                    <div style={{width:`${(sev/5)*100}%`,height:'100%',borderRadius:3,background:sev>=3.5?LT.danger:sev>=2?LT.warn:LT.good}}/>
-                  </div>
-                  <span style={{fontSize:14,fontWeight:700,color:sev>=3.5?LT.danger:sev>=2?LT.warn:LT.good}}>{sev.toFixed(1)}/5</span>
-                </div>}
-                {alertAxes.length>0&&<div style={{marginTop:10,padding:'6px 10px',background:'#fff0f0',borderRadius:6,border:`1px solid ${LT.danger}33`}}>
-                  <span style={{fontSize:14,fontWeight:700,color:LT.danger}}>⚠ {L==='ko'?'경보':'Alert'}: </span>
-                  <span style={{fontSize:14,color:LT.danger}}>{alertAxes.map(a=>a.label).join(' · ')}</span>
-                </div>}
-                {!alertAxes.length&&sc>=70&&<div style={{marginTop:10,padding:'6px 10px',background:'#f0fdf4',borderRadius:6,border:`1px solid ${LT.good}33`}}>
-                  <span style={{fontSize:14,color:LT.good}}>{L==='ko'?'✓ 모든 축 정상 범위':'✓ All axes within normal range'}</span>
-                </div>}
+      {/* Score Card + Radar */}
+      {stockEntity&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <RadarChart lang={L} sysData={stockEntity.sysData}/>
+          <div style={{flex:1,minWidth:200}}>
+            <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{L==='ko'?'종합 건강도':'Overall Health'}</div>
+            <div style={{fontSize:36,fontWeight:900,color:liveHealth?.score>=70?LT.good:liveHealth?.score>=40?LT.warn:LT.danger,fontFamily:"monospace"}}>{liveHealth?.score??'—'}</div>
+            {liveHealth?.severity!=null&&<div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+              <span style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'리스크':'Risk'}</span>
+              <div style={{flex:1,height:6,background:LT.bg3,borderRadius:3,overflow:"hidden"}}>
+                <div style={{width:`${(liveHealth.severity/5)*100}%`,height:"100%",borderRadius:3,background:liveHealth.severity>=3.5?LT.danger:liveHealth.severity>=2?LT.warn:LT.good}}/>
               </div>
-              <RadarChart lang={L} sysData={stockEntity.sysData}/>
-            </div>
-            {/* 축별 점수 한눈에 */}
-            <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingTop:12,borderTop:`1px solid ${LT.border}`}}>
-              {axSummary.map(a=>(
-                <div key={a.id} style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:20,
-                  background:a.hasAlert?`${LT.danger}12`:a.g==='양호'?`${LT.good}12`:`${LT.warn}12`,
-                  border:`1px solid ${a.hasAlert?`${LT.danger}44`:a.g==='양호'?`${LT.good}44`:`${LT.warn}44`}`}}>
-                  <span style={{fontSize:14,fontWeight:800,color:a.hasAlert?LT.danger:a.g==='양호'?LT.good:LT.warn,fontFamily:'monospace'}}>{a.sc}</span>
-                  <span style={{fontSize:14,color:LT.textDim}}>{a.label}</span>
-                </div>
-              ))}
-            </div>
-            {liveHealth?.contextNote&&<div style={{fontSize:14,color:LT.textMid,marginTop:10,padding:'8px 12px',background:LT.bg2,borderRadius:6,borderLeft:`3px solid ${LT.border}`,lineHeight:1.6}}>{liveHealth.contextNote}</div>}
+              <span style={{fontSize:14,fontWeight:700,fontFamily:"monospace",color:liveHealth.severity>=3.5?LT.danger:liveHealth.severity>=2?LT.warn:LT.good}}>{liveHealth.severity.toFixed(1)}/5</span>
+            </div>}
+            {liveHealth?.contextNote&&<div style={{fontSize:14,color:LT.textMid,marginTop:8,padding:8,background:LT.bg2,borderRadius:6}}>{liveHealth.contextNote}</div>}
           </div>
-        );
-      })()}
-
-      {/* ② 시설 현황 (간결) */}
-      {facs.length>0&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-          <div style={{fontSize:15,fontWeight:700,color:LT.text}}>{t('svFacTitle',L)}</div>
-          <div style={{display:'flex',gap:10,fontSize:14}}>
-            {normalCnt>0&&<span style={{color:LT.good,fontWeight:700}}>● {normalCnt} {L==='ko'?'정상':'Normal'}</span>}
-            {warnCnt>0&&<span style={{color:LT.danger,fontWeight:700}}>● {warnCnt} {L==='ko'?'이상':'Alert'}</span>}
-          </div>
-        </div>
-        <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
-          <div style={{display:'flex',padding:'5px 0',fontSize:14,color:LT.textDim,fontWeight:600,borderBottom:`1px solid ${LT.border}`,minWidth:400}}>
-            <span style={{flex:1}}>{t('svFacName',L)}</span>
-            <span style={{width:54,textAlign:'right'}}>VIIRS</span>
-            <span style={{width:54,textAlign:'right'}}>NO₂</span>
-            <span style={{width:54,textAlign:'right'}}>{t('svTherm',L)}</span>
-            <span style={{width:60,textAlign:'right'}}>{t('svStatus',L)}</span>
-          </div>
-          {facs.map((f,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 0',borderBottom:i<facs.length-1?`1px solid ${LT.border}`:'none'}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:600,color:LT.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</div>
-                <div style={{fontSize:14,color:LT.textDim}}>{f.loc}</div>
-              </div>
-              {[f.viirs,f.no2,f.therm].map((v,j)=>{const c=chgCell(v);return(
-                <span key={j} style={{width:54,textAlign:'right',fontSize:14,fontFamily:'monospace',fontWeight:700,color:c.col}}>{c.txt}</span>
-              );})}
-              <span style={{width:60,textAlign:'right'}}>
-                <span style={{fontSize:14,padding:'2px 5px',borderRadius:4,fontWeight:600,
-                  background:f.status==='normal'?`${LT.good}15`:f.status==='warning'?`${LT.danger}15`:LT.bg3,
-                  color:f.status==='normal'?LT.good:f.status==='warning'?LT.danger:LT.textDim}}>
-                  {t('svStat_'+f.status,L)}
-                </span>
-              </span>
-            </div>
-          ))}
-          {facs.length===0&&<div style={{padding:20,textAlign:'center',color:LT.textDim,fontSize:15}}>{t('svNoData',L)}</div>}
         </div>
       </div>}
-
-      {/* ③ 5축 상세 게이지 */}
+      {/* 5축 Gauge Panel */}
       {stockEntity&&<div style={{marginBottom:12}}>
-        <div style={{fontSize:14,color:LT.textDim,marginBottom:8,padding:'0 2px'}}>{L==='ko'?'▼ 축별 상세 지표 (클릭하여 확장)':'▼ Axis detail — click to expand'}</div>
         {Object.entries(stockEntity.sysData).map(([axId,sys])=>(
           <SystemSection key={axId} sysKey={axId} sys={sys} expanded={expanded} toggle={toggleGauge} lang={L} gaugeData={stockEntity.gaugeData} isGlobal={false}/>
         ))}
       </div>}
+      {/* Facility Table */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🛰️ {t('svFacTitle',L)}</div>
+          <div style={{fontSize:15,color:LT.textDim}}>
+            {normalCnt>0&&<span style={{color:LT.good,fontWeight:700}}>●{normalCnt} </span>}
+            {warnCnt>0&&<span style={{color:LT.danger,fontWeight:700}}>●{warnCnt} </span>}
+            {facs.length-normalCnt-warnCnt>0&&<span style={{color:LT.textDim}}>●{facs.length-normalCnt-warnCnt}</span>}
+          </div>
+        </div>
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"flex",padding:"6px 0",fontSize:14,color:LT.textDim,fontWeight:600,borderBottom:`1px solid ${LT.border}`,minWidth:480}}>
+          <span style={{flex:1,minWidth:130}}>{t('svFacName',L)}</span>
+          <span style={{width:65,textAlign:"right"}}>VIIRS</span>
+          <span style={{width:65,textAlign:"right"}}>NO₂</span>
+          <span style={{width:65,textAlign:"right"}}>{t('svTherm',L)}</span>
+          <span style={{width:70,textAlign:"right"}}>{t('svStatus',L)}</span>
+        </div>
+        {facs.map((f,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:i<facs.length-1?`1px solid ${LT.border}`:"none"}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:600,color:LT.text}}>{f.name}</div>
+              <div style={{fontSize:14,color:LT.textDim}}>{f.loc}</div>
+            </div>
+            {[f.viirs,f.no2,f.therm].map((v,j)=>{const c=chgCell(v);return(
+              <span key={j} style={{width:65,textAlign:"right",fontSize:15,fontFamily:"monospace",fontWeight:700,color:c.col}}>{c.txt}</span>
+            );})}
+            <span style={{width:70,textAlign:"right"}}>
+              <span style={{fontSize:13,padding:"2px 6px",borderRadius:4,fontWeight:600,
+                background:f.status==='normal'?`${LT.good}15`:f.status==='warning'?`${LT.danger}15`:LT.bg3,
+                color:f.status==='normal'?LT.good:f.status==='warning'?LT.danger:LT.textDim}}>
+                {t('svStat_'+f.status,L)}
+              </span>
+            </span>
+          </div>
+        ))}
+        {facs.length===0&&<div style={{padding:20,textAlign:"center",color:LT.textDim,fontSize:15}}>{t('svNoData',L)}</div>}
+        </div>{/* end scroll wrapper */}
+      </div>
+      {/* Verdict */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:8}}>🎯 {t('svVerdict',L)}</div>
+        <div style={{display:"flex",gap:16,marginBottom:10}}>
+          <div><span style={{color:LT.good,fontWeight:700}}>●{normalCnt}</span> <span style={{color:LT.textDim}}>{t('svSigNormal',L)}</span></div>
+          {warnCnt>0&&<div><span style={{color:LT.danger,fontWeight:700}}>●{warnCnt}</span> <span style={{color:LT.textDim}}>{t('svSigWarn',L)}</span></div>}
+        </div>
+        <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7,padding:12,background:LT.bg2,borderRadius:8}}>{warnCnt>0?t('svVerdictWarn',L):t('svVerdictOk',L)}</div>
+      </div>
     </>}
 
     {/* ═══ TAB 2: 공급망 조기경보 ═══ */}
     {tab==='sat'&&<>
 
-      {/* ── ① 종합 경보 상태 카드 (결론 먼저) ── */}
+      {/* ── ① 종합 경보 헤더 ── */}
       {(()=>{
         const allFacs = liveSatImg&&liveSatImg.length>0 ? liveSatImg : facs;
         const worstNo2  = allFacs.reduce((m,f)=>{ const v=f.no2?.anomPct??f.no2?.anomaly??null; return(v!=null&&v<m)?v:m; },0);
         const worstTherm= allFacs.reduce((m,f)=>{ const v=f.thermal?.anomaly_degC??f.thermal?.anomaly??f.therm??null; return(v!=null&&v<m)?v:m; },0);
         const worstViirs= allFacs.reduce((m,f)=>{ const v=f.ntl?.anomPct??f.ntl?.anomaly??f.viirs??null; return(v!=null&&v<m)?v:m; },0);
-        const alarmNow   = worstNo2<-15 || (worstNo2<-8 && worstTherm<-2);
+        // 경보 판정: NO₂ 주력, VIIRS는 추세 경고 보조
+        const alarmNow   = worstNo2<-15 || (worstNo2<-8 && worstTherm<-2); // 급성: NO₂+Thermal
         const warnNow    = !alarmNow && (worstNo2<-8 || worstTherm<-2);
-        const trendWarn  = !alarmNow && !warnNow && worstViirs<-10;
+        const trendWarn  = !alarmNow && !warnNow && worstViirs<-10; // 구조: VIIRS 장기 하락
         const state = alarmNow?'ALARM':warnNow?'WARN':trendWarn?'TREND':'OK';
-        const stateColor = state==='ALARM'?LT.danger:state==='WARN'?LT.warn:state==='TREND'?'#6366f1':LT.good;
-        const stateBg    = state==='ALARM'?'#fff0f0':state==='WARN'?'#fffbeb':state==='TREND'?'#f5f3ff':'#f0fdf4';
+        const stateColor = state==='ALARM'?LT.danger:state==='WARN'?LT.warn:state==='TREND'?LT.textDim:LT.good;
+        const stateBg    = state==='ALARM'?'#fff0f0':state==='WARN'?'#fffbeb':state==='TREND'?'#f8f8f8':'#f0fdf4';
+        const stateBorder= state==='ALARM'?`${LT.danger}33`:state==='WARN'?`${LT.warn}33`:state==='TREND'?`${LT.textDim}33`:`${LT.good}33`;
         const stateLabel = state==='ALARM'?'공급망 급성 경보':state==='WARN'?'공급망 변화 감지':state==='TREND'?'구조 추세 경고':'공급망 정상';
-        const stateDesc  = state==='ALARM'?'NO₂ 급락 — 단기(1~2주) 대응 검토'
-          :state==='WARN'?'생산 신호 이상 — 중기(2~4주) 모니터링'
-          :state==='TREND'?'야간광 구조 하락 — 장기(3~6개월) 관찰'
-          :'물리 신호 정상 범위';
-        // 3개 센서 요약
-        const sensors3=[
-          worstNo2!==0&&{label:'NO₂',fresh:'D-5',val:worstNo2,isDeg:false,alarm:worstNo2<-15,warn:worstNo2<-8},
-          worstTherm!==0&&{label:'Thermal',fresh:'D-16',val:worstTherm,isDeg:true,alarm:worstTherm<-3,warn:worstTherm<-1},
-          worstViirs!==0&&{label:'VIIRS',fresh:'D-90',val:worstViirs,isDeg:false,alarm:worstViirs<-15,warn:worstViirs<-8},
-        ].filter(Boolean);
+        const stateDesc  = state==='ALARM'
+          ?'NO₂ 급락 감지 · 향후 1~2주 리스크 구간 — 단기 대응 검토'
+          :state==='WARN'?'생산 신호 이상 감지 · 향후 2~4주 확인 구간 — 모니터링 강화'
+          :state==='TREND'?'야간광 구조 하락 · 향후 3~6개월 관찰 구간 — 장기 포지션 점검'
+          :'관측 가능한 물리 신호 범위 내 정상';
         return(
-          <div style={{background:stateBg,borderRadius:LT.cardRadius,padding:'16px 18px',border:`2px solid ${stateColor}44`,marginBottom:12}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:stateColor,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:4}}>공급망 조기경보</div>
-                <div style={{fontSize:20,fontWeight:900,color:stateColor,marginBottom:2}}>{stateLabel}</div>
-                <div style={{fontSize:14,color:stateColor,opacity:0.8}}>{stateDesc}</div>
+          <div style={{borderRadius:10,padding:'18px 20px',marginBottom:4,background:stateBg,border:`1px solid ${stateBorder}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:stateColor,letterSpacing:'0.06em',marginBottom:6,textTransform:'uppercase'}}>공급망 조기경보 · 최근 확인 물리 신호 기준</div>
+                <div style={{fontSize:22,fontWeight:900,color:stateColor,marginBottom:6}}>
+                  {stateLabel}
+                  {/* 추세 경고 툴팁 */}
+                  {state==='TREND'&&<span title="장기 활동 감소 신호 — 급성 위험 아님. VIIRS D-90 기준 누적 하락." style={{fontSize:13,fontWeight:500,color:LT.textDim,marginLeft:10,cursor:'help',borderBottom:`1px dashed ${LT.textDim}`}}>급성 위험 아님</span>}
+                </div>
+                <div style={{fontSize:14,color:stateColor,opacity:0.85,lineHeight:1.6}}>{stateDesc}</div>
               </div>
-              {/* 3개 센서 수치 요약 */}
-              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                {sensors3.map((c,ci)=>(
-                  <div key={ci} style={{textAlign:'center',padding:'8px 12px',background:'rgba(255,255,255,0.8)',borderRadius:8,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:80}}>
-                    <div style={{fontSize:14,color:LT.textDim,fontWeight:600,marginBottom:2}}>{c.label} <span style={{fontWeight:700,color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:'#6366f1'}}>{c.fresh}</span></div>
-                    <div style={{fontSize:18,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
-                  </div>
-                ))}
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                {(()=>{
+                  const cards=[];
+                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',role:'단기 가동 경보',valLabel:'최근 8주 대비 NO₂ 변화',desc:'이산화질소 농도 변화',window:'1~2주',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',role:'중기 생산 신호',valLabel:'전년 동기간 대비 온도 변화',desc:'공장 지표온도 변화',window:'2~4주',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',role:'장기 구조 추세',valLabel:'1년 평균 대비 밝기 변화',desc:'공장 불빛 밝기 변화',window:'3~6개월',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  return cards.map((c,ci)=>(
+                    <div key={ci} style={{textAlign:'left',padding:'10px 14px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:110}}>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:2}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
+                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good,marginBottom:2}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
+                      <div style={{fontSize:13,color:LT.textMid,marginBottom:2}}>{c.valLabel}</div>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600}}>{c.role} · 관찰 시기 {c.window}</div>
+                      <div style={{fontSize:13,color:LT.textDim,marginTop:3,lineHeight:'1.4'}}>{c.desc}</div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </div>
         );
       })()}
 
-      {/* ── ② 시간축 스위치 + 신선도 (간결) ── */}
+      {/* ── 경보 철학 한 줄 ── */}
+      <div style={{fontSize:13,color:LT.textDim,marginBottom:10,marginTop:4,padding:'0 4px'}}>
+        단기(NO₂) · 중기(Thermal) · 장기(야간광) 신호를 겹쳐 투자 시기 창을 제시합니다. 매수/매도 추천이 아닌 물리 신호 기반 상태 안내입니다.
+      </div>
+
+      {/* ── ② 시간축 스위치 + 신선도 안내 ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,marginBottom:8,padding:'8px 0'}}>
         {/* 스위치 2버튼 */}
         <div style={{display:'flex',gap:0,borderRadius:8,overflow:'hidden',border:`1px solid ${LT.border}`}}>
@@ -418,13 +406,18 @@ function StockView({stock:s,lang,onBack}){
             구조 추세
           </button>
         </div>
-        {/* 신선도 배지 — 현재 모드에 맞는 것만 강조 */}
-        <div style={{display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
-          {satMode==='now'
-            ?<><span style={{fontSize:14,padding:'2px 8px',borderRadius:20,background:'#f0fdf4',border:`1px solid ${LT.good}`,color:LT.good,fontWeight:700}}>NO₂ D-5</span>
-              <span style={{fontSize:14,padding:'2px 8px',borderRadius:20,background:'#fffbeb',border:`1px solid ${LT.warn}`,color:LT.warn,fontWeight:700}}>Thermal D-16</span></>
-            :<span style={{fontSize:14,padding:'2px 8px',borderRadius:20,background:'#eff6ff',border:'1px solid #6366f1',color:'#6366f1',fontWeight:700}}>VIIRS D-90</span>}
+        {/* 신선도 배지 */}
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#f0fdf4',border:`1px solid ${LT.good}`,color:LT.good,fontWeight:700}}>NO₂ D-5 최신</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#fffbeb',border:`1px solid ${LT.warn}`,color:LT.warn,fontWeight:700}}>Thermal D-16 중기</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#eff6ff',border:'1px solid #2563eb',color:'#2563eb',fontWeight:700}}>VIIRS D-90 추세용</span>
         </div>
+      </div>
+      {/* 모드 설명 */}
+      <div style={{fontSize:13,color:LT.textDim,marginBottom:12,padding:'0 4px'}}>
+        {satMode==='now'
+          ?'지금 경보: NO₂(D-5)+Thermal(D-16) — 급성 공급망 막힘 확인.'
+          :'구조 추세: VIIRS 야간광(D-90) — 장기 구조 변화 확인.'}
       </div>
 
       {/* ── ③ 시설별 Before/After + 센서 상세 ── */}
@@ -438,7 +431,7 @@ function StockView({stock:s,lang,onBack}){
               <div style={{display:"flex",gap:4}}>
                 {_SAT_PRESETS.map(p=>(
                   <button key={p.id} onClick={()=>{setSatAfterYM(p.after);setSatBeforeYM(p.before);}}
-                    style={{padding:'4px 10px',fontSize:14,fontWeight:activePreset?.id===p.id?700:400,borderRadius:6,
+                    style={{padding:'4px 10px',fontSize:13,fontWeight:activePreset?.id===p.id?700:400,borderRadius:6,
                       border:`1px solid ${activePreset?.id===p.id?LT.text:LT.border}`,
                       background:activePreset?.id===p.id?LT.text:'transparent',
                       color:activePreset?.id===p.id?LT.surface:LT.textDim,cursor:'pointer'}}>{p.label}</button>
@@ -449,23 +442,23 @@ function StockView({stock:s,lang,onBack}){
         </div>
         {/* 연월 드롭다운 */}
         {(satAfterYM||satBeforeYM)&&(()=>{
-          const selStyle={padding:'4px 8px',fontSize:14,borderRadius:6,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,cursor:'pointer',outline:'none'};
+          const selStyle={padding:'4px 8px',fontSize:13,borderRadius:6,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,cursor:'pointer',outline:'none'};
           const years=[];for(let y=new Date().getFullYear();y>=2012;y--)years.push(y);
           const months=[1,2,3,4,5,6,7,8,9,10,11,12];
           const [aY,aM]=satAfterYM?satAfterYM.split('-').map(Number):[null,null];
           const [bY,bM]=satBeforeYM?satBeforeYM.split('-').map(Number):[null,null];
           return(
             <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10,flexWrap:"wrap"}}>
-              <span style={{fontSize:14,color:LT.textDim}}>비교기준</span>
+              <span style={{fontSize:13,color:LT.textDim}}>비교기준</span>
               <select value={bY} onChange={e=>setSatBeforeYM(`${e.target.value}-${String(bM||1).padStart(2,'0')}`)} style={selStyle}>{years.map(y=><option key={y} value={y}>{y}년</option>)}</select>
               <select value={bM} onChange={e=>setSatBeforeYM(`${bY||new Date().getFullYear()-1}-${String(e.target.value).padStart(2,'0')}`)} style={selStyle}>{months.map(m=><option key={m} value={m}>{m}월</option>)}</select>
-              <span style={{fontSize:14,color:LT.textDim}}>→ 최신</span>
+              <span style={{fontSize:13,color:LT.textDim}}>→ 최신</span>
               <select value={aY} onChange={e=>setSatAfterYM(`${e.target.value}-${String(aM||1).padStart(2,'0')}`)} style={selStyle}>{years.map(y=><option key={y} value={y}>{y}년</option>)}</select>
               <select value={aM} onChange={e=>setSatAfterYM(`${aY||new Date().getFullYear()}-${String(e.target.value).padStart(2,'0')}`)} style={selStyle}>{months.map(m=><option key={m} value={m}>{m}월</option>)}</select>
             </div>
           );
         })()}
-        <div style={{fontSize:14,color:LT.textDim,marginBottom:12,padding:'6px 10px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
+        <div style={{fontSize:13,color:LT.textDim,marginBottom:12,padding:'6px 10px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
           {!satAfterYM&&!satBeforeYM?'자동 — 최근 6개월 vs 1년 전 슬라이딩 비교':`${satBeforeYM} → ${satAfterYM}`}
           &nbsp;·&nbsp; 계절 영향 제거: <strong>전년 동월 비교</strong> 권장
         </div>
@@ -598,9 +591,9 @@ function StockView({stock:s,lang,onBack}){
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <span style={{fontSize:18,fontWeight:800,color:LT.text}}>{stageIcon} {f.name}</span>
-                <span style={{fontSize:14,padding:'2px 8px',borderRadius:4,background:LT.bg3,color:LT.textMid,fontWeight:600}}>{f.stage?.toUpperCase()||''}</span>
+                <span style={{fontSize:13,padding:'2px 8px',borderRadius:4,background:LT.bg3,color:LT.textMid,fontWeight:600}}>{f.stage?.toUpperCase()||''}</span>
               </div>
-              {qStatus&&<span style={{fontSize:14,fontWeight:600,color:qStatus==='good'||qStatus==='GOOD'?LT.good:qStatus==='ok'||qStatus==='PARTIAL'?LT.warn:LT.danger}}>{qIcon} {qLabel}</span>}
+              {qStatus&&<span style={{fontSize:13,fontWeight:600,color:qStatus==='good'||qStatus==='GOOD'?LT.good:qStatus==='ok'||qStatus==='PARTIAL'?LT.warn:LT.danger}}>{qIcon} {qLabel}</span>}
             </div>
 
             {/* ── ② 센서 데이터 3개 (NO₂ → Thermal → 야간광) ── */}
@@ -617,23 +610,23 @@ function StockView({stock:s,lang,onBack}){
                 return(
                   <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
                     <div style={{width:110,minWidth:110,padding:'14px 12px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:`1px solid ${LT.border}`}}>
-                      <span style={{fontSize:14,fontWeight:700,color:LT.textMid,textAlign:'center'}}>
+                      <span style={{fontSize:13,fontWeight:700,color:LT.textMid,textAlign:'center'}}>
                         {sk==='NTL'?'VIIRS':sk==='NO2'?'Sentinel-5P':sk==='THERMAL'?'Landsat-9':sk==='SAR'?'Sentinel-1':sk}
                       </span>
-                      <span style={{fontSize:14,fontWeight:700,padding:'2px 7px',borderRadius:10,background:fresh.bg,color:fresh.color,border:`1px solid ${fresh.color}55`}}>{fresh.label}</span>
+                      <span style={{fontSize:13,fontWeight:700,padding:'2px 7px',borderRadius:10,background:fresh.bg,color:fresh.color,border:`1px solid ${fresh.color}55`}}>{fresh.label}</span>
                     </div>
                     <div style={{width:140,minWidth:140,padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
                       {hasData
                         ?<><span style={{fontSize:22,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
-                          <span style={{fontSize:14,color:LT.textDim,marginTop:4,lineHeight:1.4}}>{b.valLabel}</span></>
+                          <span style={{fontSize:13,color:LT.textDim,marginTop:4,lineHeight:1.4}}>{b.valLabel}</span></>
                         :<span style={{fontSize:14,color:LT.textDim}}>— 대기</span>}
                     </div>
                     <div style={{flex:1,padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:6}}>
                       <span style={{fontSize:14,color:LT.textMid,lineHeight:1.5}}>{b.desc}</span>
-                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:14,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'3px 10px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
+                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:13,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'3px 10px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
                         {b.band.label}
                       </span>}
-                      {!hasData&&<span style={{fontSize:14,color:LT.textDim}}>데이터 수집 대기 중</span>}
+                      {!hasData&&<span style={{fontSize:13,color:LT.textDim}}>데이터 수집 대기 중</span>}
                     </div>
                   </div>
                 );
@@ -666,24 +659,24 @@ function StockView({stock:s,lang,onBack}){
 
             {/* ── ④ 위성 이미지 (보여주기식) ── */}
             {(beforeUrl||afterUrl)&&<>
-            <div style={{fontSize:14,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
+            <div style={{fontSize:13,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
               야간광(VIIRS) 위성 이미지 — 해당 기간 평균 신호, 실시간 사진 아님
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:13,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:120}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
                   :<div style={{background:LT.bg3,height:120,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 이전</div>}
                 <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
-                <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
+                <div style={{fontSize:13,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
                   {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
                 </div>
               </div>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:13,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:120}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
@@ -691,7 +684,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
                   {anomPct!=null&&<span style={{fontSize:15,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
               </div>
@@ -706,7 +699,7 @@ function StockView({stock:s,lang,onBack}){
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{marginBottom:12}}>
           <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('svDeltaTitle',L)}</div>
-          <div style={{fontSize:14,color:LT.textDim,marginTop:3}}>최근 6개월 물리 신호 변화와 가격 반응의 동행 여부 — 예측이 아닌 상관 확인</div>
+          <div style={{fontSize:13,color:LT.textDim,marginTop:3}}>최근 6개월 물리 신호 변화와 가격 반응의 동행 여부 — 예측이 아닌 상관 확인</div>
         </div>
         <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:16}}>
           <div style={{flex:1}}>
@@ -732,6 +725,23 @@ function StockView({stock:s,lang,onBack}){
           <span style={{fontSize:15,color:LT.textMid}}>{t(delta.desc,L)}</span>
         </div>
       </div>
+      {/* Trust: Past→Present */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('svTrustTitle',L)}</div>
+          <div style={{fontSize:13,color:LT.textDim,marginTop:3}}>과거 물리 신호가 실제 실적과 어떻게 연결됐는지 — 상관 검증 사례</div>
+        </div>
+        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{background:LT.bg2,borderRadius:8,padding:14,border:`1px solid ${LT.border}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:6}}>◀ {t('svPast',L)}</div>
+            <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7}}>{t('svPastEx',L)}</div>
+          </div>
+          <div style={{background:LT.bg2,borderRadius:8,padding:14,border:`1px solid ${LT.border}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:6}}>▶ {t('svNow',L)}</div>
+            <div style={{fontSize:15,color:LT.textMid,lineHeight:1.7}}>{t('svNowEx',L)}</div>
+          </div>
+        </div>
+      </div>
 
     </>}
 
@@ -745,120 +755,115 @@ function StockView({stock:s,lang,onBack}){
       </div>}
       {/* 3-Stage 다이어그램 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{L==='ko'?'공급망 물리 흐름':'Supply Chain Physical Flow'}</div>
-          <span style={{fontSize:14,padding:'2px 8px',borderRadius:4,background:LT.bg3,color:LT.textDim,fontWeight:600}}>{liveFlow?.archetypeName||ARCHETYPE_LABELS[s.a]?.[L==='ko'?'ko':'en']||s.a}</span>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🔄 {L==='ko'?'공급망 물리 흐름':'Supply Chain Physical Flow'}</div>
+          <span style={{fontSize:14,padding:"2px 8px",borderRadius:4,background:LT.bg3,color:LT.textDim,fontWeight:600}}>{liveFlow?.archetypeName||ARCHETYPE_LABELS[s.a]?.[L==='ko'?'ko':'en']||s.a}</span>
         </div>
 
+        {/* 3-Stage Cards: INPUT → PROCESS → OUTPUT */}
         {(()=>{
           const flow = liveFlow;
           const stages = flow?.stages || {};
           const stageKeys = ['input','process','output'];
+          const stageLabels = {input:'INPUT',process:'PROCESS',output:'OUTPUT'};
           const stageIcons = {input:'📦',process:'🏭',output:'🚢'};
-          const stageNames = {input:L==='ko'?'입고':'Inbound',process:L==='ko'?'생산':'Process',output:L==='ko'?'출하':'Outbound'};
-          const statusColor = (st) => st==='ALARM'?LT.danger:st==='WARN'?'#f59e0b':LT.good;
-          const statusBg = (st) => st==='ALARM'?`${LT.danger}12`:st==='WARN'?'#f59e0b12':`${LT.good}12`;
 
-          // ① DualLock 상태 — 가장 먼저
-          const dl = flow?.dualLock;
-          const dlCombined = dl?.combined || {};
-          const dlColors = {BOTH:LT.danger,PHYS_ONLY:'#f59e0b',FIN_ONLY:'#f59e0b',NONE:LT.good};
-          const dlLabels = {BOTH:L==='ko'?'이중봉쇄 경보':'DUAL LOCK ALARM',PHYS_ONLY:L==='ko'?'물리적 봉쇄':'PHYSICAL LOCK',FIN_ONLY:L==='ko'?'재무 봉쇄':'FINANCIAL LOCK',NONE:L==='ko'?'공급망 정상':'NORMAL'};
-          const dlIcons = {BOTH:'🔒',PHYS_ONLY:'⚠',FIN_ONLY:'💰',NONE:'✅'};
-          const dlColor = dlColors[dlCombined.state]||LT.text;
+          const statusColor = (st) => st==='ALARM'?LT.danger:st==='WARN'?'#f59e0b':LT.good;
+          const statusBg = (st) => st==='ALARM'?`${LT.danger}15`:st==='WARN'?'#f59e0b15':`${LT.good}15`;
 
           return(<>
-            {/* DualLock 요약 배너 — 결론 우선 */}
-            {dl&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',borderRadius:8,
-              background:dlCombined.state==='NONE'?'#f0fdf4':dlCombined.state==='BOTH'?'#fff0f0':'#fffbeb',
-              border:`1px solid ${dlColor}33`,marginBottom:14}}>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:16}}>{dlIcons[dlCombined.state]||'❓'}</span>
-                <span style={{fontSize:15,fontWeight:700,color:dlColor}}>{dlLabels[dlCombined.state]||dlCombined.state}</span>
-                {dlCombined.reason&&<span style={{fontSize:14,color:LT.textMid,marginLeft:4}}>— {dlCombined.reason}</span>}
-              </div>
-              <div style={{display:'flex',gap:10,fontSize:14,color:LT.textDim}}>
-                <span>{L==='ko'?'물리':'Phys'} <b style={{color:dl.physical?.isDualLocked?LT.danger:LT.good}}>{dl.physical?.isDualLocked?'LOCK':'OK'}</b></span>
-                <span>{L==='ko'?'재무':'Fin'} <b style={{color:dl.financial?.isDualLocked?LT.danger:LT.good}}>{dl.financial?.isDualLocked?'LOCK':'OK'}</b></span>
-                {dlCombined.confidence!=null&&<span>{L==='ko'?'신뢰':'Conf'} <b>{dlCombined.confidence}%</b></span>}
-              </div>
-            </div>}
-
-            {/* ② 3단계 흐름 다이어그램 */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr auto 1fr',gap:0,alignItems:'stretch'}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr auto 1fr",gap:0,alignItems:"stretch",marginBottom:16}}>
               {stageKeys.map((stg,idx)=>{
                 const data = stages[stg] || {};
                 const score = data.score!=null ? Math.round(data.score) : '—';
                 const status = data.status || 'OK';
                 const evidence = data.evidence || [];
+
                 return(<>
-                  <div key={stg} style={{background:statusBg(status),borderRadius:10,padding:12,border:`1px solid ${statusColor(status)}30`,minWidth:0}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-                      <span style={{fontSize:14,fontWeight:700,color:LT.text}}>{stageIcons[stg]} {stageNames[stg]}</span>
-                      <span style={{fontSize:20,fontWeight:900,color:statusColor(status),fontFamily:'monospace'}}>{score}</span>
+                  {/* Stage Card */}
+                  <div key={stg} style={{background:statusBg(status),borderRadius:10,padding:14,border:`1px solid ${statusColor(status)}30`,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{fontSize:13,fontWeight:700,color:statusColor(status)}}>{stageLabels[stg]}</span>
+                      <span style={{fontSize:22,fontWeight:900,color:statusColor(status),fontFamily:"monospace"}}>{score}</span>
                     </div>
-                    {evidence.slice(0,2).map((ev,ei)=>(
-                      <div key={ei} style={{fontSize:14,color:LT.textMid,marginTop:3,display:'flex',justifyContent:'space-between',gap:4}}>
-                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1}}>{ev.nodeId}</span>
-                        <span style={{fontFamily:'monospace',fontWeight:700,color:ev.grade==='ALARM'?LT.danger:ev.grade==='WARN'?'#f59e0b':LT.good,flexShrink:0}}>
-                          {ev.sensor} {ev.value!=null?(ev.value>0?'+':'')+ev.value+(ev.unit==='anomDegC'?'°C':'%'):'—'}
+                    <div style={{fontSize:14,fontWeight:600,color:LT.text,marginBottom:6}}>{stageIcons[stg]} {stg==='input'?(L==='ko'?'입고구간':'Inbound'):stg==='process'?(L==='ko'?'생산구간':'Process'):(L==='ko'?'출하구간':'Outbound')}</div>
+                    {/* Evidence 2개 */}
+                    {evidence.map((ev,ei)=>(
+                      <div key={ei} style={{fontSize:13,color:LT.textMid,marginTop:3,display:"flex",justifyContent:"space-between"}}>
+                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"60%"}}>{ev.nodeId}</span>
+                        <span style={{fontFamily:"monospace",fontWeight:700,color:ev.grade==='ALARM'?LT.danger:ev.grade==='WARN'?'#f59e0b':LT.good,flexShrink:0}}>
+                          {ev.sensor}: {ev.value!=null?(ev.value>0?'+':'')+ev.value+(ev.unit==='anomDegC'?'°C':'%'):'—'}
                         </span>
                       </div>
                     ))}
-                    {evidence.length===0&&<div style={{fontSize:14,color:LT.textDim}}>—</div>}
-                    {data.blocked&&<div style={{fontSize:14,fontWeight:700,color:statusColor(status),marginTop:4}}>⚠ {L==='ko'?'봉쇄':'BLOCKED'}</div>}
+                    {evidence.length===0&&<div style={{fontSize:13,color:LT.textDim}}>—</div>}
+                    {data.blocked&&<div style={{fontSize:12,fontWeight:700,color:statusColor(status),marginTop:6}}>⚠ {L==='ko'?'봉쇄':'BLOCKED'}</div>}
                   </div>
-                  {idx<2&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',fontSize:16,color:LT.textDim}}>→</div>}
+                  {/* Arrow connector */}
+                  {idx<2&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"0 4px",fontSize:18,color:LT.textDim}}>→</div>}
                 </>);
               })}
             </div>
+
+            {/* Dual Lock Status Bar */}
+            {flow?.dualLock&&(()=>{
+              const dl = flow.dualLock;
+              const combined = dl.combined || {};
+              const stateColors = {BOTH:LT.danger,PHYS_ONLY:'#f59e0b',FIN_ONLY:'#f59e0b',NONE:LT.good};
+              const stateLabels = {BOTH:L==='ko'?'이중봉쇄 경보':'DUAL LOCK ALARM',PHYS_ONLY:L==='ko'?'물리적 봉쇄':'PHYSICAL LOCK',FIN_ONLY:L==='ko'?'재무 봉쇄':'FINANCIAL LOCK',NONE:L==='ko'?'정상':'NORMAL'};
+              const stateIcons = {BOTH:'🔒🔒',PHYS_ONLY:'🔒',FIN_ONLY:'💰',NONE:'✅'};
+
+              return(<div style={{background:LT.bg2,borderRadius:8,padding:14,border:`1px solid ${LT.border}`,marginBottom:4}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:16}}>{stateIcons[combined.state]||'❓'}</span>
+                    <span style={{fontSize:15,fontWeight:700,color:stateColors[combined.state]||LT.text}}>{stateLabels[combined.state]||combined.state}</span>
+                  </div>
+                  <div style={{display:"flex",gap:12,fontSize:13,color:LT.textDim}}>
+                    <span>{L==='ko'?'물리':'Phys'}: <b style={{color:dl.physical?.isDualLocked?LT.danger:LT.good}}>{dl.physical?.isDualLocked?(L==='ko'?'봉쇄':'LOCKED'):'OK'}</b></span>
+                    <span>{L==='ko'?'재무':'Fin'}: <b style={{color:dl.financial?.isDualLocked?LT.danger:LT.good}}>{dl.financial?.isDualLocked?(L==='ko'?'봉쇄':'LOCKED'):'OK'}</b></span>
+                    {combined.confidence!=null&&<span>{L==='ko'?'신뢰도':'Conf'}: <b>{combined.confidence}%</b></span>}
+                  </div>
+                </div>
+                {combined.reason&&<div style={{fontSize:13,color:LT.textMid,marginTop:6}}>{combined.reason}</div>}
+              </div>);
+            })()}
           </>);
         })()}
       </div>
 
-      {/* ③ 공급망 스토리 — 6문장 서사 */}
+      {/* 6문장 스토리 */}
       {liveFlow?.story&&liveFlow.story.lines&&(()=>{
         const st = liveFlow.story;
         const lines = st.lines;
+        const lineKeys = ['factor','onset','cause','manifest','result','price'];
+        const lineIcons = {factor:'🔍',onset:'📅',cause:'⚙️',manifest:'📡',result:'📊',price:'💰'};
         const isNormal = liveFlow.dualLock?.combined?.state==='NONE';
-        // 핵심 문장만: result + price 강조, 나머지는 보조
-        const lineConfig=[
-          {k:'factor',icon:'🔍',label:L==='ko'?'원인':'Factor',primary:false},
-          {k:'onset',icon:'📅',label:L==='ko'?'시점':'Onset',primary:false},
-          {k:'cause',icon:'⚙️',label:L==='ko'?'기제':'Mechanism',primary:false},
-          {k:'manifest',icon:'📡',label:L==='ko'?'신호':'Signal',primary:false},
-          {k:'result',icon:'📊',label:L==='ko'?'결과':'Result',primary:true},
-          {k:'price',icon:'💰',label:L==='ko'?'가격영향':'Price Impact',primary:true},
-        ];
 
         return(<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:12}}>{L==='ko'?'공급망 스토리':'Supply Chain Story'}</div>
-          {lineConfig.map(({k,icon,label,primary},i)=>(
-            <div key={k} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'7px 0',
-              borderBottom:i<lineConfig.length-1?`1px solid ${LT.border}`:'none',
-              background:primary&&!isNormal?'transparent':'transparent'}}>
-              <span style={{fontSize:14,flexShrink:0,width:18,textAlign:'center',color:LT.textDim}}>{icon}</span>
-              <span style={{fontSize:14,fontWeight:700,color:LT.textDim,flexShrink:0,width:44,paddingTop:2}}>{label}</span>
-              <span style={{fontSize:14,color:k==='price'&&!isNormal?LT.danger:k==='result'&&!isNormal?'#f59e0b':LT.textMid,
-                fontWeight:primary?700:400,lineHeight:1.6,flex:1}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>📖 {L==='ko'?'공급망 스토리':'Supply Chain Story'}</div>
+          {lineKeys.map((k,i)=>(
+            <div key={k} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"6px 0",borderBottom:i<5?`1px solid ${LT.border}`:'none'}}>
+              <span style={{fontSize:14,flexShrink:0,width:20,textAlign:"center"}}>{lineIcons[k]}</span>
+              <span style={{fontSize:14,color:k==='price'&&!isNormal?LT.danger:k==='result'&&!isNormal?'#f59e0b':LT.textMid,fontWeight:k==='price'||k==='result'?700:400,lineHeight:1.6}}>
                 {lines[k]}
               </span>
             </div>
           ))}
-          {/* 가격 임팩트 수치 강조 */}
+          {/* 가격 임팩트 요약 */}
           {st.impactRangePct&&st.impactRangePct[0]!==0&&(
-            <div style={{marginTop:12,padding:'10px 14px',background:LT.bg2,borderRadius:8,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
+            <div style={{marginTop:12,padding:12,background:LT.bg2,borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:16,fontWeight:900,color:LT.danger,fontFamily:'monospace'}}>{st.impactRangePct[0]}%~{st.impactRangePct[1]}%</div>
-                <div style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'가격 압력 범위':'Price pressure'}</div>
+                <div style={{fontSize:15,fontWeight:800,color:LT.danger,fontFamily:"monospace"}}>{st.impactRangePct[0]}% ~ {st.impactRangePct[1]}%</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'가격 압력 범위':'Price pressure range'}</div>
               </div>
-              <div>
-                <div style={{fontSize:16,fontWeight:700,color:LT.text,fontFamily:'monospace'}}>{st.leadTimeDays?st.leadTimeDays[0]+'~'+st.leadTimeDays[1]+'d':'-'}</div>
-                <div style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'리드타임':'Lead time'}</div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{st.leadTimeDays?st.leadTimeDays[0]+'~'+st.leadTimeDays[1]+'d':'-'}</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'리드타임':'Lead time'}</div>
               </div>
-              <div>
-                <div style={{fontSize:16,fontWeight:700,color:LT.text,fontFamily:'monospace'}}>{st.confidence||'-'}%</div>
-                <div style={{fontSize:14,color:LT.textDim}}>{L==='ko'?'신뢰도':'Confidence'}</div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{st.confidence||'-'}%</div>
+                <div style={{fontSize:13,color:LT.textDim}}>{L==='ko'?'신뢰도':'Confidence'}</div>
               </div>
             </div>
           )}
@@ -868,71 +873,77 @@ function StockView({stock:s,lang,onBack}){
 
     {/* ═══ TAB 4: 시그널 ═══ */}
     {tab==='signal'&&<>
-      {/* 리스크 레벨 배너 */}
-      {liveSignals&&<div style={{padding:'12px 16px',borderRadius:8,marginBottom:12,
-        background:liveSignals.riskLevel==='HIGH'?'#fff0f0':liveSignals.riskLevel==='MEDIUM'?'#fffbeb':'#f0fdf4',
-        border:`1px solid ${liveSignals.riskLevel==='HIGH'?LT.danger:liveSignals.riskLevel==='MEDIUM'?LT.warn:LT.good}44`}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:16,fontWeight:900,color:liveSignals.riskLevel==='HIGH'?LT.danger:liveSignals.riskLevel==='MEDIUM'?LT.warn:LT.good}}>
-            {liveSignals.riskLevel==='HIGH'?(L==='ko'?'고위험':'HIGH RISK'):liveSignals.riskLevel==='MEDIUM'?(L==='ko'?'중위험':'MEDIUM RISK'):(L==='ko'?'저위험':'LOW RISK')}
-          </span>
-          {liveSignals.contextNote&&<span style={{fontSize:14,color:LT.textMid}}>{liveSignals.contextNote}</span>}
-        </div>
-      </div>}
-
-      {/* 경보 플래그 */}
+      {/* 4 Flags — API 실데이터 우선, 없으면 로컬 추정 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:14}}>{t('svFlagTitle',L)}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🚩 {t('svFlagTitle',L)}</div>
+          {liveSignals&&<span style={{fontSize:13,padding:"2px 8px",borderRadius:4,fontWeight:600,
+            background:liveSignals.riskLevel==='HIGH'?LT.danger:liveSignals.riskLevel==='MEDIUM'?'#f59e0b':LT.good,
+            color:'#fff'}}>{liveSignals.riskLevel}</span>}
+        </div>
         {(liveSignals?.flags||[
           {id:'CROSS_SIGNAL',name:t('svFlagCross',L),active:warnCnt>0,desc:t('svFlagCrossDesc',L)},
           {id:'DUAL_LOCK',name:t('svFlagDual',L),active:warnCnt>=2,desc:t('svFlagDualDesc',L)},
           {id:'DELTA_DIVERGENCE',name:t('svFlagDelta',L),active:delta.state!=='ALIGNED',desc:t('svFlagDeltaDesc',L)},
           {id:'TREND_REVERSAL',name:t('svFlagTrend',L),active:false,desc:t('svFlagTrendDesc',L)},
         ]).map((fl,i,arr)=>(
-          <div key={fl.id} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'10px 0',borderBottom:i<arr.length-1?`1px solid ${LT.border}`:'none'}}>
-            <span style={{width:10,height:10,borderRadius:5,marginTop:5,flexShrink:0,background:fl.active?LT.danger:LT.good}}/>
+          <div key={fl.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<arr.length-1?`1px solid ${LT.border}`:"none"}}>
+            <span style={{width:8,height:8,borderRadius:4,marginTop:6,flexShrink:0,background:fl.active?LT.danger:LT.good}}/>
             <div>
               <div style={{fontSize:15,fontWeight:700,color:fl.active?LT.danger:LT.text}}>{fl.name}</div>
-              <div style={{fontSize:14,color:LT.textDim,marginTop:3,lineHeight:1.5}}>{fl.desc}</div>
+              <div style={{fontSize:15,color:LT.textDim,marginTop:2}}>{fl.desc}</div>
             </div>
           </div>
         ))}
       </div>
-
-      {/* 글로벌 맥락 — contextNote가 있을 때만 */}
-      {!(liveSignals)&&(liveHealth?.contextNote)&&(
+      {/* contextNote — 글로벌 환경 맥락 */}
+      {(liveSignals?.contextNote||liveHealth?.contextNote)&&(
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:16,border:`1px solid ${LT.border}`,marginBottom:12}}>
-          <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:8}}>{L==='ko'?'글로벌 환경 맥락':'Global Context'}</div>
-          <div style={{fontSize:14,color:LT.textMid,lineHeight:1.6}}>{liveHealth.contextNote}</div>
+          <div style={{fontSize:14,fontWeight:700,color:LT.text,marginBottom:6}}>🌐 {L==='ko'?'글로벌 환경 맥락':'Global Context'}</div>
+          <div style={{fontSize:14,color:LT.textMid,lineHeight:1.6}}>{liveSignals?.contextNote||liveHealth?.contextNote}</div>
         </div>
       )}
+      {/* DIAH-7M Edge */}
+      <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
+        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🔭 {t('svEdgeTitle',L)}</div>
+        {[
+          {icon:'✕',text:t('svEdge1',L),dim:true},
+          {icon:'✕',text:t('svEdge2',L),dim:true},
+          {icon:'●',text:t('svEdge3',L),dim:false},
+        ].map((e,i)=>(
+          <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:i<2?8:0}}>
+            <span style={{fontSize:15,color:e.dim?LT.textDim:LT.text,fontWeight:e.dim?400:700,flexShrink:0}}>{e.icon}</span>
+            <span style={{fontSize:15,color:e.dim?LT.textDim:LT.text,fontWeight:e.dim?400:600,lineHeight:1.6}}>{e.text}</span>
+          </div>
+        ))}
+      </div>
     </>}
 
     {/* ═══ TAB 5: 시장 ═══ */}
     {tab==='market'&&<>
-      {/* 주가 차트 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('svMarketTitle',L)}</div>
-          <div style={{display:'flex',gap:4}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>💹 {t('svMarketTitle',L)}</div>
+          <div style={{display:"flex",gap:4}}>
             {['1mo','3mo','6mo','1y'].map(r=>(
               <button key={r} onClick={()=>setChartRange(r)} style={{
-                padding:'4px 10px',borderRadius:4,fontSize:14,cursor:'pointer',
-                border:`1px solid ${chartRange===r?'#111':LT.border}`,
-                background:chartRange===r?'#111':'transparent',
+                padding:"3px 8px",borderRadius:4,fontSize:12,cursor:"pointer",
+                border:`1px solid ${chartRange===r?LT.primary:LT.border}`,
+                background:chartRange===r?LT.primary:'transparent',
                 color:chartRange===r?'#fff':LT.textDim,fontWeight:chartRange===r?700:400,
               }}>{r.toUpperCase()}</button>
             ))}
           </div>
         </div>
+        {/* Price chart (SVG line) */}
         {(()=>{
           const candles = liveChart?.candles || [];
           if(candles.length<2) return (
-            <div style={{background:LT.bg2,borderRadius:8,height:200,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${LT.border}`,marginBottom:12}}>
+            <div style={{background:LT.bg2,borderRadius:8,height:180,display:"flex",alignItems:"center",justifyContent:"center",border:`1px solid ${LT.border}`,marginBottom:12}}>
               <span style={{fontSize:15,color:LT.textDim}}>{candles.length===0?t('svChartPlaceholder',L):'Loading...'}</span>
             </div>
           );
-          const W=360,H=180,PX=44,PY=16;
+          const W=360,H=160,PX=40,PY=16;
           const closes=candles.map(c=>c.c);
           const hi=Math.max(...closes),lo=Math.min(...closes);
           const rng=hi-lo||1;
@@ -940,86 +951,79 @@ function StockView({stock:s,lang,onBack}){
           const toY=v=>PY+((hi-v)/rng)*(H-PY*2);
           const pts=closes.map((v,i)=>`${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
           const first=closes[0],last=closes[closes.length-1];
-          const pctChg=((last-first)/first*100).toFixed(1);
           const lineCol=last>=first?LT.good:LT.danger;
           const fillPts=pts+` ${toX(closes.length-1).toFixed(1)},${(H-PY).toFixed(1)} ${PX.toFixed(1)},${(H-PY).toFixed(1)}`;
-          const yLabels=[lo,lo+rng*0.5,hi];
+          // Y-axis labels
+          const yLabels=[lo,lo+rng*0.25,lo+rng*0.5,lo+rng*0.75,hi];
+          const cur=liveChart?.currency||'';
           const fmtY=v=>v>=10000?Math.round(v).toLocaleString():v>=100?v.toFixed(0):v.toFixed(2);
           return (
-            <div>
-              <div style={{display:'flex',gap:16,marginBottom:8,alignItems:'baseline'}}>
-                <span style={{fontSize:22,fontWeight:900,color:LT.text,fontFamily:'monospace'}}>{fmtY(last)}</span>
-                <span style={{fontSize:16,fontWeight:700,color:lineCol,fontFamily:'monospace'}}>{last>=first?'+':''}{pctChg}%</span>
-                <span style={{fontSize:14,color:LT.textDim}}>{chartRange.toUpperCase()} {L==='ko'?'기간 수익률':'return'}</span>
-              </div>
-              <div style={{background:LT.bg2,borderRadius:8,padding:'8px 4px',border:`1px solid ${LT.border}`,overflow:'hidden'}}>
-                <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:'auto',display:'block'}}>
-                  <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lineCol} stopOpacity="0.18"/><stop offset="100%" stopColor={lineCol} stopOpacity="0"/></linearGradient></defs>
-                  {yLabels.map((v,i)=>(
-                    <g key={i}>
-                      <line x1={PX} y1={toY(v)} x2={W-PX} y2={toY(v)} stroke={LT.border} strokeWidth="0.5" strokeDasharray="3,3"/>
-                      <text x={PX-4} y={toY(v)+4} textAnchor="end" fontSize="11" fill={LT.textDim}>{fmtY(v)}</text>
-                    </g>
-                  ))}
-                  <polygon points={fillPts} fill="url(#cg)"/>
-                  <polyline points={pts} fill="none" stroke={lineCol} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx={toX(closes.length-1)} cy={toY(last)} r="4" fill={lineCol}/>
-                </svg>
-              </div>
+            <div style={{background:LT.bg2,borderRadius:8,padding:"8px 4px",border:`1px solid ${LT.border}`,marginBottom:12,overflow:"hidden"}}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
+                <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lineCol} stopOpacity="0.2"/><stop offset="100%" stopColor={lineCol} stopOpacity="0"/></linearGradient></defs>
+                {yLabels.map((v,i)=>(
+                  <g key={i}>
+                    <line x1={PX} y1={toY(v)} x2={W-PX} y2={toY(v)} stroke={LT.border} strokeWidth="0.5" strokeDasharray="3,3"/>
+                    <text x={PX-4} y={toY(v)+3} textAnchor="end" fontSize="8" fill={LT.textDim}>{fmtY(v)}</text>
+                  </g>
+                ))}
+                <polygon points={fillPts} fill="url(#cg)"/>
+                <polyline points={pts} fill="none" stroke={lineCol} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx={toX(closes.length-1)} cy={toY(last)} r="3" fill={lineCol}/>
+                <text x={W-PX+4} y={toY(last)+3} fontSize="9" fontWeight="700" fill={lineCol}>{fmtY(last)}</text>
+              </svg>
+            </div>
+          );
+        })()}
+        {/* Key financials from gauge data */}
+        {(()=>{
+          const gMap={};
+          (liveGauges||[]).forEach(g=>{gMap[g.id]=g;});
+          const fmtV=(v,suf)=>v!=null?(typeof v==='number'?v.toFixed(1):String(v))+(suf||''):'—';
+          const fmtBig=v=>{
+            if(v==null)return '—';
+            if(Math.abs(v)>=1e12)return (v/1e12).toFixed(2)+'T';
+            if(Math.abs(v)>=1e9)return (v/1e9).toFixed(1)+'B';
+            if(Math.abs(v)>=1e6)return (v/1e6).toFixed(1)+'M';
+            return v.toLocaleString();
+          };
+          const pe=gMap.SG_V1?.value;
+          const pb=gMap.SG_V2?.value;
+          const evEbitda=gMap.SG_V3?.value;
+          const divYld=gMap.SG_V4?.value;
+          const roe=gMap.SG_Q1?.value;
+          const debtEq=gMap.SG_Q2?.value;
+          const rsi=gMap.SG_M1?.value;
+          const w52=gMap.SG_M2?.value;
+          const volTr=gMap.SG_M3?.value;
+          const revGr=gMap.SG_G1?.value;
+          const earnGr=gMap.SG_G2?.value;
+          const items=[
+            {label:t('svMktPE',L),val:fmtV(pe,'x'),grade:gMap.SG_V1?.grade},
+            {label:'PBR',val:fmtV(pb,'x'),grade:gMap.SG_V2?.grade},
+            {label:'EV/EBITDA',val:fmtV(evEbitda,'x'),grade:gMap.SG_V3?.grade},
+            {label:L==='ko'?'배당률':'Div Yield',val:fmtV(divYld,'%'),grade:gMap.SG_V4?.grade},
+            {label:'ROE',val:fmtV(roe,'%'),grade:gMap.SG_Q1?.grade},
+            {label:L==='ko'?'부채비율':'D/E',val:fmtV(debtEq,'%'),grade:gMap.SG_Q2?.grade},
+            {label:'RSI',val:fmtV(rsi),grade:gMap.SG_M1?.grade},
+            {label:t('svMkt52',L),val:fmtV(w52,'%'),grade:gMap.SG_M2?.grade},
+            {label:L==='ko'?'거래량추세':'Vol Trend',val:fmtV(volTr,'%'),grade:gMap.SG_M3?.grade},
+            {label:L==='ko'?'매출성장':'Rev Growth',val:fmtV(revGr,'%'),grade:gMap.SG_G1?.grade},
+            {label:L==='ko'?'이익성장':'Earn Growth',val:fmtV(earnGr,'%'),grade:gMap.SG_G2?.grade},
+          ];
+          const gradeCol=g=>g==='good'?LT.good:g==='alert'?LT.danger:LT.text;
+          return (
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+              {items.map((m,i)=>(
+                <div key={i} style={{background:LT.bg2,borderRadius:6,padding:"10px 12px",border:`1px solid ${LT.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:13,color:LT.textDim}}>{m.label}</div>
+                  <div style={{fontSize:15,fontWeight:700,color:gradeCol(m.grade),fontFamily:"monospace"}}>{m.val}</div>
+                </div>
+              ))}
             </div>
           );
         })()}
       </div>
-
-      {/* 핵심 밸류에이션 지표 */}
-      {(()=>{
-        const gMap={};
-        (liveGauges||[]).forEach(g=>{gMap[g.id]=g;});
-        const fmtV=(v,suf)=>v!=null?(typeof v==='number'?v.toFixed(1):String(v))+(suf||''):'—';
-        const gradeCol=g=>g==='good'?LT.good:g==='alert'?LT.danger:LT.text;
-
-        // 핵심 6개 (가치+수익성+모멘텀)
-        const primary=[
-          {label:t('svMktPE',L),val:fmtV(gMap.SG_V1?.value,'x'),grade:gMap.SG_V1?.grade,tip:L==='ko'?'주가수익비율 — 낮을수록 저평가':'Lower = cheaper valuation'},
-          {label:'PBR',val:fmtV(gMap.SG_V2?.value,'x'),grade:gMap.SG_V2?.grade,tip:L==='ko'?'주가순자산비율 — 1배 이하 자산 대비 저평가':'Price-to-book ratio'},
-          {label:'ROE',val:fmtV(gMap.SG_Q1?.value,'%'),grade:gMap.SG_Q1?.grade,tip:L==='ko'?'자기자본이익률 — 높을수록 자본 효율적':'Return on equity'},
-          {label:L==='ko'?'매출성장':'Rev Growth',val:fmtV(gMap.SG_G1?.value,'%'),grade:gMap.SG_G1?.grade,tip:L==='ko'?'전년 대비 매출 증가율':'YoY revenue growth'},
-          {label:'RSI',val:fmtV(gMap.SG_M1?.value),grade:gMap.SG_M1?.grade,tip:L==='ko'?'14일 RSI — 70 이상 과매수, 30 이하 과매도':'RSI 14d — >70 overbought, <30 oversold'},
-          {label:t('svMkt52',L),val:fmtV(gMap.SG_M2?.value,'%'),grade:gMap.SG_M2?.grade,tip:L==='ko'?'52주 최고가 대비 현재가 위치':'Position vs 52-week high'},
-        ];
-        // 보조 5개
-        const secondary=[
-          {label:'EV/EBITDA',val:fmtV(gMap.SG_V3?.value,'x'),grade:gMap.SG_V3?.grade},
-          {label:L==='ko'?'배당률':'Div Yield',val:fmtV(gMap.SG_V4?.value,'%'),grade:gMap.SG_V4?.grade},
-          {label:L==='ko'?'부채비율':'D/E',val:fmtV(gMap.SG_Q2?.value,'%'),grade:gMap.SG_Q2?.grade},
-          {label:L==='ko'?'이익성장':'Earn Growth',val:fmtV(gMap.SG_G2?.value,'%'),grade:gMap.SG_G2?.grade},
-          {label:L==='ko'?'거래량추세':'Vol Trend',val:fmtV(gMap.SG_M3?.value,'%'),grade:gMap.SG_M3?.grade},
-        ];
-        return(<>
-          {/* 핵심 6개 — 큰 카드 */}
-          <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:8}}>
-            <div style={{fontSize:15,fontWeight:700,color:LT.text,marginBottom:12}}>{L==='ko'?'핵심 지표':'Key Metrics'}</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
-              {primary.map((m,i)=>(
-                <div key={i} title={m.tip} style={{background:LT.bg2,borderRadius:8,padding:'12px 14px',border:`1px solid ${LT.border}`,cursor:'help'}}>
-                  <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{m.label}</div>
-                  <div style={{fontSize:20,fontWeight:800,color:gradeCol(m.grade),fontFamily:'monospace'}}>{m.val}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* 보조 5개 — 작은 목록 */}
-          <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:'14px 20px',border:`1px solid ${LT.border}`,marginBottom:12}}>
-            <div style={{fontSize:14,color:LT.textDim,fontWeight:600,marginBottom:10}}>{L==='ko'?'참고 지표':'Reference Metrics'}</div>
-            {secondary.map((m,i)=>(
-              <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:i<secondary.length-1?`1px solid ${LT.border}`:'none'}}>
-                <span style={{fontSize:14,color:LT.textDim}}>{m.label}</span>
-                <span style={{fontSize:15,fontWeight:700,color:gradeCol(m.grade),fontFamily:'monospace'}}>{m.val}</span>
-              </div>
-            ))}
-          </div>
-        </>);
-      })()}
     </>}
 
     {/* Disclaimer — always */}
@@ -1122,13 +1126,13 @@ function StockPage({user,lang}){
     <div style={{display:"flex",gap:4,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
       <button onClick={()=>setFilterCountry('')}
         style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${!filterCountry?LT.text:LT.border}`,background:!filterCountry?LT.bg3:LT.surface,color:!filterCountry?LT.text:LT.textDim,fontSize:14,fontWeight:!filterCountry?700:500,cursor:"pointer"}}>
-        {L==='ko'?'전체':'All'} <span style={{fontSize:14,color:LT.textDim}}>({STOCKS.length})</span>
+        {L==='ko'?'전체':'All'} <span style={{fontSize:13,color:LT.textDim}}>({STOCKS.length})</span>
       </button>
       {countryList.map(({flag,cnt})=>{
         const active=filterCountry===flag;
         return(<button key={flag} onClick={()=>setFilterCountry(active?'':flag)}
           style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${active?LT.text:LT.border}`,background:active?LT.bg3:LT.surface,fontSize:14,fontWeight:active?700:500,cursor:"pointer",color:active?LT.text:LT.textDim}}>
-          {flag}<span style={{fontSize:14,marginLeft:2}}>{cnt}</span>
+          {flag}<span style={{fontSize:13,marginLeft:2}}>{cnt}</span>
         </button>);
       })}
     </div>
@@ -1151,13 +1155,13 @@ function StockPage({user,lang}){
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{fontSize:15,fontWeight:700,color:LT.text}}>{getName(s)}</span>
             <span style={{fontSize:14,color:LT.textDim,fontFamily:"monospace"}}>{s.sid}</span>
-            <span style={{fontSize:14,padding:"1px 4px",borderRadius:3,background:LT.bg3,color:LT.textDim,fontWeight:600}}>T{s.tier}</span>
+            <span style={{fontSize:13,padding:"1px 4px",borderRadius:3,background:LT.bg3,color:LT.textDim,fontWeight:600}}>T{s.tier}</span>
           </div>
           <div style={{fontSize:14,color:LT.textDim,marginTop:1}}>{s.sec} · {s.fac}{t('stockFacLabel',L)}</div>
         </div>
         <div style={{width:80,display:"flex",gap:2,justifyContent:"flex-end",flexWrap:"wrap",flexShrink:0}}>
-          {s.sat.slice(0,3).map(st=>(<span key={st} style={{fontSize:14,padding:"1px 3px",borderRadius:2,background:LT.bg3,color:LT.textDim,fontWeight:600,lineHeight:1.3}}>{st}</span>))}
-          {s.sat.length>3&&<span style={{fontSize:14,color:LT.textDim}}>+{s.sat.length-3}</span>}
+          {s.sat.slice(0,3).map(st=>(<span key={st} style={{fontSize:12,padding:"1px 3px",borderRadius:2,background:LT.bg3,color:LT.textDim,fontWeight:600,lineHeight:1.3}}>{st}</span>))}
+          {s.sat.length>3&&<span style={{fontSize:12,color:LT.textDim}}>+{s.sat.length-3}</span>}
         </div>
         <div style={{width:100,textAlign:"right",flexShrink:0}}><div style={{fontSize:16,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{price}</div></div>
         <div style={{width:70,textAlign:"right",flexShrink:0}}><span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:isUp?LT.good:LT.danger}}>{change}</span></div>
