@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v7';
+  const _SAT_IMG_VER = 'v8';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -608,12 +608,14 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
           try {
             await fetchSat.authenticateGEE();
             const ee = require('@google/earthengine');
-            const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
+            // 썸네일용 bbox: 최소 30km 반경으로 넓게 (VIIRS 750m 해상도에서 충분한 픽셀 확보)
+            const thumbRadiusKm = Math.max(f.radiusKm || 5, 30);
+            const bbox = fetchSat.facilityBbox(f.lat, f.lng, thumbRadiusKm);
             const geometry = ee.Geometry.Rectangle(bbox);
             // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 80, dimensions: '800x560',
+              min: 0, max: 60, dimensions: '800x560',
             };
 
             // 항상 mean() — 단월이든 다월이든 컬렉션이 비어도 안전
