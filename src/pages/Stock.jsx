@@ -106,6 +106,18 @@ function buildStockEntityData(gaugesArr, health, lang) {
   return { gaugeData, sysData };
 }
 
+// 위성 기본 연월 계산 (컴포넌트 바깥 — 렌더마다 재계산 방지)
+function _satDefaultYM(){
+  const n=new Date();
+  const after=new Date(n); after.setMonth(after.getMonth()-3);
+  const before=new Date(n); before.setMonth(before.getMonth()-6);
+  return {
+    after:`${after.getFullYear()}-${String(after.getMonth()+1).padStart(2,'0')}`,
+    before:`${before.getFullYear()}-${String(before.getMonth()+1).padStart(2,'0')}`,
+  };
+}
+const _SAT_DEFAULTS=_satDefaultYM();
+
 // ═══ StockView — 5탭 종목 상세 ═══
 function StockView({stock:s,lang,onBack}){
   const L=lang||'ko';
@@ -126,15 +138,8 @@ function StockView({stock:s,lang,onBack}){
   const [liveChart,setLiveChart]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
-  // 위성 연월 피커: YYYY-MM 형식
-  // 기본값: VIIRS 발행지연 90일 기준 최신 가능 월(after) vs 3개월 전(before)
-  const _now = new Date();
-  const _afterD = new Date(_now); _afterD.setMonth(_afterD.getMonth()-3); // 발행 가능 최신월
-  const _beforeD = new Date(_now); _beforeD.setMonth(_beforeD.getMonth()-6); // 3개월 전
-  const _defAfter = `${_afterD.getFullYear()}-${String(_afterD.getMonth()+1).padStart(2,'0')}`;
-  const _defBefore = `${_beforeD.getFullYear()}-${String(_beforeD.getMonth()+1).padStart(2,'0')}`;
-  const [satAfterYM,setSatAfterYM]=useState(_defAfter);
-  const [satBeforeYM,setSatBeforeYM]=useState(_defBefore);
+  const [satAfterYM,setSatAfterYM]=useState(_SAT_DEFAULTS.after);
+  const [satBeforeYM,setSatBeforeYM]=useState(_SAT_DEFAULTS.before);
   const [chartRange,setChartRange]=useState('6mo');
   const [loading,setLoading]=useState(true);
 
@@ -178,7 +183,7 @@ function StockView({stock:s,lang,onBack}){
 
   // 위성 이미지 — 위성 탭 진입 or 연월 변경 시 로드
   useEffect(()=>{
-    if(tab!=='sat'||satImgLoading) return;
+    if(tab!=='sat') return;
     setSatImgLoading(true);
     setLiveSatImg(null);
     API.stockSatellite(s.sid,{afterYM:satAfterYM,beforeYM:satBeforeYM}).then(d=>{
