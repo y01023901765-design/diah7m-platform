@@ -334,5 +334,15 @@ export default {
   globalCoverage:'Data Coverage',globalProvider:'Data Source',globalNoDetail:'Details coming soon',satKoreaOnly:'Satellite data: Korea only',
   timeJustNow:'Just now',timeMinAgo:'min ago',timeHrAgo:'hr ago',timeDayAgo:'d ago',timeUpdated:'updated',
   gpTitle:'Global Economy Pulse',gpHealthScore:'World Health Score',gpCountries:' countries',
+  // ── Language-switch messages ──
+  estimVal:'Estimated',estimValTip:'Using previously collected data due to API issue. Will update automatically when restored.',
+  tierDirect:'Direct Obs',tierCausal:'Physical Causation',tierIndirect:'Indirect Ref',
+  pwMinLen:'⚠️ Password must be at least 6 characters',
+  adminKeyRequired:'Admin Key required',
+  cbResetDone:'Reset complete',cbResetFail:'Reset failed',
+  smsBalFail:'Balance query failed',smsLogFail:'Log query failed',smsTplFail:'Template query failed',
+  smsSendDone:'Send complete',smsSendFail:'Send failed',smsTplSaved:'Template saved',smsTplFailed:'Save failed',
+  smsNoPhone:'Please enter recipient number',smsNoMsg:'Please select a message or template',
+  alertSent:'Test alert sent',alertFail:'Alert failed',alertNoSms:'SMS not configured',
   cnt_KOR:'South Korea',cnt_USA:'United States',cnt_JPN:'Japan',cnt_DEU:'Germany',cnt_GBR:'United Kingdom',cnt_FRA:'France',cnt_CAN:'Canada',cnt_AUS:'Australia',cnt_ITA:'Italy',cnt_ESP:'Spain',cnt_NLD:'Netherlands',cnt_CHE:'Switzerland',cnt_SWE:'Sweden',cnt_NOR:'Norway',cnt_DNK:'Denmark',cnt_FIN:'Finland',cnt_AUT:'Austria',cnt_BEL:'Belgium',cnt_IRL:'Ireland',cnt_PRT:'Portugal',cnt_GRC:'Greece',cnt_CZE:'Czechia',cnt_POL:'Poland',cnt_HUN:'Hungary',cnt_SVK:'Slovakia',cnt_SVN:'Slovenia',cnt_EST:'Estonia',cnt_LVA:'Latvia',cnt_LTU:'Lithuania',cnt_ISL:'Iceland',cnt_LUX:'Luxembourg',cnt_NZL:'New Zealand',cnt_ISR:'Israel',cnt_TUR:'Türkiye',cnt_MEX:'Mexico',cnt_CHL:'Chile',cnt_COL:'Colombia',cnt_CRI:'Costa Rica',cnt_SGP:'Singapore',cnt_HKG:'Hong Kong',cnt_TWN:'Taiwan',cnt_IND:'India',cnt_CHN:'China',
 };

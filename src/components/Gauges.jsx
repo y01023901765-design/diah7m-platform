@@ -30,7 +30,7 @@ function mergedSatEv(code, liveSat) {
 }
 
 // Tier/label data for gauge badges
-const TIER={};const TIER_LABEL={T1:{ko:'직접관측',color:LT.sat},T2:{ko:'물리인과',color:LT.accent},T3:{ko:'간접참고',color:LT.warn}};
+const TIER={};const TIER_LABEL={T1:{key:'tierDirect',color:LT.sat},T2:{key:'tierCausal',color:LT.accent},T3:{key:'tierIndirect',color:LT.warn}};
 
 function GaugeRow({d,open,toggle,lang,liveSat,isGlobal}){
   const L=lang||'ko';
@@ -47,10 +47,10 @@ function GaugeRow({d,open,toggle,lang,liveSat,isGlobal}){
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontSize:16,fontWeight:700,color:LT.text}}>{displayName}</span>
             {sat&&<SatBadge code={d.c}/>}
-            {d._fallback&&<span title="API 장애로 이전 수집 데이터를 사용 중입니다. 복구되면 자동으로 최신 데이터로 교체됩니다." style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:12,padding:"1px 6px",borderRadius:4,fontWeight:700,background:`${LT.warn}18`,color:LT.warn,border:`1px solid ${LT.warn}40`,cursor:"help"}}>추정값</span>}
+            {d._fallback&&<span title={t('estimValTip',L)} style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:12,padding:"1px 6px",borderRadius:4,fontWeight:700,background:`${LT.warn}18`,color:LT.warn,border:`1px solid ${LT.warn}40`,cursor:"help"}}>{t('estimVal',L)}</span>}
             {TIER[d.c]&&<span style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:15,padding:"2px 7px",borderRadius:4,fontWeight:700,
               background:LT.bg2,color:LT.textMid,
-              border:`1px solid ${LT.border}`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:16}}>🛰️</span>}{TIER_LABEL[TIER[d.c]].ko}</span>}
+              border:`1px solid ${LT.border}`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:16}}>🛰️</span>}{t(TIER_LABEL[TIER[d.c]].key,L)}</span>}
           </div>
           <div style={{fontSize:16,color:LT.textDim,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.note}</div>
         </div>

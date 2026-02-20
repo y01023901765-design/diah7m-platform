@@ -332,6 +332,16 @@ export default
   globalCoverage:'데이터 커버리지',globalProvider:'데이터 출처',globalNoDetail:'상세 정보 준비 중',satKoreaOnly:'위성 데이터는 한국만 지원',
   timeJustNow:'방금',timeMinAgo:'분 전',timeHrAgo:'시간 전',timeDayAgo:'일 전',timeUpdated:'갱신',
   gpTitle:'세계경제 펄스',gpHealthScore:'세계 건강 점수',gpCountries:'개국',
+  // ── 언어 전환 관련 메시지 ──
+  estimVal:'추정값',estimValTip:'API 장애로 이전 수집 데이터를 사용 중입니다. 복구되면 자동으로 최신 데이터로 교체됩니다.',
+  tierDirect:'직접관측',tierCausal:'물리인과',tierIndirect:'간접참고',
+  pwMinLen:'⚠️ 비밀번호는 6자 이상이어야 합니다',
+  adminKeyRequired:'Admin Key가 필요합니다',
+  cbResetDone:'리셋 완료',cbResetFail:'리셋 실패',
+  smsBalFail:'잔액 조회 실패',smsLogFail:'이력 조회 실패',smsTplFail:'템플릿 조회 실패',
+  smsSendDone:'발송 완료',smsSendFail:'발송 실패',smsTplSaved:'템플릿 저장 완료',smsTplFailed:'저장 실패',
+  smsNoPhone:'수신번호를 입력하세요',smsNoMsg:'메시지 또는 템플릿을 선택하세요',
+  alertSent:'테스트 알림 발송',alertFail:'알림 실패',alertNoSms:'SMS 미설정',
   cnt_KOR:'대한민국',cnt_USA:'미국',cnt_JPN:'일본',cnt_DEU:'독일',cnt_GBR:'영국',cnt_FRA:'프랑스',cnt_CAN:'캐나다',cnt_AUS:'호주',cnt_ITA:'이탈리아',cnt_ESP:'스페인',cnt_NLD:'네덜란드',cnt_CHE:'스위스',cnt_SWE:'스웨덴',cnt_NOR:'노르웨이',cnt_DNK:'덴마크',cnt_FIN:'핀란드',cnt_AUT:'오스트리아',cnt_BEL:'벨기에',cnt_IRL:'아일랜드',cnt_PRT:'포르투갈',cnt_GRC:'그리스',cnt_CZE:'체코',cnt_POL:'폴란드',cnt_HUN:'헝가리',cnt_SVK:'슬로바키아',cnt_SVN:'슬로베니아',cnt_EST:'에스토니아',cnt_LVA:'라트비아',cnt_LTU:'리투아니아',cnt_ISL:'아이슬란드',cnt_LUX:'룩셈부르크',cnt_NZL:'뉴질랜드',cnt_ISR:'이스라엘',cnt_TUR:'튀르키예',cnt_MEX:'멕시코',cnt_CHL:'칠레',cnt_COL:'콜롬비아',cnt_CRI:'코스타리카',cnt_SGP:'싱가포르',cnt_HKG:'홍콩',cnt_TWN:'대만',cnt_IND:'인도',cnt_CHN:'중국',
 };
 // 위 닫는 }; 앞에 추가해야 하므로 sed 사용

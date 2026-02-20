@@ -26,22 +26,22 @@ function AdminPage({lang}){
   },[tab,loadCB]);
 
   const handleReset=async(source)=>{
-    if(!adminKey){setResetMsg('Admin Key 필요');return;}
+    if(!adminKey){setResetMsg(t('adminKeyRequired',L));return;}
     localStorage.setItem('diah7m-admin-key',adminKey);
     try{
       const r=await API.cbReset(adminKey,source);
-      setResetMsg((source||'ALL')+' 리셋 완료');loadCB();
+      setResetMsg((source||'ALL')+' '+t('cbResetDone',L));loadCB();
       setTimeout(()=>setResetMsg(null),3000);
-    }catch(e){setResetMsg('리셋 실패: '+e.message);}
+    }catch(e){setResetMsg(t('cbResetFail',L)+': '+e.message);}
   };
 
   const handleTestAlert=async()=>{
-    if(!adminKey){setResetMsg('Admin Key 필요');return;}
+    if(!adminKey){setResetMsg(t('adminKeyRequired',L));return;}
     try{
       const r=await API.sendTestAlert(adminKey);
-      setResetMsg('테스트 알림 발송: '+(r.sent?r.providers.join(','):'SMS 미설정'));
+      setResetMsg(t('alertSent',L)+': '+(r.sent?r.providers.join(','):t('alertNoSms',L)));
       setTimeout(()=>setResetMsg(null),5000);
-    }catch(e){setResetMsg('알림 실패: '+e.message);}
+    }catch(e){setResetMsg(t('alertFail',L)+': '+e.message);}
   };
   // ── SMS 관리 상태 ──
   const [smsTab,setSmsTab]=useState('balance');
@@ -57,15 +57,15 @@ function AdminPage({lang}){
 
   const loadSmsBalance=useCallback(()=>{
     setSmsLoading(true);
-    API.adminSmsBalance().then(d=>{setSmsBalance(d);setSmsLoading(false);}).catch(e=>{setSmsMsg('잔액 조회 실패: '+e.message);setSmsLoading(false);});
+    API.adminSmsBalance().then(d=>{setSmsBalance(d);setSmsLoading(false);}).catch(e=>{setSmsMsg(t('smsBalFail',L)+': '+e.message);setSmsLoading(false);});
   },[]);
   const loadSmsLogs=useCallback(()=>{
     setSmsLoading(true);
-    API.adminSmsLog(1,50).then(d=>{setSmsLogs(d.logs||[]);setSmsLoading(false);}).catch(e=>{setSmsMsg('이력 조회 실패: '+e.message);setSmsLoading(false);});
+    API.adminSmsLog(1,50).then(d=>{setSmsLogs(d.logs||[]);setSmsLoading(false);}).catch(e=>{setSmsMsg(t('smsLogFail',L)+': '+e.message);setSmsLoading(false);});
   },[]);
   const loadSmsTemplates=useCallback(()=>{
     setSmsLoading(true);
-    API.adminSmsTemplates().then(d=>{setSmsTemplates(d.templates||[]);setSmsLoading(false);}).catch(e=>{setSmsMsg('템플릿 조회 실패: '+e.message);setSmsLoading(false);});
+    API.adminSmsTemplates().then(d=>{setSmsTemplates(d.templates||[]);setSmsLoading(false);}).catch(e=>{setSmsMsg(t('smsTplFail',L)+': '+e.message);setSmsLoading(false);});
   },[]);
 
   useEffect(()=>{
@@ -77,24 +77,24 @@ function AdminPage({lang}){
   },[tab,smsTab,loadSmsBalance,loadSmsLogs,loadSmsTemplates]);
 
   const handleSmsSend=async()=>{
-    if(!smsSendPhone){setSmsMsg('수신번호를 입력하세요');return;}
-    if(!smsSendMsg&&!smsSendTpl){setSmsMsg('메시지 또는 템플릿을 선택하세요');return;}
+    if(!smsSendPhone){setSmsMsg(t('smsNoPhone',L));return;}
+    if(!smsSendMsg&&!smsSendTpl){setSmsMsg(t('smsNoMsg',L));return;}
     try{
       const phones=smsSendPhone.split(',').map(p=>p.trim()).filter(Boolean);
       const r=await API.adminSmsSend(phones,smsSendTpl||undefined,{},smsSendMsg||undefined);
-      setSmsMsg(`발송 완료: ${r.sent}건 성공, ${r.failed}건 실패`);
+      setSmsMsg(`${t('smsSendDone',L)}: ${r.sent}건 성공, ${r.failed}건 실패`);
       setSmsSendPhone('');setSmsSendMsg('');
       setTimeout(()=>setSmsMsg(null),5000);
-    }catch(e){setSmsMsg('발송 실패: '+e.message);}
+    }catch(e){setSmsMsg(t('smsSendFail',L)+': '+e.message);}
   };
 
   const handleTplSave=async()=>{
     if(!editTpl) return;
     try{
       await API.adminSmsTemplateUpdate(editTpl.code,{title:editTpl.title,body:editTpl.body,type:editTpl.type,active:editTpl.active});
-      setSmsMsg('템플릿 저장 완료');setEditTpl(null);loadSmsTemplates();
+      setSmsMsg(t('smsTplSaved',L));setEditTpl(null);loadSmsTemplates();
       setTimeout(()=>setSmsMsg(null),3000);
-    }catch(e){setSmsMsg('저장 실패: '+e.message);}
+    }catch(e){setSmsMsg(t('smsTplFailed',L)+': '+e.message);}
   };
 
   const tabs=[{id:'kpi',label:'📊 KPI'},{id:'members',label:'👥 회원'},{id:'products',label:'🛒 상품'},{id:'pipeline',label:'🔄 파이프라인'},{id:'sms',label:'📱 SMS'},{id:'billing',label:'💳 결제'},{id:'engine',label:'🔧 엔진'},{id:'audit',label:'📋 감사'},{id:'settings',label:'⚙️ 설정'}];

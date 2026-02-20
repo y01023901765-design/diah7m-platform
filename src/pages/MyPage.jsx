@@ -43,7 +43,7 @@ function MyPage({user,lang,setGlobalLang}){
   const handleChangePw = async () => {
     if(!pw.cur||!pw.new1){ flash(t('fillAllFields',L)); return; }
     if(pw.new1!==pw.new2){ flash(t('pwMismatch',L)); return; }
-    if(pw.new1.length < 6){ flash('⚠️ 6자 이상 입력해주세요'); return; }
+    if(pw.new1.length < 6){ flash(t('pwMinLen',L)); return; }
     setSaving(true);
     try {
       await API.changePassword(pw.cur, pw.new1);
@@ -51,7 +51,7 @@ function MyPage({user,lang,setGlobalLang}){
       setPw({cur:'',new1:'',new2:''});
     } catch(e) {
       if(e.status === 401 || e.status === 400) {
-        flash('⚠️ ' + (e.data?.error || t('curPw',L) + ' 오류'));
+        flash('⚠️ ' + (e.data?.error || t('curPw',L)));
       } else {
         console.warn('[DIAH-7M] 비밀번호 변경 실패:', e.message);
         flash(t('pwChanged',L)); // 데모 모드 폴백
