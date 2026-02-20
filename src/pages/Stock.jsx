@@ -539,49 +539,8 @@ function StockView({stock:s,lang,onBack}){
             </div>
             {alignIcon?.detail&&<div style={{fontSize:13,color:LT.textMid,marginBottom:8,paddingLeft:4}}>{alignIcon.detail}</div>}
 
-            {/* ── 센서 패널 (세로 카드) — 핵심 데이터 ── */}
-            <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
-              {sensors.map(sk=>{
-                const b=SENSOR_BADGE[sk];
-                if(!b) return null;
-                const hasData = b.val!=null;
-                return(
-                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-                    {/* 왼쪽: 아이콘 + 위성명 레이블 */}
-                    <div style={{width:120,minWidth:120,padding:'18px 14px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,borderRight:`1px solid ${LT.border}`}}>
-                      <span style={{fontSize:28}}>{b.icon}</span>
-                      <span style={{fontSize:14,fontWeight:700,color:LT.textMid,textAlign:'center',lineHeight:1.3}}>
-                        {sk==='NTL'?'VIIRS':sk==='NO2'?'S-5P':sk==='THERMAL'?'LS-9':sk==='SAR'?'S-1':sk}
-                      </span>
-                    </div>
-                    {/* 중앙: 수치 강조 */}
-                    <div style={{width:140,minWidth:140,padding:'18px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
-                      {hasData
-                        ?<><span style={{fontSize:28,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
-                          <span style={{fontSize:14,color:LT.textDim,marginTop:5,lineHeight:1.4}}>{b.valLabel}</span></>
-                        :<span style={{fontSize:16,color:LT.textDim}}>— 대기</span>}
-                    </div>
-                    {/* 오른쪽: 설명 + 민감도 */}
-                    <div style={{flex:1,padding:'18px 18px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
-                      <span style={{fontSize:15,color:LT.textMid,lineHeight:1.6}}>{b.desc}</span>
-                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:14,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'4px 12px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
-                        {b.band.label}
-                      </span>}
-                      {!hasData&&<span style={{fontSize:14,color:LT.textDim}}>데이터 수집 대기 중</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ── 운영 패턴 태그 (센서 패널 아래 전폭 배너) ── */}
-            {patternTag&&<div style={{borderRadius:8,padding:'12px 16px',marginBottom:12,background:patternTag.bg,border:`1px solid ${patternTag.color}55`}}>
-              <div style={{fontSize:15,fontWeight:700,color:patternTag.color,marginBottom:4}}>{patternTag.label}</div>
-              <div style={{fontSize:13,color:patternTag.color,opacity:0.85,lineHeight:1.6}}>{patternTag.sub}</div>
-            </div>}
-
             {/* ── 이미지 2컬럼 ── */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {/* 왼쪽: before */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>🕰 이전 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
@@ -620,6 +579,47 @@ function StockView({stock:s,lang,onBack}){
                 </div>}
               </div>
             </div>
+
+            {/* ── 센서 패널 (세로 카드) — 핵심 데이터 ── */}
+            <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+              {sensors.map(sk=>{
+                const b=SENSOR_BADGE[sk];
+                if(!b) return null;
+                const hasData = b.val!=null;
+                return(
+                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
+                    {/* 왼쪽: 아이콘 + 위성명 레이블 */}
+                    <div style={{width:120,minWidth:120,padding:'18px 14px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,borderRight:`1px solid ${LT.border}`}}>
+                      <span style={{fontSize:28}}>{b.icon}</span>
+                      <span style={{fontSize:14,fontWeight:700,color:LT.textMid,textAlign:'center',lineHeight:1.3}}>
+                        {sk==='NTL'?'VIIRS':sk==='NO2'?'S-5P':sk==='THERMAL'?'LS-9':sk==='SAR'?'S-1':sk}
+                      </span>
+                    </div>
+                    {/* 중앙: 수치 강조 */}
+                    <div style={{width:140,minWidth:140,padding:'18px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
+                      {hasData
+                        ?<><span style={{fontSize:28,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
+                          <span style={{fontSize:14,color:LT.textDim,marginTop:5,lineHeight:1.4}}>{b.valLabel}</span></>
+                        :<span style={{fontSize:16,color:LT.textDim}}>— 대기</span>}
+                    </div>
+                    {/* 오른쪽: 설명 + 민감도 */}
+                    <div style={{flex:1,padding:'18px 18px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
+                      <span style={{fontSize:15,color:LT.textMid,lineHeight:1.6}}>{b.desc}</span>
+                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:14,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'4px 12px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
+                        {b.band.label}
+                      </span>}
+                      {!hasData&&<span style={{fontSize:14,color:LT.textDim}}>데이터 수집 대기 중</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── 운영 패턴 태그 ── */}
+            {patternTag&&<div style={{borderRadius:8,padding:'12px 16px',marginBottom:12,background:patternTag.bg,border:`1px solid ${patternTag.color}55`}}>
+              <div style={{fontSize:15,fontWeight:700,color:patternTag.color,marginBottom:4}}>{patternTag.label}</div>
+              <div style={{fontSize:13,color:patternTag.color,opacity:0.85,lineHeight:1.6}}>{patternTag.sub}</div>
+            </div>}
 
             {/* ── 한줄 해석 ── */}
             {flowText&&<div style={{fontSize:14,fontWeight:600,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:'#444',marginTop:10,padding:'10px 14px',background:anomPct!=null&&anomPct<-8?`${LT.danger}08`:anomPct!=null&&anomPct>5?`${LT.good}08`:LT.bg2,borderRadius:6,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
