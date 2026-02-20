@@ -367,13 +367,17 @@ function DashboardPage({user,onNav,lang,country,city}){
     return              { level:5, name:'위기', nameEn:'Crisis',  color:'#991b1b' };
   })();
 
-  // ★ 9축 인체명칭 매핑 (배포패키지 정본 기준)
+  // ★ 9축 인체명칭 + 경제용어 매핑 (배포패키지 정본 기준)
   const AXIS_NAMES = {
-    A1:{ko:'순환계',  icon:'🫀'}, A2:{ko:'호흡계',   icon:'🫁'},
-    A3:{ko:'소화계',  icon:'🍽️'}, A4:{ko:'신경계',   icon:'🧠'},
-    A5:{ko:'면역계',  icon:'🛡️'}, A6:{ko:'내분비계', icon:'⚗️'},
-    A7:{ko:'근골격계',icon:'🏗️'}, A8:{ko:'인구/취약',icon:'👥'},
-    A9:{ko:'재생/대외',icon:'🌐'},
+    A1:{ko:'순환계',   metaphor:'통화/자금',   icon:'🫀'},
+    A2:{ko:'호흡계',   metaphor:'무역/수출입', icon:'🫁'},
+    A3:{ko:'소화계',   metaphor:'소비/내수',   icon:'🍽️'},
+    A4:{ko:'신경계',   metaphor:'심리/정책',   icon:'🧠'},
+    A5:{ko:'면역계',   metaphor:'금융안정',    icon:'🛡️'},
+    A6:{ko:'내분비계', metaphor:'물가/재정',   icon:'⚗️'},
+    A7:{ko:'근골격계', metaphor:'산업/생산',   icon:'🏗️'},
+    A8:{ko:'인구/취약',metaphor:'인구/가계',   icon:'👥'},
+    A9:{ko:'재생/대외',metaphor:'부동산/대외', icon:'🌐'},
   };
 
   // ★ 글로벌 모드: 위성 탭 숨김
