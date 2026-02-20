@@ -29,16 +29,21 @@ var CAUSE_TEMPLATES = profiles.CAUSE_TEMPLATES;
 // ═══════════════════════════════════════════════════════════════
 
 var SENSOR_THRESHOLDS = {
-  NTL: { ALARM: -15, WARN: -8 },   // anomPct 기준
-  NO2: { ALARM: -15, WARN: -8 },   // anomPct 기준
-  SAR: { ALARM: -12, WARN: -6 },   // Phase 3, anomPct 기준
+  NTL: { ALARM: -15, WARN: -8 },           // 음수만: 야간광 감소 = 가동 하락
+  NO2: { ALARM: -15, WARN: -8,
+         ALARM_HIGH: 60, WARN_HIGH: 30 },   // 양방향: 급감(조업중단) + 급증(과부하/비정상)
+  SAR: { ALARM: -12, WARN: -6 },           // Phase 3, 음수만
 };
 
 function gradeSensor(sensorType, anomPct) {
   if (anomPct == null) return 'NO_DATA';
   var th = SENSOR_THRESHOLDS[sensorType] || SENSOR_THRESHOLDS.NTL;
+  // 음수 방향 (가동 감소)
   if (anomPct <= th.ALARM) return 'ALARM';
   if (anomPct <= th.WARN)  return 'WARN';
+  // 양수 방향 (NO2 급증 = 비정상 과부하, 해당 센서만)
+  if (th.ALARM_HIGH != null && anomPct >= th.ALARM_HIGH) return 'ALARM';
+  if (th.WARN_HIGH  != null && anomPct >= th.WARN_HIGH)  return 'WARN';
   return 'OK';
 }
 
