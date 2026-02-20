@@ -347,9 +347,9 @@ function StockView({stock:s,lang,onBack}){
         const warnNow    = !alarmNow && (worstNo2<-8 || worstTherm<-2);
         const trendWarn  = !alarmNow && !warnNow && worstViirs<-10; // 구조: VIIRS 장기 하락
         const state = alarmNow?'ALARM':warnNow?'WARN':trendWarn?'TREND':'OK';
-        const stateColor = state==='ALARM'?LT.danger:state==='WARN'?'#b35e00':state==='TREND'?'#555':LT.good;
+        const stateColor = state==='ALARM'?LT.danger:state==='WARN'?LT.warn:state==='TREND'?LT.textDim:LT.good;
         const stateBg    = state==='ALARM'?'#fff0f0':state==='WARN'?'#fffbeb':state==='TREND'?'#f8f8f8':'#f0fdf4';
-        const stateBorder= state==='ALARM'?`${LT.danger}44`:state==='WARN'?'#f0a00044':state==='TREND'?'#88888844':`${LT.good}44`;
+        const stateBorder= state==='ALARM'?`${LT.danger}33`:state==='WARN'?`${LT.warn}33`:state==='TREND'?`${LT.textDim}33`:`${LT.good}33`;
         const stateLabel = state==='ALARM'?'🔴 공급망 급성 경보':state==='WARN'?'🟡 공급망 변화 감지':state==='TREND'?'📉 구조 추세 경고':'🟢 공급망 정상';
         const stateDesc  = state==='ALARM'
           ?'NO₂ 급락 확인 — 최근 확인 가능한 물리 신호 기준 이상 감지'
@@ -357,23 +357,27 @@ function StockView({stock:s,lang,onBack}){
           :state==='TREND'?'야간광 장기 하락 — VIIRS 구조 추세 경고 (D-90 기준)'
           :'관측 가능한 물리 신호 범위 내 정상';
         return(
-          <div style={{borderRadius:12,padding:'20px 22px',marginBottom:12,background:stateBg,border:`2px solid ${stateBorder}`}}>
+          <div style={{borderRadius:12,padding:'20px 22px',marginBottom:4,background:stateBg,border:`2px solid ${stateBorder}`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:11,fontWeight:700,color:stateColor,letterSpacing:'0.08em',marginBottom:6,textTransform:'uppercase'}}>공급망 조기경보 · 최근 확인 물리 신호 기준</div>
-                <div style={{fontSize:22,fontWeight:900,color:stateColor,marginBottom:6}}>{stateLabel}</div>
+                <div style={{fontSize:22,fontWeight:900,color:stateColor,marginBottom:6}}>
+                  {stateLabel}
+                  {/* 추세 경고 툴팁 */}
+                  {state==='TREND'&&<span title="장기 활동 감소 신호 — 급성 위험 아님. VIIRS D-90 기준 누적 하락." style={{fontSize:13,fontWeight:500,color:LT.textDim,marginLeft:10,cursor:'help',borderBottom:`1px dashed ${LT.textDim}`}}>ℹ️ 급성 위험 아님</span>}
+                </div>
                 <div style={{fontSize:14,color:stateColor,opacity:0.85,lineHeight:1.6}}>{stateDesc}</div>
               </div>
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                 {(()=>{
                   const cards=[];
-                  if(worstNo2!==0) cards.push({icon:'🚛',label:'NO₂',fresh:'D-5',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
-                  if(worstTherm!==0) cards.push({icon:'🔥',label:'Thermal',fresh:'D-16',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
-                  if(worstViirs!==0) cards.push({icon:'🌙',label:'야간광',fresh:'D-90',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  if(worstNo2!==0) cards.push({icon:'🚛',label:'NO₂',fresh:'D-5',dot:'🟢',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({icon:'🔥',label:'Thermal',fresh:'D-16',dot:'🟡',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({icon:'🌙',label:'야간광',fresh:'D-90',dot:'🔵',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
-                    <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?'#f0a000':LT.border}`,minWidth:90}}>
-                      <div style={{fontSize:12,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.icon} {c.label} <span style={{color:c.fresh==='D-5'?'#059669':'#b35e00',fontSize:11}}>{c.fresh}</span></div>
-                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?'#b35e00':LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
+                    <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:90}}>
+                      <div style={{fontSize:12,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.icon} {c.label} <span style={{fontSize:11}}>{c.dot}</span> <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:11,fontWeight:700}}>{c.fresh}</span></div>
+                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
                     </div>
                   ));
                 })()}
@@ -382,6 +386,11 @@ function StockView({stock:s,lang,onBack}){
           </div>
         );
       })()}
+
+      {/* ── 경보 철학 한 줄 ── */}
+      <div style={{fontSize:13,color:LT.textDim,marginBottom:12,marginTop:6,padding:'6px 14px',background:'#f8f8f8',borderRadius:6,borderLeft:'3px solid #ccc'}}>
+        경보는 최근 관측 가능한 물리 신호 기준입니다. 미래 주가를 예측하지 않습니다.
+      </div>
 
       {/* ── ② 시간축 스위치 + 신선도 안내 ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,marginBottom:12,padding:'12px 16px',background:LT.bg2,borderRadius:10,border:`1px solid ${LT.border}`}}>
@@ -396,13 +405,13 @@ function StockView({stock:s,lang,onBack}){
         </div>
         {/* 신선도 배지 */}
         <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#e6f9f0',border:'1px solid #059669',color:'#059669',fontWeight:700}}>🚛 NO₂ D-5</span>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#fff8e6',border:'1px solid #b35e00',color:'#b35e00',fontWeight:700}}>🔥 Thermal D-16</span>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#f5f5f5',border:'1px solid #888',color:'#555',fontWeight:700}}>🌙 VIIRS D-90</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#f0fdf4',border:`1px solid ${LT.good}`,color:LT.good,fontWeight:700}}>🟢 NO₂ D-5 최신</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#fffbeb',border:`1px solid ${LT.warn}`,color:LT.warn,fontWeight:700}}>🟡 Thermal D-16 중기</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#eff6ff',border:'1px solid #2563eb',color:'#2563eb',fontWeight:700}}>🔵 VIIRS D-90 추세용</span>
         </div>
       </div>
       {/* 모드 설명 */}
-      <div style={{fontSize:13,color:LT.textMid,marginBottom:12,padding:'8px 14px',background:satMode==='now'?'#e6f9f0':'#f8f8f8',borderRadius:6,borderLeft:`3px solid ${satMode==='now'?'#059669':'#888'}`}}>
+      <div style={{fontSize:13,color:LT.textMid,marginBottom:12,padding:'8px 14px',background:satMode==='now'?'#f0fdf4':'#f8f8f8',borderRadius:6,borderLeft:`3px solid ${satMode==='now'?LT.good:LT.textDim}`}}>
         {satMode==='now'
           ?'🚨 지금 경보: NO₂(D-5)+Thermal(D-16) — 지금 공급망이 막히는지 확인. 급성 신호 중심.'
           :'📉 구조 추세: VIIRS 야간광(D-90) — 공급망 구조가 무너지는지 장기 확인. 추세 신호 중심.'}
@@ -502,15 +511,15 @@ function StockView({stock:s,lang,onBack}){
             const a=Math.abs(v);
             const t1=isDeg?1:3, t2=isDeg?3:10;
             if(a<=t1) return {
-              label:'정상 변동', color:'#555', bg:'#f0f0f0',
+              label:'정상 변동', color:LT.textDim, bg:'#f8f8f8',
               tip: isDeg ? '지표온도는 계절·구름 영향으로 ±1°C 내 변동이 일반적' : '야간조도는 기상·스케줄 영향으로 ±3% 내 변동이 일반적',
             };
             if(a<=t2) return {
-              label:'변화 신호', color:'#b35e00', bg:'#fff3e0',
+              label:'변화 신호', color:LT.warn, bg:'#fffbeb',
               tip: isDeg ? '±1~3°C 변화는 공정 부하 변화 또는 계절 외 요인 가능성' : '±3~10% 변화는 가동 스케줄 또는 생산량 조정 신호',
             };
             return {
-              label:'구조 변화 가능', color:'#c00000', bg:'#ffebeb',
+              label:'구조 변화 가능', color:LT.danger, bg:'#fff0f0',
               tip: isDeg ? '±3°C 초과는 공정 구조적 변화 또는 설비 교체 수준' : '±10% 초과는 생산 구조 변화 또는 대규모 운영 전환 수준',
             };
           };
@@ -538,7 +547,7 @@ function StockView({stock:s,lang,onBack}){
           const alignIcon = activeDirs.length===0 ? null
             : allSame && activeDirs[0]>0  ? {icon:'🟢', label:'센서 방향 일치 — 가동 상승', detail:null}
             : allSame && activeDirs[0]<0  ? {icon:'🔴', label:'센서 방향 일치 — 가동 하락', detail:null}
-            : allOpposite                 ? {icon:'🟡', label:'혼합 신호', detail:_mixedDetail()}
+            : allOpposite                 ? {icon:'🟡', label:'혼합 신호', detail:_mixedDetail(), mixed:true}
             : null;
 
           // ③ 운영 패턴 태그
@@ -546,15 +555,15 @@ function StockView({stock:s,lang,onBack}){
             const ntlD=_dir(anomPct), no2D=_dir(no2Pct), thermD=_dir(thermDeg);
             const has=(a,b)=>a!==0&&b!==0;
             if(has(ntlD,no2D)&&ntlD<0&&no2D>0)
-              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + NO₂↑ — 야간→주간 교대 전환 또는 연료 전환 추정. 단순 가동 감소가 아닌 운영 구조 변화 가능', color:'#7c3aed', bg:'#f5f0ff'};
+              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + NO₂↑ — 야간→주간 교대 전환 또는 연료 전환 추정. 단순 가동 감소가 아닌 운영 구조 변화 가능', color:LT.warn, bg:'#fffbeb'};
             if(has(ntlD,thermD)&&ntlD<0&&thermD>0)
-              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + 지표온도↑ — 공정 변경 또는 고열 설비 교체 추정. 물류 흐름보다 내부 공정 변화 가능성', color:'#7c3aed', bg:'#f5f0ff'};
+              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + 지표온도↑ — 공정 변경 또는 고열 설비 교체 추정. 물류 흐름보다 내부 공정 변화 가능성', color:LT.warn, bg:'#fffbeb'};
             if(has(ntlD,no2D)&&ntlD>0&&no2D>0)
-              return {label:'📈 생산 확대 신호', sub:'야간광↑ + NO₂↑ — 가동률·연소량 동반 상승. 증산 또는 신규 라인 가동 추정', color:'#166534', bg:'#f0fdf4'};
+              return {label:'📈 생산 확대 신호', sub:'야간광↑ + NO₂↑ — 가동률·연소량 동반 상승. 증산 또는 신규 라인 가동 추정', color:LT.good, bg:'#f0fdf4'};
             if(has(ntlD,no2D)&&ntlD<0&&no2D<0)
-              return {label:'📉 생산 축소 신호', sub:'야간광↓ + NO₂↓ — 가동률·연소량 동반 하락. 감산 또는 유지보수 기간 추정', color:'#991b1b', bg:'#fff1f2'};
+              return {label:'📉 생산 축소 신호', sub:'야간광↓ + NO₂↓ — 가동률·연소량 동반 하락. 감산 또는 유지보수 기간 추정', color:LT.danger, bg:'#fff0f0'};
             if(has(ntlD,thermD)&&ntlD>0&&thermD>0)
-              return {label:'🔥 고부하 운영 신호', sub:'야간광↑ + 지표온도↑ — 고강도 가동. 풀가동 또는 비상 생산 추정', color:'#92400e', bg:'#fffbeb'};
+              return {label:'🔥 고부하 운영 신호', sub:'야간광↑ + 지표온도↑ — 고강도 가동. 풀가동 또는 비상 생산 추정', color:LT.warn, bg:'#fffbeb'};
             return null;
           };
           const patternTag = _patternTag();
@@ -582,10 +591,10 @@ function StockView({stock:s,lang,onBack}){
                 <span style={{fontSize:13,padding:'2px 8px',borderRadius:4,background:LT.bg3,color:LT.textMid,fontWeight:600}}>{f.stage?.toUpperCase()||''}</span>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                {qStatus&&<span style={{fontSize:13,fontWeight:600,color:qStatus==='good'||qStatus==='GOOD'?LT.good:qStatus==='ok'||qStatus==='PARTIAL'?'#b35e00':LT.danger}}>{qIcon} {qLabel}</span>}
+                {qStatus&&<span style={{fontSize:13,fontWeight:600,color:qStatus==='good'||qStatus==='GOOD'?LT.good:qStatus==='ok'||qStatus==='PARTIAL'?LT.warn:LT.danger}}>{qIcon} {qLabel}</span>}
                 {alignIcon&&<span style={{fontSize:13,fontWeight:700,padding:'3px 10px',borderRadius:6,
-                  background:alignIcon.icon==='🟢'?`${LT.good}18`:alignIcon.icon==='🔴'?`${LT.danger}18`:'#f0f0f0',
-                  color:alignIcon.icon==='🟢'?LT.good:alignIcon.icon==='🔴'?LT.danger:'#555'}}>
+                  background:alignIcon.icon==='🟢'?`${LT.good}18`:alignIcon.icon==='🔴'?`${LT.danger}18`:alignIcon.mixed?`${LT.warn}18`:'#f8f8f8',
+                  color:alignIcon.icon==='🟢'?LT.good:alignIcon.icon==='🔴'?LT.danger:alignIcon.mixed?LT.warn:LT.textDim}}>
                   {alignIcon.icon} {alignIcon.label}
                 </span>}
               </div>
@@ -638,7 +647,7 @@ function StockView({stock:s,lang,onBack}){
 
             {/* ── 센서 패널 — satMode 기반 필터 ── */}
             {(()=>{
-              const FRESHNESS = {NTL:{label:'D-90',color:'#888',bg:'#f5f5f5'},NO2:{label:'D-5 실시간',color:'#059669',bg:'#e6f9f0'},THERMAL:{label:'D-16',color:'#b35e00',bg:'#fff8e6'},SAR:{label:'예정',color:'#aaa',bg:'#f5f5f5'}};
+              const FRESHNESS = {NTL:{label:'D-90',color:'#2563eb',bg:'#eff6ff'},NO2:{label:'D-5 실시간',color:LT.good,bg:'#f0fdf4'},THERMAL:{label:'D-16',color:LT.warn,bg:'#fffbeb'},SAR:{label:'예정',color:LT.textDim,bg:'#f8f8f8'}};
               // satMode에 따라 표시 센서 필터: now=NO₂+Thermal 우선, trend=NTL 우선
               const modeFilter = satMode==='now'
                 ? (sk=>['NO2','THERMAL','SAR'].includes(sk))
@@ -653,11 +662,11 @@ function StockView({stock:s,lang,onBack}){
                 const fresh = FRESHNESS[sk]||{label:'',color:'#aaa',bg:'#f5f5f5'};
                 const isPrimary = sk==='NO2';
                 return(
-                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`${isPrimary?2:1}px solid ${isPrimary?'#059669':LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:isPrimary?'0 2px 8px rgba(5,150,105,0.12)':'0 1px 4px rgba(0,0,0,0.07)'}}>
+                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`${isPrimary?2:1}px solid ${isPrimary?LT.good:LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:isPrimary?'0 2px 8px rgba(5,150,105,0.12)':'0 1px 4px rgba(0,0,0,0.07)'}}>
                     {/* 왼쪽: 아이콘 + 위성명 + 신선도 */}
-                    <div style={{width:120,minWidth:120,padding:'16px 12px',background:isPrimary?'#f0fdf9':LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:`1px solid ${isPrimary?'#059669':LT.border}`}}>
+                    <div style={{width:120,minWidth:120,padding:'16px 12px',background:isPrimary?'#f0fdf4':LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:`1px solid ${isPrimary?LT.good:LT.border}`}}>
                       <span style={{fontSize:26}}>{b.icon}</span>
-                      <span style={{fontSize:13,fontWeight:700,color:isPrimary?'#059669':LT.textMid,textAlign:'center'}}>
+                      <span style={{fontSize:13,fontWeight:700,color:isPrimary?LT.good:LT.textMid,textAlign:'center'}}>
                         {sk==='NTL'?'VIIRS':sk==='NO2'?'Sentinel-5P':sk==='THERMAL'?'Landsat-9':sk==='SAR'?'Sentinel-1':sk}
                       </span>
                       <span style={{fontSize:12,fontWeight:700,padding:'2px 7px',borderRadius:10,background:fresh.bg,color:fresh.color,border:`1px solid ${fresh.color}55`}}>{fresh.label}</span>
@@ -671,7 +680,7 @@ function StockView({stock:s,lang,onBack}){
                     </div>
                     {/* 오른쪽: 설명 + 민감도 */}
                     <div style={{flex:1,padding:'16px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
-                      {isPrimary&&<span style={{fontSize:12,fontWeight:700,color:'#059669',marginBottom:2}}>★ 핵심 실시간 지표</span>}
+                      {isPrimary&&<span style={{fontSize:12,fontWeight:700,color:LT.good,marginBottom:2}}>★ 핵심 실시간 지표</span>}
                       <span style={{fontSize:14,color:LT.textMid,lineHeight:1.6}}>{b.desc}</span>
                       {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:13,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'3px 10px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
                         {b.band.label}
@@ -692,7 +701,7 @@ function StockView({stock:s,lang,onBack}){
             </div>}
 
             {/* ── 한줄 해석 ── */}
-            {flowText&&<div style={{fontSize:14,fontWeight:600,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:'#444',marginTop:10,padding:'10px 14px',background:anomPct!=null&&anomPct<-8?`${LT.danger}08`:anomPct!=null&&anomPct>5?`${LT.good}08`:LT.bg2,borderRadius:6,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
+            {flowText&&<div style={{fontSize:14,fontWeight:600,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.textMid,marginTop:10,padding:'10px 14px',background:anomPct!=null&&anomPct<-8?`${LT.danger}08`:anomPct!=null&&anomPct>5?`${LT.good}08`:LT.bg2,borderRadius:6,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
               {flowText}
             </div>}
 
