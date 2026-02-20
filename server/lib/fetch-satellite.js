@@ -524,7 +524,6 @@ async function fetchFacilityNO2(lat, lng, radiusKm) {
       ee.ImageCollection(dataset)
         .filterBounds(geometry)
         .filterDate(startDate.toISOString().split('T')[0], endStr)
-        .filter(ee.Filter.lt('SENSING_ORBIT_DIRECTION', 2)) // descending orbit
         .map(function(img) {
           // cloud_fraction < 0.2 마스킹
           var cloudMask = img.select('cloud_fraction').lt(0.2);
