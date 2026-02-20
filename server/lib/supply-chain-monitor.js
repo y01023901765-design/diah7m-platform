@@ -153,7 +153,9 @@ function aggregateStage(facilitySensorResults) {
   // evidence 2개 선택 (상위 2개: ALARM > WARN > OK, 동률 시 |value| 큰 순)
   allDetails.sort(function(a, b) {
     var gradeOrder = { ALARM: 0, WARN: 1, OK: 2, NO_DATA: 3 };
-    var ga = gradeOrder[a.grade] || 3, gb = gradeOrder[b.grade] || 3;
+    // nullish coalescing 대신 명시적 체크 (0 || 3 = 3 버그 방지)
+    var ga = gradeOrder[a.grade] != null ? gradeOrder[a.grade] : 3;
+    var gb = gradeOrder[b.grade] != null ? gradeOrder[b.grade] : 3;
     if (ga !== gb) return ga - gb;
     return Math.abs(b.value || 0) - Math.abs(a.value || 0);
   });
