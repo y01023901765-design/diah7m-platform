@@ -313,7 +313,13 @@ function StockView({stock:s,lang,onBack}){
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🛰️ {t('svSatCompare',L)}</div>
         {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
-        {!satImgLoading&&(facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]).map((f,i)=>{
+        {!satImgLoading&&(()=>{
+          // liveSatImg 있으면 이미지 있는 시설 우선, 없으면 facs.slice(0,3)
+          const displayFacs = liveSatImg && liveSatImg.length>0
+            ? liveSatImg.slice(0,3)
+            : (facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]);
+          return displayFacs;
+        })().map((f,i)=>{
           // liveSatImg에서 시설명으로 매칭
           const satFac=liveSatImg&&liveSatImg.find(sf=>sf.name===f.name);
           const imgs=satFac?.images||null;
@@ -325,7 +331,7 @@ function StockView({stock:s,lang,onBack}){
           const afterDate=imgs?.afterDate||null;
           return(
           <div key={i} style={{marginBottom:i<2?16:0}}>
-            <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc}</span></div>
+            <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc||f.stage||''}</span></div>
             <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svBefore',L)}{beforeDate&&<span style={{fontSize:12,marginLeft:6,color:LT.textDim}}>{beforeDate}</span>}</div>
