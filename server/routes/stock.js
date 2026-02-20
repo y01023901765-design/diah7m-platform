@@ -280,6 +280,21 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       });
     }
 
+    // ── Yahoo CB 상태 확인 → 재무 게이지 DEGRADED 표시 연계 ──
+    // 자동 복구 시스템(CircuitBreaker)과 연계: CB OPEN/HALF_OPEN 또는 최근 실패 시
+    // 재무 게이지(SG_V/G/Q)를 NO_DATA 대신 DEGRADED로 표시
+    const conc = require('../lib/concurrency');
+    const cbSources = conc.globalMonitor.getStatus().sources || {};
+    const yahooCB = cbSources['YAHOO_STOCK'] || {};
+    const yahooState = yahooCB.state || 'CLOSED';
+    const yahooLastFailure = yahooCB.stats && yahooCB.stats.lastFailure;
+    const yahooFailedRecently = yahooLastFailure &&
+      (Date.now() - new Date(yahooLastFailure.time).getTime()) < 10 * 60 * 1000; // 10분 내 실패
+    const yahooIsDegraded = yahooState !== 'CLOSED' || yahooFailedRecently;
+
+    // 재무 게이지 축 (Yahoo quoteSummary 의존)
+    const FINANCIAL_AXES = ['SV', 'SG', 'SQ']; // SG_V*, SG_G*, SG_Q*
+
     // 엔진으로 등급 계산
     const axes = stockThresholds ? stockThresholds.STOCK_AXES : {};
     const thresholdTable = stockThresholds ? stockThresholds.STOCK_GAUGE_THRESHOLDS : {};
@@ -292,17 +307,25 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       const axId = axKeys[a];
       const ax = axes[axId];
       const axGauges = ax.gauges || [];
+      const isFinancialAxis = FINANCIAL_AXES.includes(axId);
       for (let g = 0; g < axGauges.length; g++) {
         const gId = axGauges[g];
         const cached = gaugeData[gId];
         const value = cached ? cached.value : null;
         const gradeResult = (gradeGauge && value != null) ? gradeGauge(gId, value, thresholdTable) : { score: null, grade: null };
+
+        // 재무 게이지가 NO_DATA이고 Yahoo가 불안정하면 DEGRADED로 표시
+        let status = cached ? cached.status : 'NO_DATA';
+        if (isFinancialAxis && status === 'NO_DATA' && yahooIsDegraded) {
+          status = 'DEGRADED';
+        }
+
         gauges.push({
           id: gId,
           axis: axId,
           value: value,
           prevValue: cached ? cached.prevValue : null,
-          status: cached ? cached.status : 'NO_DATA',
+          status: status,
           score: gradeResult.score,
           grade: gradeResult.grade,
           updatedAt: cached ? cached.updatedAt : null,
@@ -310,11 +333,27 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       }
     }
 
+    // Yahoo 소스 상태 — 프론트엔드 배너용
+    const yahooStatus = {
+      state: yahooState,
+      degraded: yahooIsDegraded,
+      lastFailure: yahooLastFailure || null,
+      note: yahooIsDegraded
+        ? '재무 데이터 소스 일시 불안정 — 위성 물리 흐름 판정은 유효합니다'
+        : null,
+      autoRecovery: yahooState === 'HALF_OPEN'
+        ? '자동 복구 시도 중...'
+        : yahooState === 'OPEN'
+        ? `자동 복구 대기 중 (${Math.round((45000 - (Date.now() - (yahooCB.stats && yahooCB.stats.lastStateChange ? new Date(yahooCB.stats.lastStateChange.at).getTime() : Date.now()))) / 1000)}초 후 재시도)`
+        : null,
+    };
+
     res.json({
       ticker,
       total: gauges.length,
       stale: isStale,
       gauges,
+      yahooStatus,
     });
   });
 
