@@ -170,13 +170,11 @@ function StockView({stock:s,lang,onBack}){
   // 위성 이미지 — 위성 탭 진입 시 lazy load (GEE 수집 최대 30초 소요)
   useEffect(()=>{
     if(tab!=='sat'||liveSatImg||satImgLoading) return;
-    let c=false;
     setSatImgLoading(true);
     API.stockSatellite(s.sid).then(d=>{
-      if(!c&&d&&d.facilities) setLiveSatImg(d.facilities);
-    }).catch(()=>{}).finally(()=>{if(!c) setSatImgLoading(false);});
-    return()=>{c=true};
-  },[tab,s.sid,liveSatImg,satImgLoading]);
+      if(d&&d.facilities) setLiveSatImg(d.facilities);
+    }).catch(()=>{}).finally(()=>{ setSatImgLoading(false); });
+  },[tab,s.sid]);// eslint-disable-line
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
