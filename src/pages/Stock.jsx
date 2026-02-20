@@ -490,8 +490,8 @@ function StockView({stock:s,lang,onBack}){
           // ③ 가동 흐름 한줄 해석
           const flowText=anomPct==null?null
             :anomPct>15?'야간 운영 강화 패턴 — 가동 밀도 증가 추정'
-            :anomPct>5?'가동 흐름 안정 — 전년 대비 활동 증가'
-            :anomPct>-5?'가동 흐름 안정 — 전년과 유사 수준'
+            :anomPct>5?'가동 흐름 안정 — 1년 평균 대비 활동 증가'
+            :anomPct>-5?'가동 흐름 안정 — 1년 평균과 유사 수준'
             :anomPct>-15?'작업 밀도 소폭 감소 — 모니터링 권장'
             :'야간 활동 감소 감지 — 가동률 하락 가능성';
           // ④ 센서 신뢰도 — 서버 images.quality 우선, 없으면 ntl.quality 폴백
@@ -578,9 +578,9 @@ function StockView({stock:s,lang,onBack}){
 
           // ③ 센서 의미 아이콘
           const SENSOR_BADGE={
-            NTL:    {icon:'🌙', desc:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)',          val:_fmtPct(anomPct), valColor:_valColor(anomPct), valLabel:'전년 대비 밝기 변화',  band:ntlBand},
-            NO2:    {icon:'🚛', desc:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·배기의 이산화질소 농도를 일 단위로 측정)', val:_fmtPct(no2Pct),  valColor:_valColor(no2Pct),  valLabel:'전년 대비 NO₂ 변화', band:no2Band},
-            THERMAL:{icon:'🔥', desc:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)',          val:_fmtDeg(thermDeg),valColor:_valColor(thermDeg),valLabel:'전년 대비 온도 변화', band:thermBand},
+            NTL:    {icon:'🌙', desc:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)',          val:_fmtPct(anomPct), valColor:_valColor(anomPct), valLabel:'1년 평균 대비 밝기 변화',  band:ntlBand},
+            NO2:    {icon:'🚛', desc:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·배기의 이산화질소 농도를 일 단위로 측정)', val:_fmtPct(no2Pct),  valColor:_valColor(no2Pct),  valLabel:'최근 8주 대비 NO₂ 변화', band:no2Band},
+            THERMAL:{icon:'🔥', desc:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)',          val:_fmtDeg(thermDeg),valColor:_valColor(thermDeg),valLabel:'전년 동기간 대비 온도 변화', band:thermBand},
             SAR:    {icon:'📡', desc:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 감지, Phase 3 예정)',    val:null, valColor:LT.textDim, valLabel:null, band:null},
           };
           const sensors=f.sensors||['NTL'];
