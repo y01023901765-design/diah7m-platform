@@ -268,15 +268,16 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     let gaugeData = stockStore ? stockStore.toGaugeData(ticker) : {};
     const isStale = !stockStore || stockStore.isStale(ticker);
 
-    // stale이면 실시간 수집 시도
+    // stale이면 백그라운드 큐에 넣고 즉시 캐시 반환 (사용자 요청이 Yahoo burst 유발 방지)
     if (isStale && stockPipeline) {
-      try {
-        const pipeResult = await stockPipeline.fetchAllStockGauges(ticker);
-        if (stockStore) await stockStore.storeBatch(pipeResult);
-        gaugeData = stockStore ? stockStore.toGaugeData(ticker) : pipeResult.gauges;
-      } catch (e) {
-        console.warn('[Stock] gauge fetch error for', ticker, ':', e.message);
-      }
+      setImmediate(async function() {
+        try {
+          const pipeResult = await stockPipeline.fetchAllStockGauges(ticker);
+          if (stockStore) await stockStore.storeBatch(pipeResult);
+        } catch (e) {
+          console.warn('[Stock] bg gauge fetch error for', ticker, ':', e.message);
+        }
+      });
     }
 
     // 엔진으로 등급 계산
@@ -747,7 +748,9 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     }
 
     // live GEE vs dry 모드 선택
-    const mode = req.query.mode || 'dry'; // ?mode=live 로 GEE 실호출
+    // 프로덕션 기본값: live / 개발 환경: dry (NODE_ENV로 구분)
+    const defaultMode = process.env.NODE_ENV === 'production' ? 'live' : 'dry';
+    const mode = req.query.mode || defaultMode;
     let result;
 
     if (mode === 'live') {

@@ -26,8 +26,13 @@ var YAHOO_BASE = 'https://query1.finance.yahoo.com';
 var httpAgent = new http.Agent({ keepAlive: true, maxSockets: 20 });
 var httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 20 });
 
+// ── 전역 Rate Limiter: 초당 0.5 req, burst 2 ──
+// 429 반복의 구조적 원인 제거 — 배치/사용자 요청 모두 이 제한을 통과
+var _yahooRL = new conc.RateLimiter(2, 0.5);
+_yahooRL.startDrain();
+
 // ── 동시접속 보호: coalescer + semaphore + singleton crumb ──
-var _yahooSem = new conc.Semaphore(5);       // Yahoo 동시 5개 제한
+var _yahooSem = new conc.Semaphore(3);       // Yahoo 동시 3개 제한 (기존 5→3)
 var _summaryCoalescer = new conc.RequestCoalescer(); // 동일 종목 중복 방지
 var _chartCoalescer = new conc.RequestCoalescer();
 var _gaugeCoalescer = new conc.RequestCoalescer();
@@ -150,9 +155,12 @@ var _summaryCache = {};
 var _summaryTTL = 24 * 3600 * 1000; // 24h
 
 // query2 v10 + crumb — CB 바깥에서 직접 호출 (CB OPEN 루프 방지)
+// Rate Limiter 통과 후 실행 (초당 0.5 req 전역 제한)
 async function _fetchSummaryWithCrumb(ticker) {
   await ensureCrumb();
   if (!_crumb) throw new Error('crumb unavailable');
+  // 전역 Rate Limiter 대기 (429 구조적 방어)
+  await _yahooRL.acquire();
   var modules = 'defaultKeyStatistics,financialData,summaryDetail';
   var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
   var headers = { 'User-Agent': _nextUA() };
@@ -167,47 +175,66 @@ async function _fetchSummaryWithCrumb(ticker) {
   return (result && result[0]) || null;
 }
 
+// 429 발생 시 지수 백오프 대기 (CB failure 카운트 제외)
+async function _wait429(attempt) {
+  var ms = Math.min(60000, 5000 * Math.pow(2, attempt)) + Math.random() * 3000;
+  console.warn('[StockPipeline] 429 rate limit — waiting', Math.round(ms / 1000) + 's before retry');
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
 async function _doFetchYahooSummary(ticker) {
   var now = Date.now();
   var cached = _summaryCache[ticker];
+  // TTL 내 캐시: 바로 반환
   if (cached && (now - cached.ts < _summaryTTL)) return cached.data;
 
   return _yahooSem.run(async function() {
     var data = null;
 
-    try {
-      // CB 안에서 실행 — 성공/실패 카운트
-      data = await _cbYahooStock.run(function() {
-        return _fetchSummaryWithCrumb(ticker);
-      });
-    } catch (err) {
-      var isCBOpen = err.message && err.message.includes('[CB:');
-      var is401 = err.response && err.response.status === 401;
+    // 429 발생 시 최대 2회 재시도 (CB failure 카운트 안 함)
+    for (var attempt = 0; attempt <= 2; attempt++) {
+      try {
+        data = await _cbYahooStock.run(function() {
+          return _fetchSummaryWithCrumb(ticker);
+        });
+        break; // 성공
+      } catch (err) {
+        var isCBOpen = err.message && err.message.includes('[CB:');
+        var is401 = err.response && err.response.status === 401;
+        var is429 = err.response && err.response.status === 429;
 
-      if (isCBOpen) {
-        // CB OPEN → crumb만 조용히 갱신 후 CB 바깥에서 직접 시도
-        console.warn('[StockPipeline] CB OPEN, attempting crumb refresh for', ticker);
-        _crumb = null; _crumbTs = 0;
-        try {
-          data = await _fetchSummaryWithCrumb(ticker);
-          // 성공 시 CB 수동 리셋 (다음 정상 호출 허용)
-          if (data && _cbYahooStock.reset) _cbYahooStock.reset();
-        } catch (e2) {
-          console.error('[StockPipeline] CB bypass also failed for', ticker, ':', e2.message);
-          return null;
+        if (is429) {
+          // 429: 속도조절 신호 — CB failure 카운트 없이 백오프 후 재시도
+          if (attempt < 2) { await _wait429(attempt); continue; }
+          // 2회 재시도 후에도 429 → Last Good 반환 (null 아님)
+          console.warn('[StockPipeline] 429 persists for', ticker, '— returning last good');
+          return cached ? cached.data : null;
+        } else if (isCBOpen) {
+          // CB OPEN → crumb 갱신 후 CB 바깥에서 직접 시도
+          console.warn('[StockPipeline] CB OPEN, crumb refresh for', ticker);
+          _crumb = null; _crumbTs = 0;
+          try {
+            data = await _fetchSummaryWithCrumb(ticker);
+            if (data && _cbYahooStock.reset) _cbYahooStock.reset();
+          } catch (e2) {
+            console.error('[StockPipeline] CB bypass failed for', ticker, ':', e2.message);
+            return cached ? cached.data : null; // Last Good
+          }
+          break;
+        } else if (is401) {
+          // crumb 만료 → 갱신 후 1회 재시도
+          _crumb = null; _crumbTs = 0;
+          try {
+            data = await _fetchSummaryWithCrumb(ticker);
+          } catch (e3) {
+            console.error('[StockPipeline] 401 retry failed for', ticker, ':', e3.message);
+            return cached ? cached.data : null; // Last Good
+          }
+          break;
+        } else {
+          console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
+          return cached ? cached.data : null; // Last Good
         }
-      } else if (is401) {
-        // crumb 만료 → 갱신 후 1회 재시도 (CB 카운트에 포함 안 됨)
-        _crumb = null; _crumbTs = 0;
-        try {
-          data = await _fetchSummaryWithCrumb(ticker);
-        } catch (e3) {
-          console.error('[StockPipeline] 401 retry failed for', ticker, ':', e3.message);
-          return null;
-        }
-      } else {
-        console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
-        return null;
       }
     }
 
@@ -243,10 +270,11 @@ async function _doFetchYahooChart(ticker, range) {
   return _yahooSem.run(async function() {
     try {
       var data = await _cbYahooStock.run(async function() {
+        await _yahooRL.acquire(); // chart도 Rate Limiter 통과
         var res = await axios.get(url, {
           params: { interval: '1d', range: rng },
           timeout: YAHOO_TIMEOUT,
-          headers: { 'User-Agent': 'Mozilla/5.0' },
+          headers: { 'User-Agent': _nextUA() },
           httpsAgent: httpsAgent,
         });
 
@@ -476,6 +504,10 @@ async function fetchStockBatch(tickers) {
     } catch (err) {
       console.error('[StockPipeline] Batch error for', t, ':', err.message);
       results[t] = { ticker: t, gauges: {}, summary: { total: 15, ok: 0, errors: 15 }, error: err.message };
+    }
+    // 종목 간 2초 간격 (서버 재시작 후 burst 방지)
+    if (i < tickers.length - 1) {
+      await new Promise(function(r) { setTimeout(r, 2000); });
     }
   }
   return results;
