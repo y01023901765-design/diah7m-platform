@@ -622,15 +622,21 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             };
 
             // sort().first() — 지정 구간 내 가장 최신 이미지
-            // 단일 월에 데이터 없을 수 있으므로 3개월 윈도우로 확장
-            const afterStart3 = new Date(afterStart); afterStart3.setMonth(afterStart3.getMonth() - 2);
-            const beforeStart3 = new Date(beforeStart); beforeStart3.setMonth(beforeStart3.getMonth() - 2);
-            console.log('[Satellite] thumb', f.name, fmt(afterStart3), '~', fmt(afterEnd), '/', fmt(beforeStart3), '~', fmt(beforeEnd));
+            // 단일 월 데이터 없을 경우 대비 3개월 확장 — after/before 윈도우는 겹치지 않게 유지
+            // after: start를 앞으로 당김 (최신 방향 유지)
+            // before: end를 뒤로 당김 (1년전 방향 유지) — before 윈도우는 after와 겹치지 않음
+            const afterStart3  = new Date(afterStart);  afterStart3.setMonth(afterStart3.getMonth() - 2);
+            const beforeEnd3   = new Date(beforeEnd);   beforeEnd3.setMonth(beforeEnd3.getMonth() + 2);
+            // beforeEnd3이 afterStart를 넘지 않도록 cap (윈도우 겹침 방지)
+            const beforeEnd3Capped = beforeEnd3 < afterStart ? beforeEnd3 : new Date(afterStart.getTime() - 1);
+            console.log('[Satellite] thumb', f.name,
+              fmt(afterStart3), '~', fmt(afterEnd), '/',
+              fmt(beforeStart), '~', fmt(beforeEnd3Capped));
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry).filterDate(fmt(afterStart3), fmt(afterEnd))
               .select('avg_rad').sort('system:time_start', false).first();
             const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry).filterDate(fmt(beforeStart3), fmt(beforeEnd))
+              .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd3Capped))
               .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
