@@ -696,6 +696,24 @@ function StockView({stock:s,lang,onBack}){
                 </div>
               </div>
             </div>
+            {/* 색상 범례 — 이전/최신 이미지 공통 */}
+            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',padding:'8px 2px',borderTop:`1px solid ${LT.border}`,marginTop:4}}>
+              <span style={{fontSize:14,color:LT.textDim,fontWeight:600,flexShrink:0}}>색상 범례</span>
+              {[
+                {color:'#000000',label:'무광 (사막·바다)'},
+                {color:'#1a3a6b',label:'외곽·저밀도'},
+                {color:'#c8a020',label:'핵심·고가동'},
+                {color:'#ffffff',border:true,label:'극강 밀집'},
+              ].map((item,idx)=>(
+                <div key={idx} style={{display:'flex',alignItems:'center',gap:5}}>
+                  <span style={{width:12,height:12,borderRadius:2,flexShrink:0,
+                    background:item.color,
+                    border:item.border?'1px solid #ccc':'none',
+                    display:'inline-block'}}/>
+                  <span style={{fontSize:14,color:LT.textDim}}>{item.label}</span>
+                </div>
+              ))}
+            </div>
             </>}
 
           </div>
