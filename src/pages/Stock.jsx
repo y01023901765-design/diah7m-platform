@@ -126,7 +126,7 @@ function StockView({stock:s,lang,onBack}){
   const [liveChart,setLiveChart]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
-  const [satRange,setSatRange]=useState('1y');
+  const [satRange,setSatRange]=useState('recent');
   const [chartRange,setChartRange]=useState('6mo');
   const [loading,setLoading]=useState(true);
 
@@ -316,7 +316,7 @@ function StockView({stock:s,lang,onBack}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🛰️ {t('svSatCompare',L)}</div>
           <div style={{display:"flex",gap:4}}>
-            {[{v:'6mo',l:'6개월'},{v:'1y',l:'1년'},{v:'2y',l:'2년'},{v:'3y',l:'3년'}].map(({v,l})=>(
+            {[{v:'recent',l:'최근 3개월'},{v:'yoy',l:'전년 동기'},{v:'3y',l:'3년 비교'}].map(({v,l})=>(
               <button key={v} onClick={()=>setSatRange(v)} style={{padding:'4px 10px',fontSize:12,fontWeight:satRange===v?700:400,borderRadius:6,border:`1px solid ${satRange===v?LT.text:LT.border}`,background:satRange===v?LT.text:'transparent',color:satRange===v?LT.surface:LT.textDim,cursor:'pointer'}}>{l}</button>
             ))}
           </div>

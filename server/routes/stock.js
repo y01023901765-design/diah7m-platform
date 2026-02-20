@@ -531,10 +531,36 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const profile = byTicker[ticker];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
-    // range 파라미터: 6mo | 1y | 2y | 3y (기본 1y)
-    const RANGE_MAP = { '6mo': 180, '1y': 365, '2y': 730, '3y': 1095 };
-    const rangeDays = RANGE_MAP[req.query.range] || 365;
-    const range = req.query.range || '1y';
+    // range 파라미터: recent(최근 3개월 vs 1년전 동기) | yoy(올해 vs 작년) | 3y(3년 전 vs 최근)
+    const range = req.query.range || 'recent';
+
+    // VIIRS 발행 지연 기준점: 90일 전 (최신 발행월)
+    const now = new Date();
+    const pubOffset = 90; // VIIRS 발행 지연
+    let afterStart, afterEnd, beforeStart, beforeEnd;
+
+    if (range === 'recent') {
+      // 최근 3개월 vs 정확히 1년 전 같은 3개월 (YoY 계절 보정)
+      afterEnd   = new Date(now); afterEnd.setDate(afterEnd.getDate() - pubOffset);
+      afterStart = new Date(afterEnd); afterStart.setDate(afterStart.getDate() - 90);
+      beforeEnd  = new Date(afterEnd); beforeEnd.setFullYear(beforeEnd.getFullYear() - 1);
+      beforeStart= new Date(afterStart); beforeStart.setFullYear(beforeStart.getFullYear() - 1);
+    } else if (range === 'yoy') {
+      // 올해 연평균 vs 작년 연평균
+      const refYear = now.getFullYear() - (now.getMonth() < 3 ? 2 : 1); // 발행지연 고려
+      afterStart = new Date(`${refYear}-01-01`);
+      afterEnd   = new Date(`${refYear}-12-31`);
+      beforeStart= new Date(`${refYear - 1}-01-01`);
+      beforeEnd  = new Date(`${refYear - 1}-12-31`);
+    } else { // 3y
+      // 3년 전 연평균 vs 작년 연평균
+      const refYear = now.getFullYear() - (now.getMonth() < 3 ? 2 : 1);
+      afterStart = new Date(`${refYear}-01-01`);
+      afterEnd   = new Date(`${refYear}-12-31`);
+      beforeStart= new Date(`${refYear - 3}-01-01`);
+      beforeEnd  = new Date(`${refYear - 3}-12-31`);
+    }
+    const fmt = d => d.toISOString().split('T')[0];
 
     // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 또는 버전 다른 캐시 무효화)
     const cacheKey = ticker + '_' + _SAT_IMG_VER + '_' + range;
@@ -588,23 +614,29 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const ee = require('@google/earthengine');
             const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
             const geometry = ee.Geometry.Rectangle(bbox);
-            const endStr = new Date().toISOString().split('T')[0];
-            // VIIRS 월간 발행 2~3개월 지연 → After: 최근 180일, Before: After - rangeDays
-            const d180 = new Date(); d180.setDate(d180.getDate() - 180);
-            const d540 = new Date(); d540.setDate(d540.getDate() - 180 - rangeDays);
+            // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
             const THUMB_PARAMS = {
               palette: ['000014','0d0d2b','1a1a6e','0044aa','0088ff','00ccff','66ffcc','ffff00','ff8800','ffffff'],
               min: 0, max: 30, dimensions: '800x560',
             };
 
-            const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry)
-              .filterDate(d180.toISOString().split('T')[0], endStr)
-              .select('avg_rad').sort('system:time_start', false).first();
-            const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry)
-              .filterDate(d540.toISOString().split('T')[0], d180.toISOString().split('T')[0])
-              .select('avg_rad').sort('system:time_start', false).first();
+            // After: 최신 구간, Before: 비교 구간 (range별 계산)
+            // yoy/3y는 연간 평균 → mean(), recent는 최신 단월 → first()
+            const useMedian = (range === 'yoy' || range === '3y');
+            const afterImg = useMedian
+              ? ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                  .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
+                  .select('avg_rad').mean()
+              : ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                  .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
+                  .select('avg_rad').sort('system:time_start', false).first();
+            const beforeImg = useMedian
+              ? ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                  .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
+                  .select('avg_rad').mean()
+              : ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                  .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
+                  .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
               fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),
@@ -615,8 +647,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
               viirsImg = {
                 afterUrl,
                 beforeUrl,
-                afterDate: d180.toISOString().split('T')[0] + ' ~ ' + endStr,
-                beforeDate: d540.toISOString().split('T')[0] + ' ~ ' + d180.toISOString().split('T')[0],
+                afterDate: fmt(afterStart) + ' ~ ' + fmt(afterEnd),
+                beforeDate: fmt(beforeStart) + ' ~ ' + fmt(beforeEnd),
                 palette: THUMB_PARAMS.palette,
                 paletteLabels: { min: '0 nW', max: '80 nW' },
               };
