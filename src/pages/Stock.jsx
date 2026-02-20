@@ -420,7 +420,6 @@ function StockView({stock:s,lang,onBack}){
           const afterVal=imgs?.afterValue??null;
           const beforeVal=imgs?.beforeValue??null;
           const units=imgs?.units||'nW/cm²/sr';
-          const imgQuality=imgs?.quality||qStatus||null;
           const obsAfter=imgs?.obsMonthAfter||null;
           const obsBefore=imgs?.obsMonthBefore||null;
           // ③ 가동 흐름 한줄 해석
@@ -431,7 +430,7 @@ function StockView({stock:s,lang,onBack}){
             :anomPct>-15?'작업 밀도 소폭 감소 — 모니터링 권장'
             :'야간 활동 감소 감지 — 가동률 하락 가능성';
           // ④ 센서 신뢰도 — 서버 images.quality 우선, 없으면 ntl.quality 폴백
-          const qStatus=imgQuality||(ntl?.quality?.status||null);
+          const qStatus=(imgs?.quality)||(ntl?.quality?.status)||null;
           const qIcon=qStatus==='good'||qStatus==='GOOD'?'🟢':qStatus==='ok'||qStatus==='PARTIAL'?'🟡':'🔴';
           const qLabel=qStatus==='good'||qStatus==='GOOD'?'신뢰 높음':qStatus==='ok'||qStatus==='PARTIAL'?'관측 보통':'관측 제한';
           // ⑤ stage 아이콘
