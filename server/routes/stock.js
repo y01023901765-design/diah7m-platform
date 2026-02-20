@@ -639,9 +639,24 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
               .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd3Capped))
               .select('avg_rad').sort('system:time_start', false).first();
 
-            const [afterUrl, beforeUrl] = await Promise.all([
+            // after/before 평균값 계산 (수치 비교용)
+            const dataGeom = ee.Geometry.Rectangle(fetchSat.facilityBbox(f.lat, f.lng, Math.max(f.radiusKm||5, 15)));
+            function _rangeAvg(startD, endD) {
+              return new Promise(resolve => {
+                ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+                  .filterBounds(dataGeom).filterDate(fmt(startD), fmt(endD))
+                  .select('avg_rad').mean()
+                  .reduceRegion({ reducer: ee.Reducer.mean(), geometry: dataGeom, scale: 500, maxPixels: 1e8 })
+                  .evaluate((stats, err) => {
+                    resolve((stats && stats.avg_rad != null) ? Math.round(stats.avg_rad * 100) / 100 : null);
+                  });
+              });
+            }
+            const [afterUrl, beforeUrl, afterVal, beforeVal] = await Promise.all([
               fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),
               fetchSat.getThumbPromise(beforeImg, geometry, THUMB_PARAMS),
+              _rangeAvg(afterStart3, afterEnd),
+              _rangeAvg(beforeStart, beforeEnd3Capped),
             ]);
 
             if (afterUrl || beforeUrl) {
@@ -650,6 +665,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
                 beforeUrl,
                 afterDate: fmt(afterStart) + ' ~ ' + fmt(afterEnd),
                 beforeDate: fmt(beforeStart) + ' ~ ' + fmt(beforeEnd),
+                afterValue: afterVal,   // 해당 구간 평균 nW/cm²/sr
+                beforeValue: beforeVal, // 해당 구간 평균 nW/cm²/sr
                 palette: THUMB_PARAMS.palette,
                 paletteLabels: { min: '0 nW', max: '80 nW' },
               };

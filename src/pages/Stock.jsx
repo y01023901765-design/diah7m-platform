@@ -383,9 +383,17 @@ function StockView({stock:s,lang,onBack}){
                 </select>
               </div>
             </div>}
-            {/* 현재 선택 날짜 표시 */}
-            <div style={{fontSize:12,color:LT.textDim,marginBottom:10,padding:'4px 8px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
-              {isAuto ? '📅 자동 — 최근 6개월 vs 1년 전 슬라이딩 비교' : `📅 ${satBeforeYM} → ${satAfterYM} ${activePreset?`(${activePreset.label})`:'(직접 선택)'}`}
+            {/* ① 데이터 시점 + ② 계절성 안내 */}
+            <div style={{marginBottom:10,display:'flex',flexWrap:'wrap',gap:6,alignItems:'center'}}>
+              <div style={{fontSize:12,color:LT.textDim,padding:'4px 8px',background:LT.bg2,borderRadius:6}}>
+                {isAuto ? '📅 자동 — 최근 6개월 vs 1년 전 슬라이딩 비교' : `📅 ${satBeforeYM} → ${satAfterYM} ${activePreset?`(${activePreset.label})`:'(직접 선택)'}`}
+              </div>
+              <div style={{fontSize:11,color:LT.textDim,padding:'4px 8px',background:LT.bg2,borderRadius:6}}>
+                👉 관측 기준: VIIRS 발행 지연 약 90일 · 최신 데이터 기준 2025-11
+              </div>
+              <div style={{fontSize:11,color:'#f0a000',padding:'4px 8px',background:LT.bg2,borderRadius:6}}>
+                🌐 계절 영향 제거: <strong>전년 동월 비교</strong> 권장 — 눈·일조·기온 변수 제거
+              </div>
             </div>
           </>);
         })()}
@@ -398,7 +406,6 @@ function StockView({stock:s,lang,onBack}){
             : (facs.length>0?facs.slice(0,3):[{name:'—',loc:'—'}]);
           return displayFacs;
         })().map((f,i)=>{
-          // liveSatImg에서 시설명으로 매칭
           const satFac=liveSatImg&&liveSatImg.find(sf=>sf.name===f.name);
           const imgs=satFac?.images||null;
           const ntl=satFac?.ntl||null;
@@ -407,52 +414,89 @@ function StockView({stock:s,lang,onBack}){
           const afterUrl=imgs?.afterUrl||null;
           const beforeDate=imgs?.beforeDate||null;
           const afterDate=imgs?.afterDate||null;
+          // ② after/before 별도 수치
+          const afterVal=imgs?.afterValue??ntl?.mean_60d??null;
+          const beforeVal=imgs?.beforeValue??null;
+          // ③ 가동 흐름 한줄 해석
+          const flowText=anomPct==null?null
+            :anomPct>15?'야간 운영 강화 패턴 — 가동 밀도 증가 추정'
+            :anomPct>5?'가동 흐름 안정 — 전년 대비 활동 증가'
+            :anomPct>-5?'가동 흐름 안정 — 전년과 유사 수준'
+            :anomPct>-15?'작업 밀도 소폭 감소 — 모니터링 권장'
+            :'야간 활동 감소 감지 — 가동률 하락 가능성';
+          // ④ 센서 신뢰도
+          const qStatus=ntl?.quality?.status||null;
+          const qIcon=qStatus==='GOOD'?'🟢':qStatus==='PARTIAL'?'🟡':'🔴';
+          const qLabel=qStatus==='GOOD'?'신뢰 높음':qStatus==='PARTIAL'?'관측 보통':'관측 제한';
+          // ⑤ stage 아이콘
+          const stageIcon=f.stage==='input'?'📥':f.stage==='output'?'📤':'⚙️';
+          // ⑥ 약신호 판정 (NTL < 1 nW = 사막/외곽)
+          const isLowSignal=afterVal!=null&&afterVal<1;
           return(
-          <div key={i} style={{marginBottom:i<2?16:0}}>
-            <div style={{marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
-              <div style={{fontSize:15,fontWeight:600,color:LT.text,whiteSpace:'nowrap'}}>{f.name} <span style={{color:LT.textDim,fontWeight:400,fontSize:13}}>{f.stage||''}</span></div>
-              {f.desc&&<div style={{fontSize:12,color:LT.textDim,textAlign:'right',lineHeight:1.4}}>{f.desc}</div>}
+          <div key={i} style={{marginBottom:i<2?20:0}}>
+            {/* 헤더: 시설명 + stage + desc */}
+            <div style={{marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
+              <div>
+                <span style={{fontSize:15,fontWeight:600,color:LT.text}}>{stageIcon} {f.name}</span>
+                <span style={{fontSize:12,color:LT.textDim,marginLeft:6}}>{f.stage||''}</span>
+                {/* ④ 신뢰도 */}
+                {qStatus&&<span style={{fontSize:11,marginLeft:8}}>{qIcon} {qLabel}</span>}
+              </div>
+              {f.desc&&<div style={{fontSize:12,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'55%'}}>{f.desc}</div>}
             </div>
-            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {/* 이미지 2컬럼 */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {/* 왼쪽: before */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{beforeDate||t('svBefore',L)}</div>
+                <div style={{fontSize:12,color:LT.textDim,marginBottom:4}}>🕰 이전 &nbsp;<span style={{fontSize:11}}>{beforeDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
-                  :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ {t('svBefore',L)}</div>}
+                  :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 이전</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
-                {ntl?.mean_60d!=null&&<div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>{ntl.mean_60d.toFixed(1)} nW/cm²/sr</div>}
+                <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
+                  {beforeVal!=null?`${beforeVal.toFixed(1)} nW/cm²/sr`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW/cm²/sr`:'—'}
+                </div>
                 {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
-                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
+                  <span style={{fontSize:10,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:4,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
+                  <span style={{fontSize:10,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
+              {/* 오른쪽: after */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{afterDate||t('svAfter',L)}</div>
+                <div style={{fontSize:12,color:LT.textDim,marginBottom:4}}>📡 최신 &nbsp;<span style={{fontSize:11}}>{afterDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:'none'}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
-                  :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ {t('svLatest',L)}</div>}
+                  :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 최신</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW/cm²/sr`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW/cm²/sr`:'—'}</span>
-                  {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
+                  <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} nW/cm²/sr`:'—'}</span>
+                  {anomPct!=null&&<span style={{fontSize:14,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
                 {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
-                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
+                  <span style={{fontSize:10,color:LT.textDim}}>어두움</span>
                   <div style={{flex:1,height:4,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
+                  <span style={{fontSize:10,color:LT.textDim}}>밝음</span>
                 </div>}
               </div>
             </div>
-            {/* 색상 설명 */}
-            {(beforeUrl||afterUrl)&&<div style={{fontSize:11,color:LT.textDim,marginTop:6,lineHeight:1.5}}>
-              <span style={{color:"#000",background:"#555",padding:"0 3px",borderRadius:2}}>검정</span> 무광(사막·바다) &nbsp;
-              <span style={{color:"#00ccff"}}>■</span> 파랑=도시 외곽 &nbsp;
-              <span style={{color:"#ffff00"}}>■</span> 노랑=공장 핵심·고가동 &nbsp;
+            {/* ③ 한줄 해석 */}
+            {flowText&&<div style={{fontSize:12,color:anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.textDim,marginTop:6,padding:'4px 8px',background:LT.bg2,borderRadius:4,borderLeft:`3px solid ${anomPct!=null&&anomPct<-8?LT.danger:anomPct!=null&&anomPct>5?LT.good:LT.border}`}}>
+              {flowText}
+            </div>}
+            {/* ⑥ 약신호 안내 */}
+            {isLowSignal&&<div style={{fontSize:11,color:LT.textDim,marginTop:4,padding:'3px 8px',background:LT.bg2,borderRadius:4}}>
+              ℹ️ 야간조도 기반 분석 적합도 낮음 — 실내 생산 공정 또는 야간 운영 비중이 적은 시설
+            </div>}
+            {/* 색상 범례 */}
+            {(beforeUrl||afterUrl)&&<div style={{fontSize:11,color:LT.textDim,marginTop:5,lineHeight:1.5}}>
+              <span style={{background:"#444",padding:"0 3px",borderRadius:2,color:"#ccc"}}>검정</span> 무광(사막·바다) &nbsp;
+              <span style={{color:"#0099cc"}}>■</span> 파랑=외곽 &nbsp;
+              <span style={{color:"#ffff00"}}>■</span> 노랑=핵심·고가동 &nbsp;
               <span style={{color:"#ffffff"}}>■</span> 흰색=극강 밀집
             </div>}
           </div>
