@@ -111,11 +111,11 @@ function _satYM(monthOffset){
   const d=new Date(); d.setMonth(d.getMonth()+monthOffset);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-// VIIRS 발행 최신월 = 현재 -1개월 (실제 확인 기준 2026-01까지 발행됨)
-const _SAT_LATEST = _satYM(-1);   // 예: 2026-01
-const _SAT_PREV1  = _satYM(-2);   // 직전월: 2025-12
-const _SAT_PREV12 = _satYM(-13);  // 전년동월: 2025-01
-const _SAT_PREV3Y = _satYM(-37);  // 3년 전 동월: 2023-01
+// VIIRS 발행 지연 약 90일 → 실제 최신 발행월 = 현재 -3개월
+const _SAT_LATEST = _satYM(-3);   // 예: 2025-11
+const _SAT_PREV1  = _satYM(-4);   // 직전월: 2025-10
+const _SAT_PREV12 = _satYM(-15);  // 전년동월: 2024-11
+const _SAT_PREV3Y = _satYM(-39);  // 3년 전 동월: 2022-11
 // 프리셋 정의 — null=서버 슬라이딩 윈도우(6개월 평균) 사용
 const _SAT_PRESETS=[
   {id:'auto',label:'자동',       after:null,        before:null},       // 서버 슬라이딩 윈도우
