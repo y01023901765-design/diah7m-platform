@@ -521,6 +521,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // ── 시설 위성 이미지 (Tab2 위성 Before/After) ──
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
+  // v2: 해상도 800x560 (v1: 400x280)
+  const _SAT_IMG_VER = 'v2';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -529,8 +531,9 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const profile = byTicker[ticker];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
-    // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 캐시 무효화)
-    const cached = _satImgCache[ticker];
+    // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 또는 버전 다른 캐시 무효화)
+    const cacheKey = ticker + '_' + _SAT_IMG_VER;
+    const cached = _satImgCache[cacheKey];
     const cachedHasImages = cached && cached.data && cached.data.some(f => f.images && (f.images.afterUrl || f.images.beforeUrl));
     if (cached && cachedHasImages && (Date.now() - cached.ts) < _satImgTTL) {
       return res.json({ ticker, fromCache: true, facilities: cached.data });
@@ -586,7 +589,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const d540 = new Date(); d540.setDate(d540.getDate() - 540);
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 80, dimensions: '400x280',
+              min: 0, max: 80, dimensions: '800x560',
             };
 
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
@@ -641,7 +644,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     }
 
     // 캐시 저장
-    _satImgCache[ticker] = { data: results, ts: Date.now() };
+    _satImgCache[cacheKey] = { data: results, ts: Date.now() };
 
     res.json({ ticker, facilities: results });
   });
