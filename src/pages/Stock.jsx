@@ -122,7 +122,7 @@ const _SAT_PRESETS=[
   {id:'yoy',label:'전년 동월',  after:_SAT_LATEST, before:_SAT_PREV12},
   {id:'3y', label:'3년 비교',   after:_SAT_LATEST, before:_SAT_PREV3Y},
 ];
-const _SAT_DEFAULTS={after:_SAT_LATEST,before:_SAT_PREV1};
+const _SAT_DEFAULTS={after:_SAT_LATEST,before:_SAT_PREV12}; // 기본: 전년 동월 비교
 
 // ═══ StockView — 5탭 종목 상세 ═══
 function StockView({stock:s,lang,onBack}){
