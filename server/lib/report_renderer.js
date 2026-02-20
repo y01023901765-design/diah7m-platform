@@ -736,7 +736,10 @@ async function render(opts) {
   const narratives = generateNarratives(mini, diagnosis, gaugeRows, profile, data);
 
   // ── 색상 맵 ──
-  const colors = template.styles.colors;
+  const colors = (template.styles && template.styles.colors) || {
+    primary: "2C5F8A", accent: "D4463A", dark: "1B2A4A",
+    green: "2E7D32", red: "C62828", border: "BDBDBD", gray: "757575", white: "FFFFFF"
+  };
 
   // ── 컨텍스트 객체 ──
   const ctx = { template, mini, diagnosis, profile, data, gaugeRows, auxRows, narratives, colors, vars };

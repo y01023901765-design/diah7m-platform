@@ -665,7 +665,8 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
       const _inScore  = _calcScore(_inGauges);
       const _outScore = _calcScore(_outGauges);
 
-      // 3) miniJSON (재현키 + renderer 필수 필드)
+      // 3) miniJSON (재현키 + renderer 필수 필드 전체)
+      const _stageNum = parseInt((ssotData.sec5_current || '0').replace(/\D/g, '')) || 0;
       const miniJSON = {
         engine: 'DIAH-7M판정엔진v5.1+SSOTv1.0',
         mode,
@@ -674,10 +675,13 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         profile_hash: 'KR-STD-59',
         repro_key: `${country}-${mode}-${period}`,
         stage: ssotData.sec5_current || '0M',
+        alert_level: _stageNum,
+        dual_lock: false,
+        diah_detail: ssotData.diahStatus || 'DIAH 트리거 미발동',
         confidence: ssotData.freshnessAlert?.startsWith('✅') ? '높음' : '중간',
-        // report_renderer.generateNarratives()가 요구하는 필드
-        in:  { score: _inScore,  threshold: _inGauges.length  * 2 },
-        out: { score: _outScore, threshold: _outGauges.length * 2 },
+        // report_renderer.generateNarratives() / renderSection() 필수 필드
+        in:  { score: _inScore,  threshold: _inGauges.length  * 2, down: _inScore  > _inGauges.length },
+        out: { score: _outScore, threshold: _outGauges.length * 2, down: _outScore > _outGauges.length },
       };
 
       // 4) diagnosis 객체 (report_renderer용 — renderer가 기대하는 전체 구조 보장)

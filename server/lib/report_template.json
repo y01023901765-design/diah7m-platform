@@ -12,8 +12,19 @@
 
   "styles": {
     "font": "Malgun Gothic",
+    "fonts": { "body": "Malgun Gothic", "heading": "Malgun Gothic" },
     "sizes": { "cover_title": 20, "cover_sub": 11, "cover_period": 18, "section": 14, "sub": 12, "body": 11, "table": 10 },
     "fills": { "header": "D9D9D9", "ok": "E8F5E9", "warn": "FFF9C4", "alert": "FFCDD2" },
+    "colors": {
+      "primary":  "2C5F8A",
+      "accent":   "D4463A",
+      "dark":     "1B2A4A",
+      "green":    "2E7D32",
+      "red":      "C62828",
+      "border":   "BDBDBD",
+      "gray":     "757575",
+      "white":    "FFFFFF"
+    },
     "separator": "━━━━━━━━━━━━━━━━━━━━━━━━━"
   },
 
