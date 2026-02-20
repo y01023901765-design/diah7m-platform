@@ -361,6 +361,10 @@ export async function getGaugeDetail(country, gaugeId) {
   return api(`/api/v1/diagnosis/${country}/gauge/${gaugeId}`);
 }
 
+export async function getNarrative(country = 'kr') {
+  return api(`/api/v1/diagnosis/${country}/narrative`);
+}
+
 export function getStoredUser() {
   try {
     const u = localStorage.getItem('diah7m-user');

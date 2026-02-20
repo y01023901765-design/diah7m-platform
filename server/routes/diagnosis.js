@@ -427,6 +427,45 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
     }
   });
 
+  /**
+   * GET /api/v1/diagnosis/kr/narrative
+   * 한국 경제 진단 → 한국어 서사 산문 변환
+   * 공개 API (인증 불필요)
+   */
+  router.get('/diagnosis/kr/narrative', async (req, res) => {
+    try {
+      const { buildNarrative } = require('../lib/narrative-engine');
+
+      let diag;
+      if (engine && dataStore) {
+        const gaugeData = dataStore.toGaugeData();
+        if (Object.keys(gaugeData).length > 0) {
+          const gaugeArr = Object.entries(gaugeData).map(([id, v]) => ({
+            id,
+            value: typeof v === 'object' ? v.value : v,
+          }));
+          diag = await engine.diagnose(gaugeArr, {
+            countryCode: 'KR',
+            countryName: '대한민국',
+            productType: 'national',
+            frequency: 'daily',
+          });
+        }
+      }
+
+      if (!diag) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        diag = DEMO_DIAGNOSIS;
+      }
+
+      const narrative = buildNarrative(diag);
+      res.json({ success: true, data: narrative, demo: !engine || !dataStore });
+    } catch (error) {
+      console.error('Narrative error:', error);
+      res.status(500).json({ success: false, code: 'NARRATIVE_ERROR', message: error.message });
+    }
+  });
+
   // ==========================================
   // [기존] 진단 엔진 API (v1.0 - 보존)
   // ==========================================
