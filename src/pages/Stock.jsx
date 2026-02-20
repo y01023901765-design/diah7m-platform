@@ -106,17 +106,23 @@ function buildStockEntityData(gaugesArr, health, lang) {
   return { gaugeData, sysData };
 }
 
-// 위성 기본 연월 계산 (컴포넌트 바깥 — 렌더마다 재계산 방지)
-function _satDefaultYM(){
-  const n=new Date();
-  const after=new Date(n); after.setMonth(after.getMonth()-3);
-  const before=new Date(n); before.setMonth(before.getMonth()-6);
-  return {
-    after:`${after.getFullYear()}-${String(after.getMonth()+1).padStart(2,'0')}`,
-    before:`${before.getFullYear()}-${String(before.getMonth()+1).padStart(2,'0')}`,
-  };
+// 위성 연월 유틸 (컴포넌트 바깥 — 렌더마다 재계산 방지)
+function _satYM(monthOffset){
+  const d=new Date(); d.setMonth(d.getMonth()+monthOffset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-const _SAT_DEFAULTS=_satDefaultYM();
+// VIIRS 발행 최신월 = 현재 -3개월
+const _SAT_LATEST = _satYM(-3);   // 예: 2025-11
+const _SAT_PREV1  = _satYM(-4);   // 직전월: 2025-10
+const _SAT_PREV12 = _satYM(-15);  // 전년동월: 2024-11
+const _SAT_PREV3Y = _satYM(-39);  // 3년 전 동월: 2022-11
+// 프리셋 정의
+const _SAT_PRESETS=[
+  {id:'m1', label:'연속 1개월', after:_SAT_LATEST, before:_SAT_PREV1},
+  {id:'yoy',label:'전년 동월',  after:_SAT_LATEST, before:_SAT_PREV12},
+  {id:'3y', label:'3년 비교',   after:_SAT_LATEST, before:_SAT_PREV3Y},
+];
+const _SAT_DEFAULTS={after:_SAT_LATEST,before:_SAT_PREV1};
 
 // ═══ StockView — 5탭 종목 상세 ═══
 function StockView({stock:s,lang,onBack}){
@@ -327,12 +333,10 @@ function StockView({stock:s,lang,onBack}){
       {/* Before/After 비교 — 시설별 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:10}}>🛰️ {t('svSatCompare',L)}</div>
-        {/* 연/월 피커 */}
+        {/* 프리셋 + 연/월 피커 */}
         {(()=>{
           const selStyle={padding:'4px 8px',fontSize:12,borderRadius:6,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,cursor:'pointer',outline:'none'};
-          const now2=new Date();
-          // 선택 가능 연도: 2012~현재 (VIIRS 시작 2012)
-          const years=[];for(let y=now2.getFullYear();y>=2012;y--)years.push(y);
+          const years=[];for(let y=new Date().getFullYear();y>=2012;y--)years.push(y);
           const months=[1,2,3,4,5,6,7,8,9,10,11,12];
           const [aY,aM]=satAfterYM.split('-').map(Number);
           const [bY,bM]=satBeforeYM.split('-').map(Number);
@@ -340,10 +344,22 @@ function StockView({stock:s,lang,onBack}){
           const setAM=v=>setSatAfterYM(`${aY}-${String(v).padStart(2,'0')}`);
           const setBY=v=>setSatBeforeYM(`${v}-${String(bM).padStart(2,'0')}`);
           const setBM=v=>setSatBeforeYM(`${bY}-${String(v).padStart(2,'0')}`);
-          return(
-            <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+          const activePreset=_SAT_PRESETS.find(p=>p.after===satAfterYM&&p.before===satBeforeYM);
+          return(<>
+            {/* 프리셋 버튼 3개 */}
+            <div style={{display:"flex",gap:4,marginBottom:8}}>
+              {_SAT_PRESETS.map(p=>(
+                <button key={p.id} onClick={()=>{setSatAfterYM(p.after);setSatBeforeYM(p.before);}}
+                  style={{padding:'3px 10px',fontSize:12,fontWeight:activePreset?.id===p.id?700:400,borderRadius:6,
+                    border:`1px solid ${activePreset?.id===p.id?LT.text:LT.border}`,
+                    background:activePreset?.id===p.id?LT.text:'transparent',
+                    color:activePreset?.id===p.id?LT.surface:LT.textDim,cursor:'pointer'}}>{p.label}</button>
+              ))}
+            </div>
+            {/* 연월 드롭다운 — 직접 지정 */}
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                <span style={{fontSize:12,color:LT.textDim,whiteSpace:"nowrap"}}>비교기준</span>
+                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>비교기준</span>
                 <select value={bY} onChange={e=>setBY(Number(e.target.value))} style={selStyle}>
                   {years.map(y=><option key={y} value={y}>{y}년</option>)}
                 </select>
@@ -351,9 +367,9 @@ function StockView({stock:s,lang,onBack}){
                   {months.map(m=><option key={m} value={m}>{m}월</option>)}
                 </select>
               </div>
-              <span style={{fontSize:14,color:LT.textDim}}>→</span>
+              <span style={{fontSize:12,color:LT.textDim}}>→</span>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                <span style={{fontSize:12,color:LT.textDim,whiteSpace:"nowrap"}}>최신</span>
+                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>발행 최신월</span>
                 <select value={aY} onChange={e=>setAY(Number(e.target.value))} style={selStyle}>
                   {years.map(y=><option key={y} value={y}>{y}년</option>)}
                 </select>
@@ -362,7 +378,11 @@ function StockView({stock:s,lang,onBack}){
                 </select>
               </div>
             </div>
-          );
+            {/* 현재 선택 날짜 전면 표시 */}
+            <div style={{fontSize:12,color:LT.textDim,marginBottom:10,padding:'4px 8px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
+              📅 {satBeforeYM} → {satAfterYM} {activePreset?`(${activePreset.label})`:'(직접 선택)'}
+            </div>
+          </>);
         })()}
         {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
         {!satImgLoading&&(()=>{
