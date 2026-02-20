@@ -23,5 +23,36 @@ services:
         sync: false            # 수동 입력 필요
       - key: ADMIN_PASSWORD
         sync: false            # 수동 입력 필요
+      # ── SMS (아이코드 국내) ──
+      - key: ICODE_TOKEN_KEY
+        sync: false            # 아이코드 발송전용 토큰키
+      - key: ICODE_SENDER
+        sync: false            # 발신번호 (01091258843)
+      # ── SMS (AWS SNS 해외) ──
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-northeast-2
+      # ── SMS (CoolSMS fallback) ──
+      - key: COOLSMS_API_KEY
+        sync: false
+      - key: COOLSMS_API_SECRET
+        sync: false
+      - key: COOLSMS_SENDER
+        sync: false
+      # ── SMS (Twilio fallback) ──
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE
+        sync: false
+      # ── CB 경보 SMS ──
+      - key: ALERT_PHONE
+        sync: false            # 관리자 수신번호
+      - key: ALERT_WEBHOOK_URL
+        sync: false            # Slack/Discord webhook (선택)
     healthCheckPath: /api/health
     autoDeploy: true           # main push 시 자동 배포

@@ -47,6 +47,7 @@ function GaugeRow({d,open,toggle,lang,liveSat,isGlobal}){
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
             <span style={{fontSize:16,fontWeight:700,color:LT.text}}>{displayName}</span>
             {sat&&<SatBadge code={d.c}/>}
+            {d._fallback&&<span title="API 장애로 이전 수집 데이터를 사용 중입니다. 복구되면 자동으로 최신 데이터로 교체됩니다." style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:12,padding:"1px 6px",borderRadius:4,fontWeight:700,background:`${LT.warn}18`,color:LT.warn,border:`1px solid ${LT.warn}40`,cursor:"help"}}>추정값</span>}
             {TIER[d.c]&&<span style={{display:"inline-flex",alignItems:"center",gap:2,fontSize:15,padding:"2px 7px",borderRadius:4,fontWeight:700,
               background:LT.bg2,color:LT.textMid,
               border:`1px solid ${LT.border}`}}>{TIER[d.c]!=='T3'&&<span style={{fontSize:16}}>🛰️</span>}{TIER_LABEL[TIER[d.c]].ko}</span>}

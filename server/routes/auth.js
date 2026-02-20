@@ -16,16 +16,17 @@ module.exports = function createAuthRouter({ db, auth }) {
   // -- 회원가입 --
   router.post('/auth/register', async (req, res) => {
     try {
-      const { email, password, name, plan } = req.body;
+      const { email, password, name, plan, phone, country_code } = req.body;
       if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
       const exists = await db.get('SELECT id FROM users WHERE email = ?', [email]);
       if (exists) return res.status(409).json({ error: 'Email already registered' });
 
       const hash = auth.hashPassword(password);
+      const cleanPhone = phone ? phone.replace(/[\s\-]/g, '') : '';
       const result = await db.run(
-        'INSERT INTO users (email, password_hash, name, plan, mileage) VALUES (?, ?, ?, ?, 500)',
-        [email, hash, name || '', plan || 'FREE']
+        'INSERT INTO users (email, password_hash, name, plan, mileage, phone, country_code) VALUES (?, ?, ?, ?, 500, ?, ?)',
+        [email, hash, name || '', plan || 'FREE', cleanPhone, country_code || 'KR']
       );
 
       await db.run(
@@ -37,6 +38,14 @@ module.exports = function createAuthRouter({ db, auth }) {
         'INSERT INTO audit_logs (actor, action, target, detail) VALUES (?, ?, ?, ?)',
         ['system', 'user_register', `user:${result.lastID}`, email]
       );
+
+      // 가입 환영 SMS (phone 입력 + sms-service 사용 가능 시)
+      if (cleanPhone) {
+        try {
+          const smsService = require('../lib/sms-service');
+          smsService.sendTemplate(cleanPhone, 'welcome', { name: name || email.split('@')[0] }, { userId: result.lastID, type: 'welcome' });
+        } catch (e) { /* SMS 실패 무시 — 가입 프로세스 차단 금지 */ }
+      }
 
       const token = auth.sign({ id: result.lastID, email, plan: plan || 'FREE', role: 'user' });
       res.status(201).json({ token, user: { id: result.lastID, email, name, plan: plan || 'FREE', mileage: 500 } });
@@ -68,7 +77,7 @@ module.exports = function createAuthRouter({ db, auth }) {
   // -- 프로필 조회 --
   router.get('/me', requireAuth, async (req, res) => {
     try {
-      const user = await db.get('SELECT id, email, name, plan, mileage, lang, status, created_at FROM users WHERE id = ?', [req.user.id]);
+      const user = await db.get('SELECT id, email, name, plan, mileage, lang, status, phone, phone_verified, sms_opt_in, country_code, created_at FROM users WHERE id = ?', [req.user.id]);
       if (!user) return res.status(404).json({ error: 'User not found' });
       res.json(user);
     } catch (e) {

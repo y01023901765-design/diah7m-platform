@@ -23,7 +23,20 @@ module.exports = function createDataRouter({ auth, pipeline, dataStore }) {
     if (!dataStore) return res.status(503).json({ error: 'DataStore unavailable' });
     const cached = dataStore.getAll();
     const status = dataStore.getStatus();
-    res.json({ data: cached, status });
+    // gauges 배열: Dashboard mergeGaugeData 호환 형식
+    const gauges = Object.entries(cached).map(([id, entry]) => ({
+      id,
+      value: entry.value,
+      status: entry.status || 'OK',
+      unit: entry.unit || '',
+      source: entry.source || '',
+      date: entry.date || '',
+      note: entry.source ? `${entry.source} ${entry.date || ''}`.trim() : '',
+      isFallback: !!entry.isFallback,
+      stale: !!entry.stale,
+      fallbackAge: entry.fallbackAge || null,
+    }));
+    res.json({ data: { ...cached, gauges }, status });
   });
 
   // -- refresh (Header 인증 방식) --

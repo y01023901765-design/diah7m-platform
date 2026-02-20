@@ -10,12 +10,40 @@
 
 const axios = require('axios');
 const pLimit = require('p-limit');
+const conc = require('./concurrency');
+const alerter = require('./alerter');
 
 const CONCURRENT_LIMIT = 5;
 const CACHE_TTL = 30 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 15000;
 
+// ── CircuitBreaker per API source ──
+// ECOS: 월 1회 점검, 간헐 타임아웃 → 5연속 실패 = 실제 장애
+// FRED: 안정적이지만 API키 만료/서버 장애 가능 → 5연속
+// Yahoo: 429 빈번, crumb 만료 → 3연속 (더 민감)
+// TE: 스크래핑이라 차단 가능성 높음 → 3연속
+// GEE: callback 무응답 빈번 → 3연속
+var _escalate = alerter.onCBEscalate;
+var _cbECOS = new conc.CircuitBreaker('ECOS', { failThreshold: 5, resetTimeout: 60000, onEscalate: _escalate });
+var _cbFRED = new conc.CircuitBreaker('FRED', { failThreshold: 5, resetTimeout: 60000, onEscalate: _escalate });
+var _cbYahoo = new conc.CircuitBreaker('YAHOO_NAT', { failThreshold: 3, resetTimeout: 45000, onEscalate: _escalate });
+var _cbTE = new conc.CircuitBreaker('TRADING_ECON', { failThreshold: 3, resetTimeout: 90000, onEscalate: _escalate });
+var _cbGEE = new conc.CircuitBreaker('GEE_NAT', { failThreshold: 3, resetTimeout: 60000, onEscalate: _escalate });
+
+// 글로벌 모니터에 등록
+conc.globalMonitor.register('ECOS', _cbECOS);
+conc.globalMonitor.register('FRED', _cbFRED);
+conc.globalMonitor.register('YAHOO_NAT', _cbYahoo);
+conc.globalMonitor.register('TRADING_ECON', _cbTE);
+conc.globalMonitor.register('GEE_NAT', _cbGEE);
+
 const cache = new Map();
+
+// ── Fallback 캐시 참조 ──
+// 서버 부팅 시 setFallbackStore(dataStore)로 등록하면
+// CB OPEN 에러 시 이전 캐시 값을 자동 반환 (isFallback: true)
+var _fallbackStore = null;
+function setFallbackStore(store) { _fallbackStore = store; }
 
 function getCached(key) {
   const entry = cache.get(key);
@@ -698,18 +726,18 @@ const GAUGE_MAP = {
 // ═══════════════════════════════════════════════════════════════
 // API 연동
 // ═══════════════════════════════════════════════════════════════
-async function fetchECOS(params) {
+// ── 원본 fetch 함수들 (CB 없는 raw 버전) ──
+
+async function _doFetchECOS(params) {
   const apiKey = process.env.ECOS_API_KEY;
   if (!apiKey) throw new Error('ECOS_API_KEY not configured');
 
   const { statisticCode, itemCode1, itemCode2, cycle, startDate, endDate } = params;
   let end, start;
   if (cycle === 'D') {
-    // Daily: YYYYMMDD 형식 필요
     end = endDate || new Date().toISOString().slice(0, 10).replace(/-/g, '');
     start = startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
   } else {
-    // Monthly/Quarterly/Annual: YYYYMM 형식
     end = endDate || new Date().toISOString().slice(0, 7).replace('-', '');
     start = startDate || new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7).replace('-', '');
   }
@@ -726,7 +754,7 @@ async function fetchECOS(params) {
   return rows || [];
 }
 
-async function fetchFRED(params) {
+async function _doFetchFRED(params) {
   const apiKey = process.env.FRED_API_KEY;
   if (!apiKey) throw new Error('FRED_API_KEY not configured');
 
@@ -736,19 +764,64 @@ async function fetchFRED(params) {
   return response.data.observations || [];
 }
 
+async function _doFetchYahoo(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+  const response = await axios.get(url, {
+    params: { interval: '1d', range: '1mo' },
+    timeout: 5000,
+  });
+  return response.data;
+}
+
+async function _doFetchTE(slug) {
+  const url = `https://tradingeconomics.com/${slug}`;
+  const response = await axios.get(url, {
+    timeout: FETCH_TIMEOUT_MS,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  });
+  const html = response.data;
+  let value = null;
+
+  // Strategy 1: id="p" element (commodity pages)
+  const pMatch = html.match(/id="p"[^>]*>\s*([0-9.,]+)/);
+  if (pMatch) {
+    value = parseFloat(pMatch[1].replace(/,/g, ''));
+  }
+
+  // Strategy 2: meta description fallback (indicator pages)
+  if (value === null || isNaN(value)) {
+    const metaMatch = html.match(/(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
+    if (metaMatch) {
+      value = parseFloat(metaMatch[1].replace(/,/g, ''));
+    }
+  }
+
+  if (value !== null && !isNaN(value)) return value;
+  throw new Error('Could not parse value from ' + slug);
+}
+
+// ── CircuitBreaker 래핑 fetch 함수들 ──
+// 장애 시: CB가 에러 throw → fetchGauge의 catch가 ERROR 상태로 처리
+// 캐시 히트: CB 우회 (불필요한 CB 카운트 방지)
+
+async function fetchECOS(params) {
+  return _cbECOS.run(function() { return _doFetchECOS(params); });
+}
+
+async function fetchFRED(params) {
+  return _cbFRED.run(function() { return _doFetchFRED(params); });
+}
+
 async function fetchYahoo(symbol) {
   const cached = getCached(`yahoo:${symbol}`);
   if (cached) return cached;
 
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
-
   try {
-    const response = await axios.get(url, {
-      params: { interval: '1d', range: '1mo' },
-      timeout: 5000,
-    });
-
-    const data = response.data;
+    const data = await _cbYahoo.run(function() { return _doFetchYahoo(symbol); });
     setCache(`yahoo:${symbol}`, data);
     return data;
   } catch (error) {
@@ -761,55 +834,33 @@ async function fetchTradingEconomics(slug) {
   const cached = getCached(`te:${slug}`);
   if (cached) return cached;
 
-  const url = `https://tradingeconomics.com/${slug}`;
   try {
-    const response = await axios.get(url, {
-      timeout: FETCH_TIMEOUT_MS,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    const html = response.data;
-    let value = null;
-
-    // Strategy 1: id="p" element (commodity pages like /commodity/baltic)
-    const pMatch = html.match(/id="p"[^>]*>\s*([0-9.,]+)/);
-    if (pMatch) {
-      value = parseFloat(pMatch[1].replace(/,/g, ''));
-    }
-
-    // Strategy 2: meta description "increased/decreased/fell/rose to X.XX" (indicator pages)
-    if (value === null || isNaN(value)) {
-      const metaMatch = html.match(/(?:increased|decreased|unchanged|remained|fell|rose|dropped)\s+to\s+([0-9.,]+)/i);
-      if (metaMatch) {
-        value = parseFloat(metaMatch[1].replace(/,/g, ''));
-      }
-    }
-
-    if (value !== null && !isNaN(value)) {
-      setCache(`te:${slug}`, value);
-      return value;
-    }
-    console.warn(`[TE] Could not parse value from ${slug}`);
-    return null;
+    const value = await _cbTE.run(function() { return _doFetchTE(slug); });
+    setCache(`te:${slug}`, value);
+    return value;
   } catch (error) {
     console.error(`[TE] Error fetching ${slug}:`, error.message);
     return null;
   }
 }
 
-// 위성 모듈 안전 로드
-let fetchVIIRS, fetchLandsat;
+// 위성 모듈 안전 로드 + CircuitBreaker 래핑
+let _rawFetchVIIRS, _rawFetchLandsat;
 try {
   const sat = require('./fetch-satellite.js');
-  fetchVIIRS = sat.fetchVIIRS;
-  fetchLandsat = sat.fetchLandsat;
+  _rawFetchVIIRS = sat.fetchVIIRS;
+  _rawFetchLandsat = sat.fetchLandsat;
 } catch (e) {
   console.warn('  ⚠️ fetch-satellite.js 로드 실패:', e.message);
-  fetchVIIRS = async () => null;
-  fetchLandsat = async () => null;
+  _rawFetchVIIRS = async () => null;
+  _rawFetchLandsat = async () => null;
+}
+
+async function fetchVIIRS(region) {
+  return _cbGEE.run(function() { return _rawFetchVIIRS(region); });
+}
+async function fetchLandsat(region) {
+  return _cbGEE.run(function() { return _rawFetchLandsat(region); });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -913,6 +964,29 @@ async function fetchGauge(gaugeId) {
 
   } catch (error) {
     console.error(`[${new Date().toISOString()}] ❌ ${gaugeId} error:`, error.message);
+
+    // CB OPEN 에러 시 fallback: 이전 캐시 값 반환 (점수 급변 방지)
+    if (_fallbackStore && error.message && error.message.includes('[CB:')) {
+      var cached = _fallbackStore.get(gaugeId);
+      if (cached && cached.value !== null && cached.value !== undefined) {
+        console.log(`[${new Date().toISOString()}] 🔄 ${gaugeId} fallback = ${cached.value} (CB OPEN → 이전 캐시 사용)`);
+        return {
+          id: gaugeId,
+          gaugeId,
+          value: cached.value,
+          prevValue: cached.prevValue || null,
+          status: 'OK',
+          isFallback: true,
+          fallbackReason: error.message,
+          fallbackAge: cached.updatedAt || null,
+          source: cached.source || gauge.source,
+          name: gauge.name || gaugeId,
+          unit: cached.unit || gauge.unit || '',
+          timestamp: new Date().toISOString(),
+        };
+      }
+    }
+
     return {
       id: gaugeId,
       gaugeId,
@@ -971,15 +1045,23 @@ async function fetchAll(ecosKey, kosisKey) {
   }
 
   const success = collected.filter(g => g.status === 'OK').length;
+  const fallback = collected.filter(g => g.isFallback).length;
   const failed = collected.filter(g => g.status === 'ERROR').length;
   const noData = collected.filter(g => g.status === 'NO_DATA').length;
   const manual = collected.filter(g => g.status === 'MANUAL').length;
 
+  // CB 상태 요약 로그
+  const cbAlerts = conc.globalMonitor.getAlerts();
+  const cbSummary = cbAlerts.length > 0
+    ? cbAlerts.map(function(a) { return a.source + '=' + a.state; }).join(', ')
+    : 'all CLOSED';
+
   console.log(`[${new Date().toISOString()}] 📊 Collection complete:`);
-  console.log(`  ✅ Success: ${success}/${gaugeIds.length}`);
+  console.log(`  ✅ Success: ${success}/${gaugeIds.length}` + (fallback > 0 ? ` (${fallback} fallback)` : ''));
   console.log(`  ⚠️  No Data: ${noData}`);
   console.log(`  ❌ Failed: ${failed}`);
   console.log(`  ⚠️  Manual: ${manual}`);
+  console.log(`  🔌 CB: ${cbSummary}`);
 
   // 기존 호환: fetchAll(ecosKey, kosisKey) → { results, stats, errors }
   if (isLegacyCall) {
@@ -1007,7 +1089,7 @@ async function fetchAll(ecosKey, kosisKey) {
   // 신규: fetchAll() → { gauges, summary, timestamp }
   return {
     gauges: collected,
-    summary: { success, failed, noData, manual, total: gaugeIds.length },
+    summary: { success, fallback, failed, noData, manual, total: gaugeIds.length },
     timestamp: new Date().toISOString(),
   };
 }
@@ -1081,4 +1163,7 @@ module.exports = {
   diagnoseMapping,
   testGauge,
   diagnoseAll,
+  setFallbackStore,
+  // CircuitBreaker 접근 (서버 health 엔드포인트용)
+  _circuitBreakers: { ECOS: _cbECOS, FRED: _cbFRED, YAHOO_NAT: _cbYahoo, TRADING_ECON: _cbTE, GEE_NAT: _cbGEE },
 };

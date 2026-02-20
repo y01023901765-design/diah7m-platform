@@ -17,6 +17,7 @@ var https = require('https');
 var fetchSat = require('./fetch-satellite');
 var profilesMod = require('../data/stock-profiles-100');
 var conc = require('./concurrency');
+var alerter = require('./alerter');
 
 var YAHOO_TIMEOUT = 8000;
 var YAHOO_BASE = 'https://query1.finance.yahoo.com';
@@ -31,6 +32,15 @@ var _summaryCoalescer = new conc.RequestCoalescer(); // 동일 종목 중복 방
 var _chartCoalescer = new conc.RequestCoalescer();
 var _gaugeCoalescer = new conc.RequestCoalescer();
 var _crumbSingleton = new conc.SingletonRefresh();   // crumb 갱신 1회 보호
+
+// ── CircuitBreaker — Yahoo Stock + GEE Stock ──
+// Yahoo Stock: crumb 만료 + 429 빈번 → 3연속 실패 = 장애
+// GEE Stock: callback 무응답 → 3연속 실패 = 장애
+var _escalate = alerter.onCBEscalate;
+var _cbYahooStock = new conc.CircuitBreaker('YAHOO_STOCK', { failThreshold: 3, resetTimeout: 45000, onEscalate: _escalate });
+var _cbGEEStock = new conc.CircuitBreaker('GEE_STOCK', { failThreshold: 3, resetTimeout: 60000, onEscalate: _escalate });
+conc.globalMonitor.register('YAHOO_STOCK', _cbYahooStock);
+conc.globalMonitor.register('GEE_STOCK', _cbGEEStock);
 
 // ── 캐시 크기 제한 유틸 (메모리 누수 방지) ──
 var MAX_CACHE_SIZE = 150; // 100종목 + 여유분
@@ -131,29 +141,32 @@ async function _doFetchYahooSummary(ticker) {
   var modules = 'defaultKeyStatistics,financialData,summaryDetail';
   var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
 
-  // semaphore: Yahoo 동시 5개 제한 (레이트리밋 보호)
+  // semaphore + CircuitBreaker: Yahoo 동시 5개 제한 + 장애 자동감지
   return _yahooSem.run(async function() {
     try {
-      var headers = { 'User-Agent': 'Mozilla/5.0' };
-      if (_crumbCookies) headers['Cookie'] = _crumbCookies;
+      var data = await _cbYahooStock.run(async function() {
+        var headers = { 'User-Agent': 'Mozilla/5.0' };
+        if (_crumbCookies) headers['Cookie'] = _crumbCookies;
 
-      var res = await axios.get(url, {
-        params: { modules: modules, crumb: _crumb || '' },
-        timeout: YAHOO_TIMEOUT,
-        headers: headers,
-        httpsAgent: httpsAgent,
+        var res = await axios.get(url, {
+          params: { modules: modules, crumb: _crumb || '' },
+          timeout: YAHOO_TIMEOUT,
+          headers: headers,
+          httpsAgent: httpsAgent,
+        });
+
+        var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
+        return (result && result[0]) || null;
       });
 
-      var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
-      var data = (result && result[0]) || null;
       if (data) {
         _summaryCache[ticker] = { data: data, ts: now };
         _pruneCache(_summaryCache);
       }
       return data;
     } catch (err) {
-      // crumb 만료 시 재시도 1회
-      if (err.response && err.response.status === 401 && _crumb) {
+      // crumb 만료 시 재시도 1회 (CB OPEN 에러는 재시도 안함)
+      if (err.response && err.response.status === 401 && _crumb && !err.message.includes('[CB:')) {
         _crumb = null;
         _crumbTs = 0;
         return _doFetchYahooSummary(ticker);
@@ -187,15 +200,18 @@ async function _doFetchYahooChart(ticker, range) {
 
   return _yahooSem.run(async function() {
     try {
-      var res = await axios.get(url, {
-        params: { interval: '1d', range: rng },
-        timeout: YAHOO_TIMEOUT,
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        httpsAgent: httpsAgent,
+      var data = await _cbYahooStock.run(async function() {
+        var res = await axios.get(url, {
+          params: { interval: '1d', range: rng },
+          timeout: YAHOO_TIMEOUT,
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          httpsAgent: httpsAgent,
+        });
+
+        var chart = res.data && res.data.chart && res.data.chart.result;
+        return (chart && chart[0]) || null;
       });
 
-      var chart = res.data && res.data.chart && res.data.chart.result;
-      var data = (chart && chart[0]) || null;
       if (data) {
         _chartCache[cKey] = { data: data, ts: now };
         _pruneCache(_chartCache);
@@ -558,7 +574,10 @@ async function fetchSatelliteGauges(ticker) {
   for (var i = 0; i < processFacilities.length; i++) {
     var f = processFacilities[i];
     try {
-      var sensorData = await fetchSat.fetchFacilitySensors(f);
+      // CircuitBreaker: GEE 장애 시 빠른 실패 (30s 타임아웃 대기 대신 즉시 거부)
+      var sensorData = await _cbGEEStock.run(function() {
+        return fetchSat.fetchFacilitySensors(f);
+      });
 
       if (sensorData.NTL && sensorData.NTL.anomPct != null) {
         ntlAnomalies.push(sensorData.NTL.anomPct);
@@ -592,4 +611,5 @@ module.exports = {
   fetchStockPrice: fetchStockPrice,
   fetchStockPrices: fetchStockPrices,
   fetchSatelliteGauges: fetchSatelliteGauges,
+  _circuitBreakers: { YAHOO_STOCK: _cbYahooStock, GEE_STOCK: _cbGEEStock },
 };

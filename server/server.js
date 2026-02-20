@@ -165,7 +165,9 @@ app.get('/', (req, res) => {
 </body></html>`);
 });
 
-// Health + 라우트 스냅샷 (동작 동일성 확인용)
+// Health + 라우트 스냅샷 + CircuitBreaker 통합 현황
+const conc = require('./lib/concurrency');
+
 app.get('/api/health', (req, res) => {
   const routeList = [];
   app._router.stack.forEach(layer => {
@@ -178,8 +180,11 @@ app.get('/api/health', (req, res) => {
     }
   });
 
+  // CircuitBreaker 통합 요약
+  const cbStatus = conc.globalMonitor.getStatus();
+
   res.json({
-    status: 'ok',
+    status: cbStatus.overall === 'CRITICAL' ? 'degraded' : 'ok',
     version: state.version,
     uptime: Math.round((Date.now() - state.startedAt) / 1000),
     buildCommit: process.env.RENDER_GIT_COMMIT || 'local',
@@ -192,9 +197,67 @@ app.get('/api/health', (req, res) => {
       FRED_API_KEY: process.env.FRED_API_KEY ? 'SET' : 'MISSING',
       JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'MISSING',
     },
+    // API 소스 건강 현황 요약
+    apiHealth: {
+      overall: cbStatus.overall,
+      summary: cbStatus.summary,
+      alerts: conc.globalMonitor.getAlerts(),
+    },
     routeCount: routeList.length,
     routes: routeList.filter(r => r.includes('/api/')),
   });
+});
+
+// ── 상세 API 소스 현황 (전체 통계 포함) ──
+app.get('/api/health/sources', (req, res) => {
+  res.json(conc.globalMonitor.getStatus());
+});
+
+// ── 관리자: CircuitBreaker 수동 리셋 ──
+app.post('/api/admin/cb/reset', (req, res) => {
+  const key = req.query.key || req.headers['x-admin-key'];
+  if (!key || key !== process.env.ADMIN_PASSWORD) {
+    return res.status(403).json({ error: 'Admin key required' });
+  }
+
+  const source = req.query.source; // 특정 소스만 리셋 (optional)
+  if (source) {
+    const cbStatus = conc.globalMonitor.getStatus();
+    if (!cbStatus.sources[source]) {
+      return res.status(404).json({ error: 'Unknown source: ' + source });
+    }
+    // 개별 리셋: data-pipeline 또는 stock-pipeline CB 찾기
+    const allBreakers = {};
+    if (pipeline && pipeline._circuitBreakers) Object.assign(allBreakers, pipeline._circuitBreakers);
+    if (stockPipeline && stockPipeline._circuitBreakers) Object.assign(allBreakers, stockPipeline._circuitBreakers);
+    if (allBreakers[source]) {
+      allBreakers[source].reset();
+      return res.json({ ok: true, reset: source });
+    }
+    return res.status(404).json({ error: 'CB not found: ' + source });
+  }
+
+  // 전체 리셋
+  conc.globalMonitor.resetAll();
+  res.json({ ok: true, reset: 'ALL' });
+});
+
+// ── 관리자: SMS 테스트 알림 발송 ──
+app.post('/api/admin/alert/test', async (req, res) => {
+  const key = req.query.key || req.headers['x-admin-key'];
+  if (!key || key !== process.env.ADMIN_PASSWORD) {
+    return res.status(403).json({ error: 'Admin key required' });
+  }
+  try {
+    const alerter = require('./lib/alerter');
+    const result = await alerter.sendAlert('TEST', {
+      reopenCount: 0,
+      stats: { lastFailure: { error: '테스트 알림입니다' } },
+    });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ═══ 디버그 라우트 (production에서는 관리자 인증 필요) ═══
@@ -371,7 +434,13 @@ async function start() {
 
     // DataStore 초기화
     await initDataStore();
-    
+
+    // fallback 연결: CB OPEN 시 이전 캐시 값 자동 반환
+    if (pipeline && dataStore && pipeline.setFallbackStore) {
+      pipeline.setFallbackStore(dataStore);
+      console.log('  🔄 Fallback store connected');
+    }
+
     // 첫 시작 시 데이터 수집 (Demo 방지)
     if (pipeline && dataStore) {
       try {

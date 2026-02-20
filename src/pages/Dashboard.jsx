@@ -65,6 +65,8 @@ function buildEntityData(entityInfo, lang) {
       bs: null,
       _live: true,
       _global: true,
+      _fallback: !!g.isFallback,
+      _stale: !!g.stale,
     };
   }
 
@@ -166,6 +168,8 @@ function mergeGaugeData(demoD, liveResults) {
       ch: r.change || (r.value >= 0 ? `+${r.value.toFixed(1)}` : r.value.toFixed(1)),
       note: r.note || merged[key].note,
       _live: true,
+      _fallback: !!r.isFallback,
+      _stale: !!r.stale,
     };
   }
   return merged;
@@ -288,6 +292,7 @@ function DashboardPage({user,onNav,lang,country,city}){
 
   const allG=Object.values(gaugeData);
   const good=allG.filter(g=>g.g==="양호").length,caution=allG.filter(g=>g.g==="주의").length,alertCnt=allG.filter(g=>g.g==="경보").length;
+  const fallbackCnt=allG.filter(g=>g._fallback).length;
   const totalG=allG.length||1;
 
   // ★ V2: 서버 countryScore 우선 (수축 적용됨) → 폴백 = 프론트 단순 평균
@@ -384,6 +389,12 @@ function DashboardPage({user,onNav,lang,country,city}){
           <div style={{fontSize:LT.fs.sm,color:LT.textDim}}>{iso3} · {countryInfo?.gaugeCount||0}/{countryInfo?.totalGauges||0} {t('gaugesLabel',L)} · {countryInfo?.coverageRate||''} · {apiStatus==='live'?'LIVE':'DEMO'}</div>
         </div>
         <button onClick={()=>onNav('dashboard')} style={{marginLeft:"auto",padding:`${LT.sp.sm}px ${LT.sp.xl}px`,borderRadius:LT.sp.sm,border:`1px solid ${LT.border}`,background:"transparent",color:LT.textDim,fontSize:LT.fs.sm,cursor:"pointer"}}>🇰🇷 {t('backToKR',L)||'한국으로'}</button>
+      </div>}
+      {/* ★ Fallback 투명성 배너 — API 장애 시 추정값 사용 중 */}
+      {fallbackCnt>0&&<div style={{background:`${LT.warn}10`,borderRadius:LT.smRadius,padding:`${LT.sp.lg}px ${LT.sp['2xl']}px`,marginBottom:LT.sp.xl,border:`1px solid ${LT.warn}30`,display:"flex",alignItems:"center",gap:LT.sp.md,flexWrap:"wrap"}}>
+        <span style={{fontSize:LT.fs.md}}>&#9888;&#65039;</span>
+        <span style={{fontSize:LT.fs.sm,color:LT.warn,fontWeight:LT.fw.bold}}>API {fallbackCnt}개 게이지 장애 — 이전 수집 데이터(추정값)로 표시 중</span>
+        <span style={{fontSize:LT.fs.xs,color:LT.textDim,marginLeft:"auto"}}>복구 시 자동 교체</span>
       </div>}
       {/* ★ 커버리지 배너 + 예비 판정 경고 */}
       {isGlobalMode&&<div style={{background:isPreliminary?`${LT.warn}10`:LT.bg2,borderRadius:LT.smRadius,padding:`${LT.sp.lg}px ${LT.sp['2xl']}px`,marginBottom:LT.sp.xl,border:`1px solid ${isPreliminary?LT.warn+'30':LT.border}`,display:"flex",alignItems:"center",gap:LT.sp.md,flexWrap:"wrap"}}>

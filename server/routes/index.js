@@ -15,6 +15,7 @@ const createAdminRouter = require('./admin');         // 🟢 창3
 const createStockRouter = require('./stock');         // 🛰️ Phase2
 const createCatalogRouter = require('./catalog');     // 🛒 Phase3
 const createNotificationRouter = require('./notification'); // 🔔 알림
+const createSmsRouter = require('./sms');                   // 📱 SMS
 
 /**
  * 모든 라우트를 app에 마운트
@@ -34,7 +35,7 @@ function mountRoutes(app, deps) {
     }
   }
 
-  // 순서 유지: auth → diagnosis → data → admin → stock → catalog → notification
+  // 순서 유지: auth → diagnosis → data → admin → stock → catalog → notification → sms
   mount('routes/auth', createAuthRouter);
   mount('routes/diagnosis', createDiagnosisRouter);
   mount('routes/data', createDataRouter);
@@ -42,6 +43,7 @@ function mountRoutes(app, deps) {
   mount('routes/stock', createStockRouter);
   mount('routes/catalog', createCatalogRouter);
   mount('routes/notification', createNotificationRouter);
+  mount('routes/sms', createSmsRouter);
 
   console.log(`  ✅ Routes mounted: ${mounted.join(', ')}`);
   return mounted;

@@ -184,6 +184,20 @@ export async function healthCheck() {
   return api('/api/health');
 }
 
+export async function healthSources() {
+  return api('/api/health/sources');
+}
+
+export async function cbReset(adminKey, source) {
+  var url = '/api/admin/cb/reset?key=' + encodeURIComponent(adminKey);
+  if (source) url += '&source=' + encodeURIComponent(source);
+  return api(url, { method: 'POST' });
+}
+
+export async function sendTestAlert(adminKey) {
+  return api('/api/admin/alert/test?key=' + encodeURIComponent(adminKey), { method: 'POST' });
+}
+
 // ── Data Pipeline ──
 export async function dataStatus() {
   return api('/api/v1/data/status');
@@ -350,6 +364,66 @@ export function getStoredUser() {
 
 export function storeUser(user) {
   localStorage.setItem('diah7m-user', JSON.stringify(user));
+}
+
+// ── SMS 서비스 ──
+export async function smsVerifySend(phone, purpose) {
+  return api('/api/v1/sms/verify/send', {
+    method: 'POST',
+    body: JSON.stringify({ phone, purpose }),
+  });
+}
+export async function smsVerifyCheck(phone, code, purpose) {
+  return api('/api/v1/sms/verify/check', {
+    method: 'POST',
+    body: JSON.stringify({ phone, code, purpose }),
+  });
+}
+export async function updatePhone(phone, sms_opt_in, country_code) {
+  return api('/api/v1/me/phone', {
+    method: 'PUT',
+    body: JSON.stringify({ phone, sms_opt_in, country_code }),
+  });
+}
+export async function verifyPhone(phone, code) {
+  return api('/api/v1/me/phone/verify', {
+    method: 'POST',
+    body: JSON.stringify({ phone, code }),
+  });
+}
+// ── Admin SMS ──
+export async function adminSmsSend(phones, templateCode, vars, message) {
+  return api('/api/v1/admin/sms/send', {
+    method: 'POST',
+    body: JSON.stringify({ phones, templateCode, vars, message }),
+  });
+}
+export async function adminSmsLog(page, limit, type, status) {
+  const params = new URLSearchParams();
+  if (page) params.set('page', page);
+  if (limit) params.set('limit', limit);
+  if (type) params.set('type', type);
+  if (status) params.set('status', status);
+  return api(`/api/v1/admin/sms/log?${params}`);
+}
+export async function adminSmsBalance() {
+  return api('/api/v1/admin/sms/balance');
+}
+export async function adminSmsStats(days) {
+  return api(`/api/v1/admin/sms/stats?days=${days || 30}`);
+}
+export async function adminSmsTemplates() {
+  return api('/api/v1/admin/sms/templates');
+}
+export async function adminSmsTemplateUpdate(code, data) {
+  return api(`/api/v1/admin/sms/templates/${code}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+export async function adminSmsUsers(opts = {}) {
+  const params = new URLSearchParams(opts);
+  return api(`/api/v1/admin/sms/users?${params}`);
 }
 
 export { setToken, getToken, API_BASE };

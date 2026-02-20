@@ -1,14 +1,16 @@
 'use strict';
 
 /**
- * DIAH-7M Concurrency Utilities — 1000명 동시접속 대비
- * ═══════════════════════════════════════════════════════
+ * DIAH-7M Concurrency Utilities — 동시접속 + 장애 자동 복구
+ * ═══════════════════════════════════════════════════════════
  *
  * 1) RequestCoalescer — 동일 키 중복 요청 결합 (thundering herd 방지)
  * 2) Semaphore — 동시 실행 제한 (외부 API 레이트리밋 보호)
  * 3) RateLimiter — 토큰 버킷 기반 호출 제한
  * 4) withTimeout — Promise 타임아웃 래퍼
  * 5) SingletonRefresh — Crumb 같은 싱글톤 토큰 갱신 보호
+ * 6) CircuitBreaker — API 장애 자동감지 + 자동복구 (3-state FSM)
+ * 7) HealthMonitor — 전체 API 소스 통합 건강 현황판
  */
 
 // ── 1. RequestCoalescer ────────────────────────────────
@@ -156,6 +158,246 @@ SingletonRefresh.prototype.refresh = function(fn) {
   return this._refreshing;
 };
 
+// ── 6. CircuitBreaker (3-state FSM) ─────────────────
+// CLOSED(정상) → OPEN(차단) → HALF_OPEN(시험) → CLOSED
+//
+// 설계 근거:
+// - failThreshold=5: ECOS 월 1회 점검, Yahoo 간헐 429 → 5연속이면 실제 장애
+// - resetTimeout=60s: Render free tier 90-120s deploy → 60s면 재배포 중 대기 충분
+// - halfOpenMax=2: 시험 호출 2개 성공하면 완전 복구 (단일 성공은 fluke 가능)
+// - successThreshold=2: 2연속 성공 → CLOSED 복귀
+//
+// 사용법:
+//   var cb = new CircuitBreaker('ECOS', { failThreshold: 5, resetTimeout: 60000 });
+//   var result = await cb.run(function() { return fetchECOS(params); });
+//   // 장애시: CircuitBreakerOpen 에러 throw → 호출자가 캐시 fallback
+
+var CB_STATE = { CLOSED: 'CLOSED', OPEN: 'OPEN', HALF_OPEN: 'HALF_OPEN' };
+
+function CircuitBreaker(name, opts) {
+  opts = opts || {};
+  this.name = name;
+  this.state = CB_STATE.CLOSED;
+  this.failCount = 0;
+  this.successCount = 0;
+  this.failThreshold = opts.failThreshold || 5;
+  this.successThreshold = opts.successThreshold || 2;
+  this.resetTimeout = opts.resetTimeout || 60000; // 60초
+  this.halfOpenMax = opts.halfOpenMax || 2;       // HALF_OPEN 동시 시험 수
+  this._halfOpenRunning = 0;
+  this._openedAt = 0;
+  // Escalation: HALF_OPEN→OPEN 반복 = 자동복구 실패
+  this._reopenCount = 0;                        // HALF_OPEN→OPEN 반복 횟수
+  this.escalateThreshold = opts.escalateThreshold || 3; // 3회 반복 시 SMS 발송
+  this._escalated = false;                       // 이미 알림 발송했는지 (중복 방지)
+  this.onEscalate = opts.onEscalate || null;     // function(breakerName, stats)
+  // 통계
+  this.stats = {
+    totalCalls: 0,
+    totalSuccess: 0,
+    totalFailures: 0,
+    totalRejected: 0,   // OPEN 상태에서 거부된 호출
+    totalReopens: 0,     // HALF_OPEN→OPEN 재진입 횟수
+    escalated: false,    // SMS 발송 여부
+    lastFailure: null,   // { time, error }
+    lastSuccess: null,   // { time }
+    lastStateChange: null,
+    stateHistory: [],     // 최근 10개 상태 변경 이력
+  };
+}
+
+CircuitBreaker.prototype._changeState = function(newState) {
+  var prev = this.state;
+  this.state = newState;
+  var entry = { from: prev, to: newState, at: new Date().toISOString() };
+  this.stats.lastStateChange = entry;
+  this.stats.stateHistory.push(entry);
+  if (this.stats.stateHistory.length > 10) this.stats.stateHistory.shift();
+  console.log('[CB:' + this.name + '] ' + prev + ' → ' + newState);
+};
+
+CircuitBreaker.prototype._onSuccess = function() {
+  this.stats.totalSuccess++;
+  this.stats.lastSuccess = { time: new Date().toISOString() };
+
+  if (this.state === CB_STATE.HALF_OPEN) {
+    this._halfOpenRunning--;
+    this.successCount++;
+    if (this.successCount >= this.successThreshold) {
+      this.failCount = 0;
+      this.successCount = 0;
+      this._reopenCount = 0;    // 복구 성공 → escalation 카운터 리셋
+      this._escalated = false;
+      this.stats.escalated = false;
+      this._changeState(CB_STATE.CLOSED);
+    }
+  } else {
+    // CLOSED 상태: 연속 실패 카운터 리셋
+    this.failCount = 0;
+  }
+};
+
+CircuitBreaker.prototype._onFailure = function(err) {
+  this.stats.totalFailures++;
+  this.stats.lastFailure = { time: new Date().toISOString(), error: String(err && err.message || err) };
+
+  if (this.state === CB_STATE.HALF_OPEN) {
+    this._halfOpenRunning--;
+    // 시험 실패 → 다시 OPEN (자동복구 실패)
+    this.successCount = 0;
+    this._openedAt = Date.now();
+    this._reopenCount++;
+    this.stats.totalReopens++;
+    this._changeState(CB_STATE.OPEN);
+
+    // Escalation: 3회 반복 복구 실패 → SMS 발송
+    if (this._reopenCount >= this.escalateThreshold && !this._escalated) {
+      this._escalated = true;
+      this.stats.escalated = true;
+      console.error('[CB:' + this.name + '] ESCALATE — 자동복구 ' + this._reopenCount + '회 실패, SMS 발송');
+      if (typeof this.onEscalate === 'function') {
+        try { this.onEscalate(this.name, this.getStatus()); } catch(e) {
+          console.error('[CB:' + this.name + '] onEscalate error:', e.message);
+        }
+      }
+    }
+  } else if (this.state === CB_STATE.CLOSED) {
+    this.failCount++;
+    if (this.failCount >= this.failThreshold) {
+      this._openedAt = Date.now();
+      this._changeState(CB_STATE.OPEN);
+    }
+  }
+};
+
+CircuitBreaker.prototype.run = function(fn) {
+  this.stats.totalCalls++;
+  var self = this;
+
+  // OPEN 상태: resetTimeout 경과 확인
+  if (this.state === CB_STATE.OPEN) {
+    if (Date.now() - this._openedAt >= this.resetTimeout) {
+      this._changeState(CB_STATE.HALF_OPEN);
+      this.successCount = 0;
+      this._halfOpenRunning = 0;
+    } else {
+      this.stats.totalRejected++;
+      return Promise.reject(new Error('[CB:' + this.name + '] OPEN — 호출 차단 (남은 대기: ' +
+        Math.round((this.resetTimeout - (Date.now() - this._openedAt)) / 1000) + '초)'));
+    }
+  }
+
+  // HALF_OPEN 상태: 동시 시험 수 초과 → 거부
+  if (this.state === CB_STATE.HALF_OPEN && this._halfOpenRunning >= this.halfOpenMax) {
+    this.stats.totalRejected++;
+    return Promise.reject(new Error('[CB:' + this.name + '] HALF_OPEN — 시험 중 추가 호출 차단'));
+  }
+
+  if (this.state === CB_STATE.HALF_OPEN) {
+    this._halfOpenRunning++;
+  }
+
+  return fn().then(
+    function(r) { self._onSuccess(); return r; },
+    function(e) { self._onFailure(e); throw e; }
+  );
+};
+
+CircuitBreaker.prototype.getStatus = function() {
+  return {
+    name: this.name,
+    state: this.state,
+    failCount: this.failCount,
+    reopenCount: this._reopenCount,
+    escalated: this._escalated,
+    stats: this.stats,
+  };
+};
+
+// 수동 리셋 (관리자 API용)
+CircuitBreaker.prototype.reset = function() {
+  this.failCount = 0;
+  this.successCount = 0;
+  this._halfOpenRunning = 0;
+  this._changeState(CB_STATE.CLOSED);
+};
+
+// ── 7. HealthMonitor — 전체 API 소스 통합 건강판 ────
+// 모든 CircuitBreaker를 등록하고 통합 상태를 제공
+//
+// 사용법:
+//   var monitor = new HealthMonitor();
+//   monitor.register('ECOS', ecosCB);
+//   monitor.register('YAHOO', yahooCB);
+//   var status = monitor.getStatus(); // 전체 현황
+//   var alerts = monitor.getAlerts(); // 경보만
+
+function HealthMonitor() {
+  this._breakers = {};
+}
+
+HealthMonitor.prototype.register = function(name, breaker) {
+  this._breakers[name] = breaker;
+};
+
+HealthMonitor.prototype.getStatus = function() {
+  var sources = {};
+  var names = Object.keys(this._breakers);
+  var healthy = 0;
+  var degraded = 0;
+  var down = 0;
+
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var status = this._breakers[name].getStatus();
+    sources[name] = status;
+    if (status.state === CB_STATE.CLOSED) healthy++;
+    else if (status.state === CB_STATE.HALF_OPEN) degraded++;
+    else down++;
+  }
+
+  var overall = down > 0 ? 'DEGRADED' : (degraded > 0 ? 'RECOVERING' : 'HEALTHY');
+  // 전체 API 중 50% 이상 down이면 CRITICAL
+  if (names.length > 0 && down / names.length >= 0.5) overall = 'CRITICAL';
+
+  return {
+    overall: overall,
+    summary: { total: names.length, healthy: healthy, degraded: degraded, down: down },
+    sources: sources,
+    checkedAt: new Date().toISOString(),
+  };
+};
+
+HealthMonitor.prototype.getAlerts = function() {
+  var alerts = [];
+  var names = Object.keys(this._breakers);
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var status = this._breakers[name].getStatus();
+    if (status.state !== CB_STATE.CLOSED) {
+      alerts.push({
+        source: name,
+        state: status.state,
+        failCount: status.failCount,
+        lastFailure: status.stats.lastFailure,
+        lastSuccess: status.stats.lastSuccess,
+      });
+    }
+  }
+  return alerts;
+};
+
+// 전체 수동 리셋 (비상용)
+HealthMonitor.prototype.resetAll = function() {
+  var names = Object.keys(this._breakers);
+  for (var i = 0; i < names.length; i++) {
+    this._breakers[names[i]].reset();
+  }
+};
+
+// 글로벌 싱글톤 HealthMonitor
+var _globalMonitor = new HealthMonitor();
+
 // ── Exports ──────────────────────────────────────────
 
 module.exports = {
@@ -164,4 +406,7 @@ module.exports = {
   RateLimiter: RateLimiter,
   withTimeout: withTimeout,
   SingletonRefresh: SingletonRefresh,
+  CircuitBreaker: CircuitBreaker,
+  HealthMonitor: HealthMonitor,
+  globalMonitor: _globalMonitor,
 };

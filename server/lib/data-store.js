@@ -76,6 +76,7 @@ class DataStore {
     for (const [id, data] of Object.entries(pipelineResults)) {
       if (data.status === 'OK' && data.value !== null && data.value !== undefined) {
         // 새 데이터 정상 → 캐시 갱신
+        // isFallback=true면 CB OPEN으로 이전 캐시 값을 재사용한 것
         this.memCache[id] = {
           value: data.value,
           prevValue: data.prevValue || null,
@@ -83,8 +84,11 @@ class DataStore {
           source: data.source || 'unknown',
           date: data.date || new Date().toISOString().slice(0, 10),
           status: 'OK',
-          stale: false,
-          updatedAt: new Date().toISOString(),
+          stale: !!data.isFallback,
+          isFallback: !!data.isFallback,
+          fallbackReason: data.fallbackReason || null,
+          fallbackAge: data.fallbackAge || null,
+          updatedAt: data.isFallback ? (this.memCache[id]?.updatedAt || new Date().toISOString()) : new Date().toISOString(),
         };
         okCount++;
 
@@ -143,6 +147,23 @@ class DataStore {
     return data;
   }
 
+  // 엔진 입력 + 메타: { I1: { value: 2.5, isFallback: false }, ... }
+  // 프론트엔드 투명성 표기용
+  toGaugeDataWithMeta() {
+    const data = {};
+    for (const [id, cached] of Object.entries(this.memCache)) {
+      if (cached.status === 'OK' && cached.value !== null) {
+        data[id] = {
+          value: cached.value,
+          isFallback: !!cached.isFallback,
+          stale: !!cached.stale,
+          updatedAt: cached.updatedAt || null,
+        };
+      }
+    }
+    return data;
+  }
+
   // delta 판정용: 이전 값 맵 { I1: 2.3, I2: 85.1, ... }
   toPrevData() {
     const data = {};
@@ -164,12 +185,14 @@ class DataStore {
     const entries = Object.entries(this.memCache);
     const ok = entries.filter(([, v]) => v.status === 'OK').length;
     const staleCount = entries.filter(([, v]) => v.stale).length;
+    const fallbackCount = entries.filter(([, v]) => v.isFallback).length;
     const expired = this.isStale();
     return {
       available: ok > 0,
       total: entries.length,
       ok,
       stale: staleCount,
+      fallback: fallbackCount,
       expired,
       stale_age_sec: this.lastFetch ? Math.round((Date.now() - new Date(this.lastFetch).getTime()) / 1000) : null,
       lastFetch: this.lastFetch,
