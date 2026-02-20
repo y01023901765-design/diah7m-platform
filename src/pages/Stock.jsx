@@ -770,6 +770,40 @@ function StockView({stock:s,lang,onBack}){
           </div>
         </div>
       </div>
+
+      {/* ── 전체 종합 요약 ── */}
+      {(()=>{
+        const af = liveSatImg&&liveSatImg.length>0 ? liveSatImg : facs;
+        const wNo2  = af.reduce((m,f)=>{ const v=f.no2?.anomPct??f.no2?.anomaly??null; return(v!=null&&v<m)?v:m; },0);
+        const wTh   = af.reduce((m,f)=>{ const v=f.thermal?.anomaly_degC??f.thermal?.anomaly??f.therm??null; return(v!=null&&v<m)?v:m; },0);
+        const wVi   = af.reduce((m,f)=>{ const v=f.ntl?.anomPct??f.ntl?.anomaly??f.viirs??null; return(v!=null&&v<m)?v:m; },0);
+        const hasNo2=wNo2!==0, hasTh=wTh!==0, hasVi=wVi!==0;
+        const parts=[];
+        if(hasNo2) parts.push(`NO₂ ${wNo2>0?'+':''}${wNo2.toFixed(1)}%(최근 8주 대비)`);
+        if(hasTh)  parts.push(`지표온도 ${wTh>0?'+':''}${wTh.toFixed(1)}°C(전년 동기간 대비)`);
+        if(hasVi)  parts.push(`야간광 ${wVi>0?'+':''}${wVi.toFixed(1)}%(1년 평균 대비)`);
+        if(parts.length===0) return null;
+        // 종합 판단 문장
+        const alarm = wNo2<-15||(wNo2<-8&&wTh<-2);
+        const warn  = !alarm&&(wNo2<-8||wTh<-2);
+        const trend = !alarm&&!warn&&wVi<-10;
+        let verdict='';
+        if(alarm) verdict='복수 센서에서 급성 이상 신호가 감지되었습니다. 단기 리스크 구간으로, 1~2주 내 추가 확인이 필요합니다.';
+        else if(warn) verdict='일부 센서에서 변화 신호가 감지되었습니다. 즉각적 위험은 아니나, 2~4주간 모니터링을 권장합니다.';
+        else if(trend) verdict='야간광 장기 하락 추세가 관측됩니다. 급성 위험은 아니나, 3~6개월 구조 변화 가능성에 유의하세요.';
+        else verdict='관측 가능한 물리 신호 범위 내에서 정상입니다. 현재 공급망에 특이 사항이 없습니다.';
+        return(
+          <div style={{background:LT.bg2,borderRadius:10,padding:'16px 20px',marginTop:4,marginBottom:12,border:`1px solid ${LT.border}`}}>
+            <div style={{fontSize:14,fontWeight:700,color:LT.text,marginBottom:8}}>종합 요약</div>
+            <div style={{fontSize:14,color:LT.textMid,lineHeight:1.7,marginBottom:6}}>
+              현재 {s.name}의 위성 관측 수치는 {parts.join(', ')}입니다.
+            </div>
+            <div style={{fontSize:14,color:alarm?LT.danger:warn?LT.warn:trend?LT.textDim:LT.good,lineHeight:1.7,fontWeight:600}}>
+              {verdict}
+            </div>
+          </div>
+        );
+      })()}
     </>}
 
     {/* ═══ TAB 3: 플로우 — 공급망 물리 흐름 ═══ */}
