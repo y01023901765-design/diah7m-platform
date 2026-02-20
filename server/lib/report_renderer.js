@@ -167,39 +167,65 @@ function pageBreak() { return new Paragraph({ children: [new PageBreak()] }); }
 
 function extractGaugeRows(data, profile, diagnosis) {
   const rows = [];
-  const summary = data["수집완료_요약"];
+  const summary = data["수집완료_요약"] || {};
+
+  // 판정_양호/주의/경보에서 code→상태 매핑 (ssot_engine 코드 기준)
   const statusMap = {};
+  for (const g of (summary["판정_양호"] || [])) statusMap[g] = "양호";
+  for (const g of (summary["판정_주의"] || [])) statusMap[g] = "주의";
+  for (const g of (summary["판정_경보"] || [])) statusMap[g] = "경보";
 
-  // 판정_양호/주의/경보에서 ID→상태 매핑
-  for (const g of (summary["판정_양호"] || [])) statusMap[g.split('_')[0]] = "양호";
-  for (const g of (summary["판정_주의"] || [])) statusMap[g.split('_')[0]] = "주의";
-  for (const g of (summary["판정_경보"] || [])) statusMap[g.split('_')[0]] = "경보";
+  // ssot_engine 출력 배열 키 순서대로 수집
+  const sectionKeys = [
+    'sec2_gauges', 'sec3_gauges',
+    'axis2_gauges', 'axis3_gauges', 'axis4_gauges',
+    'axis5_gauges', 'axis6_gauges', 'axis7_gauges',
+    'axis8_gauges', 'axis9_gauges',
+  ];
 
-  // 수집데이터의 축 섹션에서 게이지 상세를 순서대로 추출
-  for (const sectionKey of Object.keys(data)) {
-    if (sectionKey.startsWith("축") && typeof data[sectionKey] === 'object') {
-      for (const [gaugeKey, gaugeData] of Object.entries(data[sectionKey])) {
-        const id = gaugeKey.split('_')[0];
-        const name = gaugeKey.split('_').slice(1).join('_');
+  for (const sectionKey of sectionKeys) {
+    const gaugeArr = data[sectionKey];
+    if (!Array.isArray(gaugeArr)) continue;
 
-        // profile에서 flow 정보 가져오기
-        const profileGauge = (profile.gauges || []).find(g => g.id === id);
-        const flow = profileGauge ? (profileGauge.flow === 'input' ? 'Input' : 'Output') : '-';
-        const metaphor = profileGauge ? profileGauge.body_metaphor : '';
+    for (const g of gaugeArr) {
+      // code 형식: "I1 무역수지(경상)" or "I1"
+      const codeFull = g.code || '';
+      const code = codeFull.split(' ')[0];
+      const name = codeFull.split(' ').slice(1).join(' ') || g.name || code;
+      const flow = g.cat || (sectionKey === 'sec2_gauges' ? 'Input' : sectionKey === 'sec3_gauges' ? 'Output' : 'Axis');
+      const val = g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-');
+      const grade = g.grade || statusMap[code] || '-';
 
-        // 값 추출 (여러 필드 시도)
-        const val = gaugeData["값"] || gaugeData["값_연간"] || gaugeData["값_서울주간"] || gaugeData["값_12월_전월비"] || '-';
+      rows.push({
+        id: code,
+        name,
+        flow,
+        val,
+        detail: g.judge || g.narrative || '',
+        metaphor: '',
+        status: grade,
+        score: grade.includes('경보') ? 2 : grade.includes('주의') ? 1 : 0,
+        source: g._source || '',
+        raw: g,
+      });
+    }
+  }
 
-        // 상세/비고
-        const detail = gaugeData["비고"] || '';
-
-        rows.push({
-          id, name, flow, val, detail, metaphor,
-          status: statusMap[id] || '-',
-          score: statusMap[id] === "양호" ? 0 : statusMap[id] === "주의" ? 1 : 2,
-          source: gaugeData["출처"] || '',
-          raw: gaugeData,
-        });
+  // 구형 "축" 접두사 형식 폴백 (레거시 호환)
+  if (rows.length === 0) {
+    for (const sectionKey of Object.keys(data)) {
+      if (sectionKey.startsWith("축") && typeof data[sectionKey] === 'object') {
+        for (const [gaugeKey, gaugeData] of Object.entries(data[sectionKey])) {
+          const id = gaugeKey.split('_')[0];
+          const name = gaugeKey.split('_').slice(1).join('_');
+          const val = gaugeData["값"] || '-';
+          rows.push({
+            id, name, flow: '-', val, detail: gaugeData["비고"] || '',
+            metaphor: '', status: statusMap[id] || '-',
+            score: statusMap[id] === "양호" ? 0 : statusMap[id] === "주의" ? 1 : 2,
+            source: gaugeData["출처"] || '', raw: gaugeData,
+          });
+        }
       }
     }
   }
