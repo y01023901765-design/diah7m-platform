@@ -60,7 +60,20 @@
   },
 
   "sections": [
-    { "type": "cover", "page_break_before": false },
+    { "type": "cover",
+      "page_break_before": false,
+      "title_main": "대한민국 경제건강검진 보고서",
+      "subtitle": "DIAH-7M Economic Health Check — Monthly",
+      "dynamic_title": "{{기준월}} 경제건강검진",
+      "dynamic_subtitle": "수집일: {{수집일}} | Engine: {{engine_id}}",
+      "summary_box": {
+        "show": true,
+        "fields": [
+          { "label": "이중봉쇄", "format_true": "⚠ 발동", "format_false": "미발동" }
+        ]
+      },
+      "meta_line": { "show": true }
+    },
 
     { "type": "verdict",
       "heading": "1. 종합 판정 (Overall Vital Sign)",

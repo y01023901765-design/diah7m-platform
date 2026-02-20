@@ -77,13 +77,20 @@ function statusScore(status, template) {
   return sm[status] ? sm[status].score : 0;
 }
 
-// 템플릿 문자열 치환: "{변수}" → 실제 값
+// 템플릿 문자열 치환: "{변수}" 또는 "{{변수}}" → 실제 값
 function interpolate(str, ctx) {
   if (!str) return "";
-  return str.replace(/\{([^}]+)\}/g, (_, key) => {
+  // {{key}} 먼저 처리 (이중 중괄호)
+  let result = str.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
+    const val = resolveNested(ctx, key);
+    return val !== undefined ? String(val) : `{{${key}}}`;
+  });
+  // {key} 단일 중괄호 처리
+  result = result.replace(/\{([^}]+)\}/g, (_, key) => {
     const val = resolveNested(ctx, key);
     return val !== undefined ? String(val) : `{${key}}`;
   });
+  return result;
 }
 
 function resolveNested(obj, path) {
