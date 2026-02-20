@@ -186,6 +186,9 @@ function CircuitBreaker(name, opts) {
   this.halfOpenMax = opts.halfOpenMax || 2;       // HALF_OPEN 동시 시험 수
   this._halfOpenRunning = 0;
   this._openedAt = 0;
+  // ignoreStatus: HTTP 상태코드 배열 — 이 코드는 failure로 카운트하지 않음
+  // 예: [429] → rate limit은 서버 장애가 아님
+  this.ignoreStatus = opts.ignoreStatus || [];
   // Escalation: HALF_OPEN→OPEN 반복 = 자동복구 실패
   this._reopenCount = 0;                        // HALF_OPEN→OPEN 반복 횟수
   this.escalateThreshold = opts.escalateThreshold || 3; // 3회 반복 시 SMS 발송
@@ -299,7 +302,14 @@ CircuitBreaker.prototype.run = function(fn) {
 
   return fn().then(
     function(r) { self._onSuccess(); return r; },
-    function(e) { self._onFailure(e); throw e; }
+    function(e) {
+      // ignoreStatus 코드는 failure 카운트 없이 그냥 throw
+      var status = e && e.response && e.response.status;
+      if (status && self.ignoreStatus.indexOf(status) >= 0) {
+        throw e; // CB failure 카운트 없이 통과
+      }
+      self._onFailure(e); throw e;
+    }
   );
 };
 
