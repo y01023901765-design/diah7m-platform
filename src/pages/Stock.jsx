@@ -371,13 +371,15 @@ function StockView({stock:s,lang,onBack}){
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                 {(()=>{
                   const cards=[];
-                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
-                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
-                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',desc:'이산화질소 농도 — 5일 전 데이터',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',desc:'공장 지표온도 — 16일 전 데이터',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',desc:'공장 불빛 밝기 — 90일 전 데이터',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
                     <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:90}}>
                       <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
                       <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
+                      <div style={{fontSize:13,color:LT.textDim,marginTop:5}}>전년 대비 변화</div>
+                      <div style={{fontSize:13,color:LT.textDim}}>{c.desc}</div>
                     </div>
                   ));
                 })()}
