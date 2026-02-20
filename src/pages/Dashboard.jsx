@@ -175,6 +175,30 @@ function mergeGaugeData(demoD, liveResults) {
   return merged;
 }
 
+// 야간광 채널 선택 카드 (단기/중기/기준선)
+function S2Card({data,lang,LT,t}){
+  const [ch,setCh]=useState('60d');
+  const chVal={'7d':data.mean_7d,'60d':data.mean_60d,'1y':data.baseline_365d};
+  const chLabel={'7d':lang==='ko'?'단기 7일':'7-day','60d':lang==='ko'?'중기 60일':'60-day','1y':lang==='ko'?'기준 1년':'1yr baseline'};
+  return(
+    <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.good}30`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.md}}>
+        <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌙 {t('satS2Name',lang)||'야간광량'}</span>
+        <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.good}15`,color:LT.good,fontWeight:LT.fw.semi}}>VIIRS DNB</span>
+      </div>
+      <div style={{display:"flex",gap:4,marginBottom:LT.sp.md}}>
+        {['7d','60d','1y'].map(c=>(
+          <button key={c} onClick={()=>setCh(c)} style={{padding:'3px 10px',fontSize:11,fontWeight:ch===c?700:400,borderRadius:6,border:`1px solid ${ch===c?LT.good:LT.border}`,background:ch===c?`${LT.good}20`:'transparent',color:ch===c?LT.good:LT.textDim,cursor:'pointer'}}>{chLabel[c]}</button>
+        ))}
+      </div>
+      <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{chVal[ch]??'—'}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{data.unit}</span></div>
+      {data.anomaly!=null&&<div style={{marginTop:LT.sp.sm,fontSize:LT.fs.sm,fontWeight:LT.fw.bold,color:data.anomaly>=0?LT.good:LT.danger}}>
+        {data.anomaly>=0?'▲':'▼'} {(data.anomaly*100).toFixed(2)}% vs {lang==='ko'?'1년 기준선':'1yr baseline'}
+      </div>}
+    </div>
+  );
+}
+
 function DashboardPage({user,onNav,lang,country,city}){
   const L=lang||'ko';
   const [expanded,setExpanded]=useState({});
@@ -516,21 +540,7 @@ function DashboardPage({user,onNav,lang,country,city}){
       </div>
       {/* 위성 실데이터 카드 (S2 + R6) */}
       {satData&&(satData.S2||satData.R6)&&<div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.lg,marginBottom:LT.sp['2xl']}}>
-        {satData.S2&&satData.S2.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.good}30`}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.md}}>
-            <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌙 {t('satS2Name',L)||'야간광량'}</span>
-            <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.sm}px`,borderRadius:LT.sp.xs,background:`${LT.good}15`,color:LT.good,fontWeight:LT.fw.semi}}>VIIRS DNB</span>
-          </div>
-          <div style={{fontSize:LT.fs['3xl'],fontWeight:LT.fw.black,color:LT.text,fontFamily:"monospace"}}>{satData.S2.value}<span style={{fontSize:LT.fs.md,color:LT.textDim,marginLeft:LT.sp.xs}}>{satData.S2.unit}</span></div>
-          <div style={{display:"flex",gap:LT.sp.xl,marginTop:LT.sp.md,fontSize:LT.fs.sm,color:LT.textMid}}>
-            {satData.S2.mean_7d!=null&&<span>7d: {satData.S2.mean_7d}</span>}
-            {satData.S2.mean_60d!=null&&<span>60d: {satData.S2.mean_60d}</span>}
-            {satData.S2.baseline_365d!=null&&<span>365d: {satData.S2.baseline_365d}</span>}
-          </div>
-          {satData.S2.anomaly!=null&&<div style={{marginTop:LT.sp.sm,fontSize:LT.fs.sm,fontWeight:LT.fw.bold,color:satData.S2.anomaly>=0?LT.good:LT.danger}}>
-            {satData.S2.anomaly>=0?'▲':'▼'} {(satData.S2.anomaly*100).toFixed(2)}% vs 365d baseline
-          </div>}
-        </div>}
+        {satData.S2&&satData.S2.status==='OK'&&<S2Card data={satData.S2} lang={L} LT={LT} t={t}/>}
         {satData.R6&&satData.R6.status==='OK'&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp['2xl'],border:`1px solid ${LT.warn}30`}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:LT.sp.md}}>
             <span style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:LT.text}}>🌡️ {t('satR6Name',L)||'도시열섬'}</span>
