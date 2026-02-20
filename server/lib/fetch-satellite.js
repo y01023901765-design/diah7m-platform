@@ -437,16 +437,17 @@ async function fetchFacilityVIIRS(lat, lng, radiusKm) {
   var t0 = Date.now();
   await authenticateGEE();
 
-  var bbox = _facilityBbox(lat, lng, radiusKm);
+  // VIIRS는 월간 데이터 — lookback을 충분히 길게 (release delay 2-3개월)
+  // 데이터용 radiusKm은 최소 15km (reduceRegion 픽셀 수 확보)
+  var dataRadiusKm = Math.max(radiusKm, 15);
+  var bbox = _facilityBbox(lat, lng, dataRadiusKm);
   var geometry = ee.Geometry.Rectangle(bbox);
   var endDate = new Date();
   var endStr = endDate.toISOString().split('T')[0];
 
-  // 7일 평균
-  var d7 = new Date(); d7.setDate(d7.getDate() - 7);
-  // 60일 평균
-  var d60 = new Date(); d60.setDate(d60.getDate() - 60);
-  // 365일 baseline
+  // VIIRS 월간: "최근 3개월" ≈ recent, "최근 6개월" ≈ short-term, "365일" = baseline
+  var d90  = new Date(); d90.setDate(d90.getDate() - 90);
+  var d180 = new Date(); d180.setDate(d180.getDate() - 180);
   var d365 = new Date(); d365.setDate(d365.getDate() - 365);
 
   var col = 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG';
@@ -465,7 +466,8 @@ async function fetchFacilityVIIRS(lat, lng, radiusKm) {
     });
   }
 
-  var results = await Promise.all([_meanReduce(d7), _meanReduce(d60), _meanReduce(d365)]);
+  var results = await Promise.all([_meanReduce(d90), _meanReduce(d180), _meanReduce(d365)]);
+  // mean_7d 필드명 유지 (하위호환) — 실제값은 최근 3개월 평균
   var mean7d = results[0], mean60d = results[1], baseline365 = results[2];
 
   var anomaly = (baseline365 && baseline365 > 0) ? (mean60d - baseline365) / baseline365 : null;
@@ -504,7 +506,9 @@ async function fetchFacilityNO2(lat, lng, radiusKm) {
   var t0 = Date.now();
   await authenticateGEE();
 
-  var bbox = _facilityBbox(lat, lng, radiusKm);
+  // NO2 scale=1000m → 최소 15km 반경 필요 (픽셀 수 확보)
+  var dataRadiusKm = Math.max(radiusKm, 15);
+  var bbox = _facilityBbox(lat, lng, dataRadiusKm);
   var geometry = ee.Geometry.Rectangle(bbox);
   var endDate = new Date();
   var endStr = endDate.toISOString().split('T')[0];
