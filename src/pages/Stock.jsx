@@ -116,13 +116,14 @@ const _SAT_LATEST = _satYM(-1);   // 예: 2026-01
 const _SAT_PREV1  = _satYM(-2);   // 직전월: 2025-12
 const _SAT_PREV12 = _satYM(-13);  // 전년동월: 2025-01
 const _SAT_PREV3Y = _satYM(-37);  // 3년 전 동월: 2023-01
-// 프리셋 정의
+// 프리셋 정의 — null=서버 슬라이딩 윈도우(6개월 평균) 사용
 const _SAT_PRESETS=[
-  {id:'m1', label:'연속 1개월', after:_SAT_LATEST, before:_SAT_PREV1},
-  {id:'yoy',label:'전년 동월',  after:_SAT_LATEST, before:_SAT_PREV12},
-  {id:'3y', label:'3년 비교',   after:_SAT_LATEST, before:_SAT_PREV3Y},
+  {id:'auto',label:'자동',       after:null,        before:null},       // 서버 슬라이딩 윈도우
+  {id:'m1',  label:'연속 1개월', after:_SAT_LATEST, before:_SAT_PREV1},
+  {id:'yoy', label:'전년 동월',  after:_SAT_LATEST, before:_SAT_PREV12},
+  {id:'3y',  label:'3년 비교',   after:_SAT_LATEST, before:_SAT_PREV3Y},
 ];
-const _SAT_DEFAULTS={after:_SAT_LATEST,before:_SAT_PREV12}; // 기본: 전년 동월 비교
+const _SAT_DEFAULTS={after:null,before:null}; // 기본: 자동(슬라이딩 윈도우)
 
 // ═══ StockView — 5탭 종목 상세 ═══
 function StockView({stock:s,lang,onBack}){
@@ -341,15 +342,16 @@ function StockView({stock:s,lang,onBack}){
           const selStyle={padding:'4px 8px',fontSize:12,borderRadius:6,border:`1px solid ${LT.border}`,background:LT.bg2,color:LT.text,cursor:'pointer',outline:'none'};
           const years=[];for(let y=new Date().getFullYear();y>=2012;y--)years.push(y);
           const months=[1,2,3,4,5,6,7,8,9,10,11,12];
-          const [aY,aM]=satAfterYM.split('-').map(Number);
-          const [bY,bM]=satBeforeYM.split('-').map(Number);
-          const setAY=v=>setSatAfterYM(`${v}-${String(aM).padStart(2,'0')}`);
-          const setAM=v=>setSatAfterYM(`${aY}-${String(v).padStart(2,'0')}`);
-          const setBY=v=>setSatBeforeYM(`${v}-${String(bM).padStart(2,'0')}`);
-          const setBM=v=>setSatBeforeYM(`${bY}-${String(v).padStart(2,'0')}`);
+          const isAuto = !satAfterYM && !satBeforeYM;
+          const [aY,aM] = isAuto ? [null,null] : satAfterYM.split('-').map(Number);
+          const [bY,bM] = isAuto ? [null,null] : satBeforeYM.split('-').map(Number);
+          const setAY=v=>setSatAfterYM(`${v}-${String(aM||1).padStart(2,'0')}`);
+          const setAM=v=>setSatAfterYM(`${aY||new Date().getFullYear()}-${String(v).padStart(2,'0')}`);
+          const setBY=v=>setSatBeforeYM(`${v}-${String(bM||1).padStart(2,'0')}`);
+          const setBM=v=>setSatBeforeYM(`${bY||new Date().getFullYear()-1}-${String(v).padStart(2,'0')}`);
           const activePreset=_SAT_PRESETS.find(p=>p.after===satAfterYM&&p.before===satBeforeYM);
           return(<>
-            {/* 프리셋 버튼 3개 */}
+            {/* 프리셋 버튼 */}
             <div style={{display:"flex",gap:4,marginBottom:8}}>
               {_SAT_PRESETS.map(p=>(
                 <button key={p.id} onClick={()=>{setSatAfterYM(p.after);setSatBeforeYM(p.before);}}
@@ -359,8 +361,8 @@ function StockView({stock:s,lang,onBack}){
                     color:activePreset?.id===p.id?LT.surface:LT.textDim,cursor:'pointer'}}>{p.label}</button>
               ))}
             </div>
-            {/* 연월 드롭다운 — 직접 지정 */}
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+            {/* 연월 드롭다운 — 자동 모드가 아닐 때만 표시 */}
+            {!isAuto&&<div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
                 <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>비교기준</span>
                 <select value={bY} onChange={e=>setBY(Number(e.target.value))} style={selStyle}>
@@ -380,10 +382,10 @@ function StockView({stock:s,lang,onBack}){
                   {months.map(m=><option key={m} value={m}>{m}월</option>)}
                 </select>
               </div>
-            </div>
-            {/* 현재 선택 날짜 전면 표시 */}
+            </div>}
+            {/* 현재 선택 날짜 표시 */}
             <div style={{fontSize:12,color:LT.textDim,marginBottom:10,padding:'4px 8px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
-              📅 {satBeforeYM} → {satAfterYM} {activePreset?`(${activePreset.label})`:'(직접 선택)'}
+              {isAuto ? '📅 자동 — 최근 6개월 vs 1년 전 슬라이딩 비교' : `📅 ${satBeforeYM} → ${satAfterYM} ${activePreset?`(${activePreset.label})`:'(직접 선택)'}`}
             </div>
           </>);
         })()}
