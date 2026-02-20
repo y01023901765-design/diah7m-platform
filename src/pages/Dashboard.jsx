@@ -530,6 +530,27 @@ function DashboardPage({user,onNav,lang,country,city}){
             })}
           </div>
           <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L} levelInfo={levelInfo}/></div>
+          {/* ★ PDF 보고서 다운로드 버튼 */}
+          {isKorea&&<button
+            onClick={async()=>{
+              try{
+                const a=document.createElement('a');
+                a.href='/api/v1/diagnosis/kr/pdf';
+                a.download=`DIAH7M_KR_${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }catch(e){console.error('[PDF]',e);}
+            }}
+            style={{
+              marginTop:LT.sp.lg,width:'100%',padding:`${LT.sp.md}px`,
+              background:`linear-gradient(135deg,#1a56db,#6366f1)`,
+              color:'#fff',border:'none',borderRadius:LT.smRadius,
+              fontSize:LT.fs.md,fontWeight:LT.fw.bold,cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:LT.sp.sm,
+              boxShadow:'0 2px 8px #1a56db40',
+            }}
+          >📄 {L==='ko'?'경제건강검진 보고서 다운로드':'Download Health Report (PDF)'}</button>}
         </div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <RadarChart lang={L} sysData={activeSys}/>

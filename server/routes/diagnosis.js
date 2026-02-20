@@ -561,5 +561,52 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
     }
   });
 
+  // ── PDF 보고서 다운로드 (GET /api/v1/diagnosis/kr/pdf) ──
+  // 인증 불필요 — 무료 체험용 (플랜 제한은 추후 추가)
+  router.get('/diagnosis/kr/pdf', async (req, res) => {
+    try {
+      if (!engine || !engine.diagnose) {
+        return res.status(503).json({ error: 'Engine unavailable' });
+      }
+
+      // 1) 게이지 데이터 수집
+      let gaugeData = {};
+      if (dataStore) {
+        gaugeData = dataStore.toGaugeData ? dataStore.toGaugeData() : {};
+      }
+
+      // 2) demo 폴백
+      let diagnosis;
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        diagnosis = DEMO_DIAGNOSIS;
+      } else {
+        const gaugeArr = Object.entries(gaugeData).map(([id, v]) => ({
+          id,
+          value: typeof v === 'object' ? (v.value ?? 0) : (v ?? 0),
+        }));
+        diagnosis = engine.diagnose
+          ? engine.diagnose(
+              gaugeArr.reduce((acc, g) => { acc[g.id] = g.value; return acc; }, {}),
+            )
+          : { overall: {}, axes: {}, crossSignals: [], dualLock: {} };
+      }
+
+      // 3) PDF 스트림 전송
+      const renderer = require('../lib/renderer');
+      const filename = `DIAH-7M_${(diagnosis.period || new Date().toISOString().slice(0,7)).replace(/[^0-9\-]/g,'')}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      await renderer.renderPDF(diagnosis, res);
+
+    } catch (e) {
+      console.error('[PDF] 생성 오류:', e.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: e.message });
+      }
+    }
+  });
+
   return router;
 };
