@@ -420,6 +420,11 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 {ntl?.mean_60d!=null&&<div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>{ntl.mean_60d.toFixed(1)} nW/cm²/sr</div>}
+                {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
+                  <div style={{flex:1,height:4,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
+                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
+                </div>}
               </div>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{afterDate||t('svAfter',L)}</div>
@@ -433,20 +438,19 @@ function StockView({stock:s,lang,onBack}){
                   <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW`:'—'}</span>
                   {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
+                {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
+                  <div style={{flex:1,height:4,borderRadius:2,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
+                  <span style={{fontSize:10,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
+                </div>}
               </div>
             </div>
-            {/* 팔레트 범례 */}
-            {(beforeUrl||afterUrl)&&<div style={{marginTop:6}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
-                <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
-              </div>
-              <div style={{fontSize:11,color:LT.textDim,marginTop:3,lineHeight:1.4}}>
-                야간 불빛 강도 — <span style={{color:"#00ccff"}}>파랑</span>=공장·도시 외곽 &nbsp;
-                <span style={{color:"#ffff00"}}>노랑</span>=공장 핵심·고밀도 가동 &nbsp;
-                <span style={{color:LT.textDim}}>검정</span>=무광(사막·바다)
-              </div>
+            {/* 색상 설명 */}
+            {(beforeUrl||afterUrl)&&<div style={{fontSize:11,color:LT.textDim,marginTop:6,lineHeight:1.5}}>
+              <span style={{color:"#000",background:"#555",padding:"0 3px",borderRadius:2}}>검정</span> 무광(사막·바다) &nbsp;
+              <span style={{color:"#00ccff"}}>■</span> 파랑=도시 외곽 &nbsp;
+              <span style={{color:"#ffff00"}}>■</span> 노랑=공장 핵심·고가동 &nbsp;
+              <span style={{color:"#ffffff"}}>■</span> 흰색=극강 밀집
             </div>}
           </div>
           );
