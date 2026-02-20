@@ -437,10 +437,18 @@ function StockView({stock:s,lang,onBack}){
           const stageIcon=f.stage==='input'?'📥':f.stage==='output'?'📤':'⚙️';
           // ⑥ 약신호 판정 (NTL < 1 nW = 사막/외곽)
           const isLowSignal=afterVal!=null&&afterVal<1;
+          // 센서 → 위성 뱃지 매핑
+          const SENSOR_BADGE={
+            NTL:    {label:'VIIRS · NTL',   title:'NASA Suomi NPP/NOAA-20 · 야간광(avg_rad) · 500m/월'},
+            NO2:    {label:'Sentinel-5P · NO₂', title:'ESA Copernicus Sentinel-5P · 이산화질소 · 5.5km/일'},
+            THERMAL:{label:'Landsat-9 · 열',title:'NASA/USGS Landsat-9 · 지표온도 ST_B10 · 30m/16일'},
+            SAR:    {label:'Sentinel-1 · SAR', title:'ESA Copernicus Sentinel-1 · C-band SAR · 10m (Phase3)'},
+          };
+          const sensors=f.sensors||['NTL'];
           return(
           <div key={i} style={{marginBottom:i<2?20:0}}>
             {/* 헤더: 시설명 + stage + desc */}
-            <div style={{marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
+            <div style={{marginBottom:4,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
               <div>
                 <span style={{fontSize:15,fontWeight:600,color:LT.text}}>{stageIcon} {f.name}</span>
                 <span style={{fontSize:12,color:LT.textDim,marginLeft:6}}>{f.stage||''}</span>
@@ -448,6 +456,10 @@ function StockView({stock:s,lang,onBack}){
                 {qStatus&&<span style={{fontSize:11,marginLeft:8}}>{qIcon} {qLabel}</span>}
               </div>
               {f.desc&&<div style={{fontSize:12,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'55%'}}>{f.desc}</div>}
+            </div>
+            {/* 센서 뱃지 */}
+            <div style={{display:'flex',gap:4,marginBottom:6,flexWrap:'wrap'}}>
+              {sensors.map(s=>{const b=SENSOR_BADGE[s];return b?(<span key={s} title={b.title} style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:LT.bg2,border:`1px solid ${LT.border}`,color:LT.textDim,cursor:'default'}}>{b.label}</span>):null;})}
             </div>
             {/* 이미지 2컬럼 */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
