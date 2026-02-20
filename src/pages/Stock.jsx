@@ -368,7 +368,7 @@ function StockView({stock:s,lang,onBack}){
             </div>
             {/* 팔레트 범례 */}
             {(beforeUrl||afterUrl)&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:6}}>
-              <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#4b0082,#8b0000,#ff4400,#ffcc00,#ffffff)"}}/>
+              <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
               <span style={{fontSize:11,color:LT.textDim}}>NTL 강도</span>
             </div>}
           </div>

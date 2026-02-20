@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v4';
+  const _SAT_IMG_VER = 'v5';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -616,9 +616,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const geometry = ee.Geometry.Rectangle(bbox);
             // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
             const THUMB_PARAMS = {
-              // NASA 열지도 팔레트 — 검정→보라→빨강→주황→노랑→흰색 (고대비 표준)
-              palette: ['000000','1a0033','4b0082','8b0000','cc2200','ff4400','ff8800','ffcc00','ffff66','ffffff'],
-              min: 0, max: 60, dimensions: '800x560',
+              palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
+              min: 0, max: 80, dimensions: '800x560',
             };
 
             // After: 최신 구간, Before: 비교 구간 (range별 계산)
@@ -651,7 +650,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
                 afterDate: fmt(afterStart) + ' ~ ' + fmt(afterEnd),
                 beforeDate: fmt(beforeStart) + ' ~ ' + fmt(beforeEnd),
                 palette: THUMB_PARAMS.palette,
-                paletteLabels: { min: '0 nW', max: '60 nW' },
+                paletteLabels: { min: '0 nW', max: '80 nW' },
               };
             }
           } catch (imgErr) {
