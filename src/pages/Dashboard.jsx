@@ -535,7 +535,8 @@ function DashboardPage({user,onNav,lang,country,city}){
             onClick={async()=>{
               try{
                 const a=document.createElement('a');
-                a.href='/api/v1/diagnosis/kr/pdf';
+                const apiBase = import.meta.env.VITE_API_URL || '';
+                a.href=`${apiBase}/api/v1/diagnosis/kr/pdf`;
                 a.download=`DIAH7M_KR_${new Date().toISOString().slice(0,10)}.pdf`;
                 document.body.appendChild(a);
                 a.click();
