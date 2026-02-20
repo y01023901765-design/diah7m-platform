@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v5';
+  const _SAT_IMG_VER = 'v6';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -612,12 +612,15 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
           try {
             await fetchSat.authenticateGEE();
             const ee = require('@google/earthengine');
-            const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
+            // 이미지 반경 = facility radiusKm 또는 15km (더 많은 VIIRS 픽셀 포함 → 모자이크 감소)
+            const imgRadiusKm = Math.max(f.radiusKm || 5, 15);
+            const bbox = fetchSat.facilityBbox(f.lat, f.lng, imgRadiusKm);
             const geometry = ee.Geometry.Rectangle(bbox);
             // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
+            // dimensions 작게 → GEE 내부 다운샘플 → CSS blur와 결합 시 픽셀 경계 소멸
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 80, dimensions: '800x560',
+              min: 0, max: 80, dimensions: '512x360',
             };
 
             // After: 최신 구간, Before: 비교 구간 (range별 계산)

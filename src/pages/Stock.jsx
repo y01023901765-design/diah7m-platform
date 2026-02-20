@@ -346,7 +346,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{beforeDate||t('svBefore',L)}</div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
-                  ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
+                  ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(5px)",transform:"scale(1.15)",imageRendering:"auto"}}/>
                   :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ {t('svBefore',L)}</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
@@ -356,7 +356,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{afterDate||t('svAfter',L)}</div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:'none'}}>
                 {afterUrl
-                  ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
+                  ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(5px)",transform:"scale(1.15)",imageRendering:"auto"}}/>
                   :<div style={{background:LT.bg3,height:140,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ {t('svLatest',L)}</div>}
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
