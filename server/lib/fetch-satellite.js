@@ -589,9 +589,11 @@ async function fetchFacilityThermal(lat, lng, radiusKm) {
 
   // 최근 60일 평균 (Landsat 16일 주기)
   var d60 = new Date(); d60.setDate(d60.getDate() - 60);
-  // 전년 동기간 baseline: 작년 같은 달 ±45일 (계절 보정 — 여름/겨울 혼입 방지)
-  var baselineEnd = new Date(); baselineEnd.setFullYear(baselineEnd.getFullYear() - 1); baselineEnd.setDate(baselineEnd.getDate() + 45);
-  var baselineStart = new Date(); baselineStart.setFullYear(baselineStart.getFullYear() - 1); baselineStart.setDate(baselineStart.getDate() - 45);
+  // 전년 동기간 baseline: 작년 동일 60일 구간 (계절 완전 대칭)
+  // baselineEnd = 작년 오늘, baselineStart = 작년 오늘 - 60일
+  // → 현재 60일과 정확히 같은 계절 구간 비교
+  var baselineEnd = new Date(); baselineEnd.setFullYear(baselineEnd.getFullYear() - 1);
+  var baselineStart = new Date(); baselineStart.setFullYear(baselineStart.getFullYear() - 1); baselineStart.setDate(baselineStart.getDate() - 60);
 
   var dataset = 'LANDSAT/LC09/C02/T1_L2';
 
