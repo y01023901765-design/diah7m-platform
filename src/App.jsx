@@ -81,6 +81,7 @@ export default function App(){
     }, 10000);
 
     async function init(){
+      let loggedIn = false;
       try {
         // 서버 상태 확인 (8초 타임아웃)
         await checkServer();
@@ -90,6 +91,7 @@ export default function App(){
           try {
             const data = await API.getMe();
             const u = data.user || data;
+            loggedIn = true;
             setUser(u);
             API.storeUser(u);
           } catch {
@@ -100,6 +102,13 @@ export default function App(){
         // 서버 다운 — 데모 모드로 진행
         console.warn('[DIAH-7M] 서버 오프라인 — 데모 모드');
       } finally {
+        // ── 개발 모드: 출시 전까지 자동 로그인 (출시 시 이 블록 제거) ──
+        if(!loggedIn){
+          const devUser = {name:'종원',email:'admin@diah7m.com',plan:'PRO',tier:'pro'};
+          setUser(devUser);
+          API.storeUser(devUser);
+          setPage('dashboard');
+        }
         if(!done){ done=true; setAppReady(true); }
         clearTimeout(timeout);
       }
