@@ -244,18 +244,22 @@ function DisclaimerCard({ disclaimer }) {
 }
 
 // ── 메인 컴포넌트 ──
-export default function ReportPanel({ lang }) {
+// entityContext: { entityType, entityName, entityCode, parentName }
+// 없으면 국가(KR) 기본값
+export default function ReportPanel({ lang, entityContext }) {
   const [state, setState] = useState('loading'); // loading|ok|error
   const [narrative, setNarrative] = useState(null);
   const [isDemo, setIsDemo] = useState(true);
   const [error, setError] = useState(null);
+
+  const ctxKey = JSON.stringify(entityContext || {});
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setState('loading');
-        const res = await API.getNarrative('kr');
+        const res = await API.getNarrative('kr', entityContext || {});
         if (cancelled) return;
         if (res?.data) {
           setNarrative(res.data);
@@ -270,7 +274,7 @@ export default function ReportPanel({ lang }) {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [ctxKey]); // entityContext가 바뀌면 재요청
 
   if (state === 'loading') return <Spinner />;
   if (state === 'error') return <ErrorBox msg={error} />;
@@ -285,13 +289,18 @@ export default function ReportPanel({ lang }) {
   return (
     <div>
       <FreshnessBanner isDemo={isDemo} />
-      {/* 헤더 */}
+      {/* 헤더 — 엔티티명 동적 표시 */}
       <div style={{ marginBottom: LT.sp['2xl'] }}>
+        {narrative.parent_name && (
+          <div style={{ fontSize: LT.fs.md, color: LT.textDim, marginBottom: LT.sp.xs }}>
+            {narrative.parent_name} &rsaquo;
+          </div>
+        )}
         <div style={{ fontSize: LT.fs['2xl'], fontWeight: LT.fw.extra, color: LT.text }}>
-          🇰🇷 대한민국 경제 진단 보고서
+          {narrative.entity_name || narrative.country} 진단 보고서
         </div>
         <div style={{ fontSize: LT.fs.lg, color: LT.textDim, marginTop: LT.sp.xs }}>
-          {narrative.date} 기준 · DIAH-7M Engine v{narrative.engineVersion || '2.0'}
+          {narrative.date} 기준 · {narrative.entity_type === 'country' ? '국가 경제 진단' : narrative.entity_type === 'province' ? '광역 경제 진단' : '지역 지표 진단'} · DIAH-7M Engine v{narrative.engineVersion || '2.0'}
         </div>
       </div>
 
