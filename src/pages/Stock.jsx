@@ -334,7 +334,7 @@ function StockView({stock:s,lang,onBack}){
             <div style={{fontSize:15,fontWeight:600,color:LT.text,marginBottom:6}}>{f.name} <span style={{color:LT.textDim,fontWeight:400}}>{f.loc||f.stage||''}</span></div>
             <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svBefore',L)}{beforeDate&&<span style={{fontSize:12,marginLeft:6,color:LT.textDim}}>{beforeDate}</span>}</div>
+                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{beforeDate||t('svBefore',L)}</div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",objectFit:"cover"}}/>
@@ -344,7 +344,7 @@ function StockView({stock:s,lang,onBack}){
                 {ntl?.mean_60d!=null&&<div style={{fontSize:15,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>{ntl.mean_60d.toFixed(1)} nW/cm²/sr</div>}
               </div>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:14,color:LT.textDim,marginBottom:4}}>{t('svAfter',L)}{afterDate&&<span style={{fontSize:12,marginLeft:6,color:LT.textDim}}>{afterDate}</span>}</div>
+                <div style={{fontSize:13,color:LT.textDim,marginBottom:4}}>{afterDate||t('svAfter',L)}</div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:'none'}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",objectFit:"cover"}}/>
