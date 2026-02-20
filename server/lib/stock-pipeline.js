@@ -191,49 +191,55 @@ async function _doFetchYahooSummary(ticker) {
   return _yahooSem.run(async function() {
     var data = null;
 
-    // 429 발생 시 최대 2회 재시도 (CB failure 카운트 안 함)
+    // CB OPEN 확인 — OPEN이면 바로 Last Good 반환 (crumb 갱신은 이미 동작 중)
+    if (_cbYahooStock.state === 'OPEN') {
+      _crumb = null; _crumbTs = 0;
+      try {
+        data = await _fetchSummaryWithCrumb(ticker);
+        if (data && _cbYahooStock.reset) _cbYahooStock.reset();
+        if (data) { _summaryCache[ticker] = { data: data, ts: now }; _pruneCache(_summaryCache); }
+        return data;
+      } catch (e) {
+        return cached ? cached.data : null;
+      }
+    }
+
+    // 429 발생 시 최대 2회 재시도 — CB 바깥에서 429 감지 후 처리
+    // 전략: _fetchSummaryWithCrumb 직접 호출 → 429 감지 → 백오프 후 재시도
+    //       성공/실패(429 제외)만 CB에 카운트
     for (var attempt = 0; attempt <= 2; attempt++) {
       try {
-        data = await _cbYahooStock.run(function() {
-          return _fetchSummaryWithCrumb(ticker);
-        });
-        break; // 성공
+        // 먼저 CB 바깥에서 직접 호출 (429 선감지용)
+        data = await _fetchSummaryWithCrumb(ticker);
+        // 성공 → CB에 성공 카운트 (수동)
+        _cbYahooStock._onSuccess && _cbYahooStock._onSuccess();
+        break;
       } catch (err) {
-        var isCBOpen = err.message && err.message.includes('[CB:');
-        var is401 = err.response && err.response.status === 401;
-        var is429 = err.response && err.response.status === 429;
+        var status = err.response && err.response.status;
+        var is429 = status === 429;
+        var is401 = status === 401;
 
         if (is429) {
-          // 429: 속도조절 신호 — CB failure 카운트 없이 백오프 후 재시도
+          // 429: CB failure 카운트 없이 백오프 후 재시도
           if (attempt < 2) { await _wait429(attempt); continue; }
-          // 2회 재시도 후에도 429 → Last Good 반환 (null 아님)
           console.warn('[StockPipeline] 429 persists for', ticker, '— returning last good');
           return cached ? cached.data : null;
-        } else if (isCBOpen) {
-          // CB OPEN → crumb 갱신 후 CB 바깥에서 직접 시도
-          console.warn('[StockPipeline] CB OPEN, crumb refresh for', ticker);
-          _crumb = null; _crumbTs = 0;
-          try {
-            data = await _fetchSummaryWithCrumb(ticker);
-            if (data && _cbYahooStock.reset) _cbYahooStock.reset();
-          } catch (e2) {
-            console.error('[StockPipeline] CB bypass failed for', ticker, ':', e2.message);
-            return cached ? cached.data : null; // Last Good
-          }
-          break;
         } else if (is401) {
           // crumb 만료 → 갱신 후 1회 재시도
           _crumb = null; _crumbTs = 0;
           try {
             data = await _fetchSummaryWithCrumb(ticker);
+            _cbYahooStock._onSuccess && _cbYahooStock._onSuccess();
           } catch (e3) {
-            console.error('[StockPipeline] 401 retry failed for', ticker, ':', e3.message);
-            return cached ? cached.data : null; // Last Good
+            _cbYahooStock._onFailure && _cbYahooStock._onFailure(e3);
+            return cached ? cached.data : null;
           }
           break;
         } else {
+          // 그 외 실패 → CB failure 카운트
+          _cbYahooStock._onFailure && _cbYahooStock._onFailure(err);
           console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
-          return cached ? cached.data : null; // Last Good
+          return cached ? cached.data : null;
         }
       }
     }
