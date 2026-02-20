@@ -286,11 +286,44 @@ export default function ReportPanel({ lang, entityContext }) {
   const deltaSec = sections.find(s => s.id === 'delta');
   const actionsSec = sections.find(s => s.id === 'actions');
 
+  const entityLabel = narrative.entity_type === 'province' ? '광역 경제 진단'
+    : narrative.entity_type === 'district' ? '지역 지표 진단'
+    : '국가 경제 진단';
+
+  const handlePrint = () => {
+    // 인쇄 전 9축 전체 펼치기 (접힌 상태라면)
+    window.print();
+  };
+
   return (
-    <div>
-      <FreshnessBanner isDemo={isDemo} />
-      {/* 헤더 — 엔티티명 동적 표시 */}
-      <div style={{ marginBottom: LT.sp['2xl'] }}>
+    <div id="report-print-root">
+      {/* 화면 전용: 신선도 배너 + PDF 버튼 */}
+      <div className="pdf-hide" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: LT.sp.xl }}>
+        <div style={{ flex: 1 }}><FreshnessBanner isDemo={isDemo} /></div>
+        <button
+          onClick={handlePrint}
+          style={{
+            flexShrink: 0,
+            marginLeft: LT.sp.xl,
+            padding: `${LT.sp.sm}px ${LT.sp['2xl']}px`,
+            background: LT.btnPrimary,
+            color: LT.btnPrimaryText,
+            border: 'none',
+            borderRadius: LT.smRadius,
+            fontSize: LT.fs.md,
+            fontWeight: LT.fw.semi,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: LT.sp.sm,
+          }}
+        >
+          ⬇ PDF 저장
+        </button>
+      </div>
+
+      {/* 헤더 — 인쇄 시도 포함 */}
+      <div className="print-break-avoid" style={{ marginBottom: LT.sp['2xl'] }}>
         {narrative.parent_name && (
           <div style={{ fontSize: LT.fs.md, color: LT.textDim, marginBottom: LT.sp.xs }}>
             {narrative.parent_name} &rsaquo;
@@ -300,27 +333,27 @@ export default function ReportPanel({ lang, entityContext }) {
           {narrative.entity_name || narrative.country} 진단 보고서
         </div>
         <div style={{ fontSize: LT.fs.lg, color: LT.textDim, marginTop: LT.sp.xs }}>
-          {narrative.date} 기준 · {narrative.entity_type === 'country' ? '국가 경제 진단' : narrative.entity_type === 'province' ? '광역 경제 진단' : '지역 지표 진단'} · DIAH-7M Engine v{narrative.engineVersion || '2.0'}
+          {narrative.date} 기준 · {entityLabel} · DIAH-7M Engine v{narrative.engineVersion || '2.0'}
         </div>
       </div>
 
       {/* 종합 현황 */}
-      {overview && <OverviewCard overview={overview} />}
+      {overview && <div className="print-break-avoid"><OverviewCard overview={overview} /></div>}
 
       {/* 9축 진단 */}
-      {systemsSec && <SystemsSection section={systemsSec} />}
+      {systemsSec && <div className="print-break-avoid"><SystemsSection section={systemsSec} /></div>}
 
       {/* 교차신호 */}
-      {crossSec && <CrossSection section={crossSec} />}
+      {crossSec && <div className="print-break-avoid"><CrossSection section={crossSec} /></div>}
 
       {/* Delta */}
-      {deltaSec && <DeltaSection section={deltaSec} />}
+      {deltaSec && <div className="print-break-avoid"><DeltaSection section={deltaSec} /></div>}
 
       {/* 관찰 시그널 */}
-      {actionsSec && <ActionsSection section={actionsSec} />}
+      {actionsSec && <div className="print-break-avoid"><ActionsSection section={actionsSec} /></div>}
 
       {/* 면책 조항 */}
-      {disclaimer && <DisclaimerCard disclaimer={disclaimer} />}
+      {disclaimer && <div className="print-break-avoid"><DisclaimerCard disclaimer={disclaimer} /></div>}
     </div>
   );
 }

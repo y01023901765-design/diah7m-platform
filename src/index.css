@@ -33,3 +33,50 @@ body {
 ::-webkit-scrollbar-track { background: #0a0f1e; }
 ::-webkit-scrollbar-thumb { background: #1e2a42; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a3a58; }
+
+/* ══════════════════════════════════════
+   PDF / 인쇄 전용 스타일
+   @media print 블록은 window.print() 호출 시 적용
+   ══════════════════════════════════════ */
+@media print {
+  /* 페이지 설정 */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 16mm 18mm 16mm;
+  }
+
+  /* 화면 UI 전체 숨김 */
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 12px !important;
+  }
+
+  /* 내비게이션, 탭, 사이드바, 온보딩, 스크롤바 숨김 */
+  nav, header, .tab-scroll,
+  [class*="onboard"], [class*="Onboard"],
+  button.pdf-hide,
+  ::-webkit-scrollbar { display: none !important; }
+
+  /* 보고서 컨테이너만 표시 */
+  #report-print-root {
+    display: block !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* 페이지 나누기 제어 */
+  .print-break-before { page-break-before: always; }
+  .print-break-avoid  { page-break-inside: avoid; }
+
+  /* 색상 보정 — 라이트 배경 */
+  .report-card {
+    background: #ffffff !important;
+    border: 1px solid #dddddd !important;
+    box-shadow: none !important;
+    color: #111111 !important;
+  }
+
+  /* 링크 URL 숨김 */
+  a[href]::after { content: none !important; }
+}
