@@ -143,6 +143,7 @@ function StockView({stock:s,lang,onBack}){
   const [liveFlow,setLiveFlow]=useState(null);
   const [liveSignals,setLiveSignals]=useState(null);
   const [liveChart,setLiveChart]=useState(null);
+  const [yahooStatus,setYahooStatus]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
   const [satImgError,setSatImgError]=useState(null);
@@ -170,7 +171,10 @@ function StockView({stock:s,lang,onBack}){
         if(c)return;
         if(facRes.status==='fulfilled'&&facRes.value?.facilities) setLiveFacs(facRes.value.facilities);
         if(deltaRes.status==='fulfilled') setLiveDelta(deltaRes.value);
-        if(gaugeRes.status==='fulfilled'&&gaugeRes.value?.gauges) setLiveGauges(gaugeRes.value.gauges);
+        if(gaugeRes.status==='fulfilled'&&gaugeRes.value?.gauges) {
+          setLiveGauges(gaugeRes.value.gauges);
+          if(gaugeRes.value.yahooStatus) setYahooStatus(gaugeRes.value.yahooStatus);
+        }
         if(profileRes.status==='fulfilled'&&profileRes.value?.health) setLiveHealth(profileRes.value.health);
         if(priceRes.status==='fulfilled'&&priceRes.value?.price!=null) setLivePrice(priceRes.value);
         if(flowRes.status==='fulfilled'&&flowRes.value?.stages) setLiveFlow(flowRes.value);
@@ -258,6 +262,17 @@ function StockView({stock:s,lang,onBack}){
         <div style={{width:32,height:32,border:`3px solid ${LT.border}`,borderTopColor:LT.text,borderRadius:"50%",margin:"0 auto 12px",animation:"spin 1s linear infinite"}}/>
         <div style={{fontSize:15,color:LT.textDim}}>{L==='ko'?'진단 데이터 로딩 중...':'Loading diagnosis...'}</div>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>}
+      {/* Yahoo DEGRADED 배너 — 재무 데이터 일시 불안정 시 표시 */}
+      {yahooStatus?.degraded&&<div style={{background:"#78350f22",border:"1px solid #92400e",borderRadius:8,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:16}}>⚠️</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#d97706"}}>{L==='ko'?'재무 데이터 소스 일시 불안정':'Financial Data Temporarily Unavailable'}</div>
+          <div style={{fontSize:13,color:LT.textDim,marginTop:2}}>
+            {L==='ko'?'밸류에이션·성장성·재무건전성 게이지는 마지막 유효 데이터를 표시합니다. 위성 물리 흐름 판정은 정상입니다.':'Valuation, Growth, Quality gauges show last valid data. Satellite physical flow assessment is unaffected.'}
+          </div>
+          {yahooStatus?.autoRecovery&&<div style={{fontSize:12,color:"#d97706",marginTop:2}}>{yahooStatus.autoRecovery}</div>}
+        </div>
       </div>}
       {/* Score Card + Radar */}
       {stockEntity&&<div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
