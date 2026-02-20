@@ -575,44 +575,30 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
         let viirsImg = null;
         if (sensors.includes('NTL') && f.lat && f.lng) {
           try {
-            const ntl = sensorData.NTL;
-            // fetchFacilityVIIRS는 수치만 반환 — 이미지는 별도로 GEE getThumbURL 호출
-            // Before: 90~365d, After: 최신
             await fetchSat.authenticateGEE();
             const ee = require('@google/earthengine');
-            const bbox = [
-              f.lng - (f.radiusKm||5)/111.32 / Math.cos(f.lat*Math.PI/180),
-              f.lat - (f.radiusKm||5)/111.32,
-              f.lng + (f.radiusKm||5)/111.32 / Math.cos(f.lat*Math.PI/180),
-              f.lat + (f.radiusKm||5)/111.32,
-            ];
+            const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
             const geometry = ee.Geometry.Rectangle(bbox);
             const endStr = new Date().toISOString().split('T')[0];
             const d90 = new Date(); d90.setDate(d90.getDate() - 90);
             const d365 = new Date(); d365.setDate(d365.getDate() - 365);
-            const VIIRS_PARAMS = {
-              bands: 'avg_rad',
+            const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
               min: 0, max: 80, dimensions: '400x280',
-              paletteLabels: { min: '0 nW', max: '80 nW' },
             };
 
-            const afterCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+            const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry)
               .filterDate(d90.toISOString().split('T')[0], endStr)
-              .select('avg_rad').sort('system:time_start', false);
-            const beforeCol = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+              .select('avg_rad').sort('system:time_start', false).first();
+            const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry)
               .filterDate(d365.toISOString().split('T')[0], d90.toISOString().split('T')[0])
-              .select('avg_rad').sort('system:time_start', false);
+              .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
-              new Promise(r => {
-                try { afterCol.first().getThumbURL({ region: geometry, dimensions: VIIRS_PARAMS.dimensions, palette: VIIRS_PARAMS.palette, min: VIIRS_PARAMS.min, max: VIIRS_PARAMS.max, format: 'png' }, (u, e) => r(e||!u ? null : u)); } catch { r(null); }
-              }),
-              new Promise(r => {
-                try { beforeCol.first().getThumbURL({ region: geometry, dimensions: VIIRS_PARAMS.dimensions, palette: VIIRS_PARAMS.palette, min: VIIRS_PARAMS.min, max: VIIRS_PARAMS.max, format: 'png' }, (u, e) => r(e||!u ? null : u)); } catch { r(null); }
-              }),
+              fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),
+              fetchSat.getThumbPromise(beforeImg, geometry, THUMB_PARAMS),
             ]);
 
             if (afterUrl || beforeUrl) {
@@ -621,8 +607,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
                 beforeUrl,
                 afterDate: endStr,
                 beforeDate: d90.toISOString().split('T')[0],
-                palette: VIIRS_PARAMS.palette,
-                paletteLabels: VIIRS_PARAMS.paletteLabels,
+                palette: THUMB_PARAMS.palette,
+                paletteLabels: { min: '0 nW', max: '80 nW' },
               };
             }
           } catch (imgErr) {

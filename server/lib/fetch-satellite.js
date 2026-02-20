@@ -683,6 +683,8 @@ module.exports = {
   fetchFacilitySensors: fetchFacilitySensors,
   clearFacilityCache: clearFacilityCache,
   getFacilityCacheSize: getFacilityCacheSize,
+  getThumbPromise: getThumbPromise,
+  facilityBbox: _facilityBbox,
   REGIONS: REGIONS,
   SENSOR_CONFIG: SENSOR_CONFIG,
 };
