@@ -515,15 +515,16 @@ async function fetchFacilityNO2(lat, lng, radiusKm) {
 
   var d7 = new Date(); d7.setDate(d7.getDate() - 7);
   var d30 = new Date(); d30.setDate(d30.getDate() - 30);
-  var d180 = new Date(); d180.setDate(d180.getDate() - 180);
+  // baseline: 56일(8주) — 단기 경보용, 계절 영향 최소화
+  var d56 = new Date(); d56.setDate(d56.getDate() - 56);
 
   var dataset = 'COPERNICUS/S5P/OFFL/L3_NO2';
 
-  function _no2Mean(startDate) {
+  function _no2Mean(startDate, endDateStr) {
     return new Promise(function(resolve) {
       ee.ImageCollection(dataset)
         .filterBounds(geometry)
-        .filterDate(startDate.toISOString().split('T')[0], endStr)
+        .filterDate(startDate.toISOString().split('T')[0], endDateStr)
         .map(function(img) {
           // cloud_fraction < 0.2 마스킹
           var cloudMask = img.select('cloud_fraction').lt(0.2);
@@ -539,22 +540,23 @@ async function fetchFacilityNO2(lat, lng, radiusKm) {
     });
   }
 
-  var results = await Promise.all([_no2Mean(d7), _no2Mean(d30), _no2Mean(d180)]);
-  var mean7d = results[0], mean30d = results[1], baseline180d = results[2];
+  var results = await Promise.all([_no2Mean(d7, endStr), _no2Mean(d30, endStr), _no2Mean(d56, endStr)]);
+  var mean7d = results[0], mean30d = results[1], baseline56d = results[2];
 
   // 값을 µmol/m²로 변환 (×1e6) 후 반올림
   var toMicro = function(v) { return v != null ? Math.round(v * 1e6 * 100) / 100 : null; };
-  mean7d = toMicro(mean7d); mean30d = toMicro(mean30d); baseline180d = toMicro(baseline180d);
+  mean7d = toMicro(mean7d); mean30d = toMicro(mean30d); baseline56d = toMicro(baseline56d);
 
-  var anomaly = (baseline180d && baseline180d > 0) ? (mean30d - baseline180d) / baseline180d : null;
+  // anomPct = 최근 30일 vs 최근 8주 baseline (단기 경보: 빠른 이상 감지)
+  var anomaly = (baseline56d && baseline56d > 0) ? (mean30d - baseline56d) / baseline56d : null;
   var anomPct = anomaly != null ? Math.round(anomaly * 10000) / 100 : null;
 
-  var quality = (mean7d != null && mean30d != null && baseline180d != null) ? 'GOOD'
+  var quality = (mean7d != null && mean30d != null && baseline56d != null) ? 'GOOD'
     : (mean30d != null) ? 'PARTIAL' : 'LOW_QUALITY';
 
   var result = {
     sensor: 'NO2', unit: 'anomPct',
-    mean_7d: mean7d, mean_30d: mean30d, baseline_180d: baseline180d,
+    mean_7d: mean7d, mean_30d: mean30d, baseline_56d: baseline56d,
     anomaly: anomaly != null ? Math.round(anomaly * 10000) / 10000 : null,
     anomPct: anomPct,
     quality: { status: quality, coverageDays: null, cloudPct: null },
@@ -587,16 +589,18 @@ async function fetchFacilityThermal(lat, lng, radiusKm) {
 
   // 최근 60일 평균 (Landsat 16일 주기)
   var d60 = new Date(); d60.setDate(d60.getDate() - 60);
-  // 365일 baseline
-  var d365 = new Date(); d365.setDate(d365.getDate() - 365);
+  // 전년 동기간 baseline: 작년 같은 달 ±45일 (계절 보정 — 여름/겨울 혼입 방지)
+  var baselineEnd = new Date(); baselineEnd.setFullYear(baselineEnd.getFullYear() - 1); baselineEnd.setDate(baselineEnd.getDate() + 45);
+  var baselineStart = new Date(); baselineStart.setFullYear(baselineStart.getFullYear() - 1); baselineStart.setDate(baselineStart.getDate() - 45);
 
   var dataset = 'LANDSAT/LC09/C02/T1_L2';
 
   function _thermalMean(startDate, endDateStr) {
+    var endD = endDateStr instanceof Date ? endDateStr.toISOString().split('T')[0] : endDateStr;
     return new Promise(function(resolve) {
       ee.ImageCollection(dataset)
         .filterBounds(geometry)
-        .filterDate(startDate.toISOString().split('T')[0], endDateStr)
+        .filterDate(startDate.toISOString().split('T')[0], endD)
         .filter(ee.Filter.lt('CLOUD_COVER', 30))
         .select('ST_B10')
         .mean()
@@ -612,9 +616,10 @@ async function fetchFacilityThermal(lat, lng, radiusKm) {
     });
   }
 
-  var results = await Promise.all([_thermalMean(d60, endStr), _thermalMean(d365, endStr)]);
+  var results = await Promise.all([_thermalMean(d60, endStr), _thermalMean(baselineStart, baselineEnd)]);
   var tempC = results[0], baselineTempC = results[1];
 
+  // anomalyDegC = 최근 60일 평균 vs 전년 동기간(±45일) 평균 (계절 보정)
   var anomalyDegC = (tempC != null && baselineTempC != null) ? Math.round((tempC - baselineTempC) * 10) / 10 : null;
 
   var quality = (tempC != null && baselineTempC != null) ? 'GOOD'
