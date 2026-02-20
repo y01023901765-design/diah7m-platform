@@ -385,13 +385,13 @@ function StockView({stock:s,lang,onBack}){
             </div>}
             {/* ① 데이터 시점 + ② 계절성 안내 */}
             <div style={{marginBottom:10,display:'flex',flexWrap:'wrap',gap:6,alignItems:'center'}}>
-              <div style={{fontSize:13,color:LT.textDim,padding:'5px 10px',background:LT.bg2,borderRadius:6}}>
+              <div style={{fontSize:13,color:LT.text,padding:'5px 10px',background:LT.bg2,borderRadius:6}}>
                 {isAuto ? '📅 자동 — 최근 6개월 vs 1년 전 슬라이딩 비교' : `📅 ${satBeforeYM} → ${satAfterYM} ${activePreset?`(${activePreset.label})`:'(직접 선택)'}`}
               </div>
-              <div style={{fontSize:12,color:LT.textDim,padding:'5px 10px',background:LT.bg2,borderRadius:6}}>
+              <div style={{fontSize:12,color:LT.text,padding:'5px 10px',background:LT.bg2,borderRadius:6}}>
                 👉 관측 기준: VIIRS 발행 지연 약 90일 · 최신 데이터 기준 2025-11
               </div>
-              <div style={{fontSize:12,color:'#f0a000',padding:'5px 10px',background:LT.bg2,borderRadius:6}}>
+              <div style={{fontSize:12,color:'#b35e00',padding:'5px 10px',background:'#fff3e0',borderRadius:6,border:'1px solid #f0a000'}}>
                 🌐 계절 영향 제거: <strong>전년 동월 비교</strong> 권장 — 눈·일조·기온 변수 제거
               </div>
             </div>
@@ -511,10 +511,10 @@ function StockView({stock:s,lang,onBack}){
             </div>}
             {/* 색상 범례 */}
             {(beforeUrl||afterUrl)&&<div style={{fontSize:12,color:LT.textDim,marginTop:5,lineHeight:1.6}}>
-              <span style={{background:"#444",padding:"0 4px",borderRadius:2,color:"#ccc"}}>검정</span> 무광(사막·바다) &nbsp;
-              <span style={{color:"#0099cc"}}>■</span> 파랑=외곽 &nbsp;
-              <span style={{color:"#ffff00"}}>■</span> 노랑=핵심·고가동 &nbsp;
-              <span style={{color:"#ffffff"}}>■</span> 흰색=극강 밀집
+              <span style={{background:"#222",padding:"1px 5px",borderRadius:2,color:"#ccc"}}>검정</span> 무광(사막·바다) &nbsp;
+              <span style={{color:"#0077bb"}}>■</span> 파랑=외곽 &nbsp;
+              <span style={{color:"#cc9900"}}>■</span> 노랑=핵심·고가동 &nbsp;
+              <span style={{background:"#555",padding:"1px 4px",borderRadius:2,color:"#fff"}}>흰색</span> 극강 밀집
             </div>}
           </div>
           );
