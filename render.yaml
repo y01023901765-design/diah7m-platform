@@ -8,7 +8,7 @@ services:
     region: singapore  # 한국 최근접
     plan: free         # 시작은 무료, 필요시 Starter($7/mo)
     rootDir: server
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
