@@ -371,16 +371,16 @@ function StockView({stock:s,lang,onBack}){
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                 {(()=>{
                   const cards=[];
-                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',role:'단기 가동 경보',base:'최근 8주 대비',desc:'이산화질소 농도',window:'1~2주',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
-                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',role:'중기 생산 신호',base:'전년 동기간 대비',desc:'공장 지표온도',window:'2~4주',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
-                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',role:'장기 구조 추세',base:'전년 동월 대비',desc:'공장 불빛 밝기',window:'3~6개월',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',role:'단기 가동 경보',valLabel:'최근 8주 대비 NO₂ 변화',desc:'이산화질소 농도 변화',window:'1~2주',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',role:'중기 생산 신호',valLabel:'전년 동기간 대비 온도 변화',desc:'공장 지표온도 변화',window:'2~4주',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',role:'장기 구조 추세',valLabel:'1년 평균 대비 밝기 변화',desc:'공장 불빛 밝기 변화',window:'3~6개월',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
                     <div key={ci} style={{textAlign:'left',padding:'10px 14px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:110}}>
                       <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:2}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
-                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good,marginBottom:4}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
-                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600}}>{c.role}</div>
-                      <div style={{fontSize:13,color:LT.textDim}}>{c.desc} · {c.base}</div>
-                      <div style={{fontSize:13,color:LT.textDim,marginTop:2}}>관찰 시기 {c.window}</div>
+                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good,marginBottom:2}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
+                      <div style={{fontSize:13,color:LT.textMid,marginBottom:2}}>{c.valLabel}</div>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600}}>{c.role} · 관찰 시기 {c.window}</div>
+                      <div style={{fontSize:13,color:LT.textDim,marginTop:3,lineHeight:'1.4'}}>{c.desc}</div>
                     </div>
                   ));
                 })()}
@@ -606,7 +606,7 @@ function StockView({stock:s,lang,onBack}){
 
             {/* ── 이미지 2컬럼 ── */}
             <div style={{fontSize:13,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
-              해당 기간 평균 신호(추세) — 실시간 사진 아님
+              해당 기간 야간광(VIIRS) 평균 신호 — 실시간 사진 아님
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {/* 왼쪽: before */}
