@@ -233,6 +233,32 @@ class DBAdapter {
       } catch (e) { /* ignore duplicates */ }
     }
 
+    // master admin 계정 seed (재배포 후 DB 초기화 시 자동 복원)
+    try {
+      const crypto = require('crypto');
+      const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 };
+      const adminEmail = 'master@diar7m.com';
+      const adminPw = process.env.MASTER_PW || 'M12345678@';
+      const existing = await this.get('SELECT id, role, plan FROM users WHERE email = ?', [adminEmail]);
+      if (!existing) {
+        const salt = crypto.randomBytes(32).toString('hex');
+        const hash = crypto.scryptSync(adminPw, salt, 64, SCRYPT_PARAMS).toString('hex');
+        await this.run(
+          'INSERT INTO users (email, password_hash, name, plan, role, mileage) VALUES (?, ?, ?, ?, ?, ?)',
+          [adminEmail, salt + ':' + hash, 'Master', 'ENTERPRISE', 'admin', 99999]
+        );
+        console.log('  ✅ Master admin 계정 생성됨');
+      } else if (existing.role !== 'admin' || existing.plan !== 'ENTERPRISE') {
+        await this.run(
+          'UPDATE users SET role = ?, plan = ?, mileage = 99999 WHERE email = ?',
+          ['admin', 'ENTERPRISE', adminEmail]
+        );
+        console.log('  ✅ Master admin 계정 업그레이드됨');
+      }
+    } catch (e) {
+      console.warn('  ⚠️ Master admin seed 실패:', e.message);
+    }
+
     console.log('  ✅ Schema initialized');
   }
 
