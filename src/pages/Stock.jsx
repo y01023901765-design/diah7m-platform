@@ -352,9 +352,9 @@ function StockView({stock:s,lang,onBack}){
         const stateBorder= state==='ALARM'?`${LT.danger}33`:state==='WARN'?`${LT.warn}33`:state==='TREND'?`${LT.textDim}33`:`${LT.good}33`;
         const stateLabel = state==='ALARM'?'공급망 급성 경보':state==='WARN'?'공급망 변화 감지':state==='TREND'?'구조 추세 경고':'공급망 정상';
         const stateDesc  = state==='ALARM'
-          ?'NO₂ 급락 확인 — 최근 확인 가능한 물리 신호 기준 이상 감지'
-          :state==='WARN'?'일부 실시간 센서 이상 — 지속 모니터링 권장'
-          :state==='TREND'?'야간광 장기 하락 — VIIRS 구조 추세 경고 (D-90 기준)'
+          ?'NO₂ 급락 감지 · 향후 1~2주 리스크 구간 — 단기 대응 검토'
+          :state==='WARN'?'생산 신호 이상 감지 · 향후 2~4주 확인 구간 — 모니터링 강화'
+          :state==='TREND'?'야간광 구조 하락 · 향후 3~6개월 관찰 구간 — 장기 포지션 점검'
           :'관측 가능한 물리 신호 범위 내 정상';
         return(
           <div style={{borderRadius:10,padding:'18px 20px',marginBottom:4,background:stateBg,border:`1px solid ${stateBorder}`}}>
@@ -371,15 +371,16 @@ function StockView({stock:s,lang,onBack}){
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                 {(()=>{
                   const cards=[];
-                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',desc:'이산화질소 농도 — 5일 전 데이터',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
-                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',desc:'공장 지표온도 — 16일 전 데이터',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
-                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',desc:'공장 불빛 밝기 — 90일 전 데이터',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',role:'단기 가동 경보',base:'최근 8주 대비',desc:'이산화질소 농도',window:'1~2주',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',role:'중기 생산 신호',base:'전년 동기간 대비',desc:'공장 지표온도',window:'2~4주',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',role:'장기 구조 추세',base:'전년 동월 대비',desc:'공장 불빛 밝기',window:'3~6개월',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
-                    <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:90}}>
-                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
-                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
-                      <div style={{fontSize:13,color:LT.textDim,marginTop:5}}>전년 대비 변화</div>
-                      <div style={{fontSize:13,color:LT.textDim}}>{c.desc}</div>
+                    <div key={ci} style={{textAlign:'left',padding:'10px 14px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:110}}>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600,marginBottom:2}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:13,fontWeight:700}}>{c.fresh}</span></div>
+                      <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good,marginBottom:4}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
+                      <div style={{fontSize:13,color:LT.textDim,fontWeight:600}}>{c.role}</div>
+                      <div style={{fontSize:13,color:LT.textDim}}>{c.desc} · {c.base}</div>
+                      <div style={{fontSize:13,color:LT.textDim,marginTop:2}}>관찰 시기 {c.window}</div>
                     </div>
                   ));
                 })()}
@@ -391,7 +392,7 @@ function StockView({stock:s,lang,onBack}){
 
       {/* ── 경보 철학 한 줄 ── */}
       <div style={{fontSize:13,color:LT.textDim,marginBottom:10,marginTop:4,padding:'0 4px'}}>
-        경보는 최근 관측 가능한 물리 신호 기준입니다. 미래 주가를 예측하지 않습니다.
+        단기(NO₂) · 중기(Thermal) · 장기(야간광) 신호를 겹쳐 투자 시기 창을 제시합니다. 매수/매도 추천이 아닌 물리 신호 기반 상태 안내입니다.
       </div>
 
       {/* ── ② 시간축 스위치 + 신선도 안내 ── */}
