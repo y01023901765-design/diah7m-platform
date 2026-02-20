@@ -90,13 +90,15 @@ function getThumbPromise(image, geometry, params) {
   return new Promise(function(resolve) {
     if (!image) return resolve(null);
     try {
-      image.getThumbURL({
+      const thumbOpts = {
         region: geometry,
-        dimensions: params.dimensions,
         palette: params.palette,
         min: params.min, max: params.max,
         format: 'png',
-      }, function(url, err) {
+      };
+      if (params.scale) thumbOpts.scale = params.scale;
+      else if (params.dimensions) thumbOpts.dimensions = params.dimensions;
+      image.getThumbURL(thumbOpts, function(url, err) {
         if (err) console.warn('  ⚠️ getThumbURL callback err:', err);
         else if (!url) console.warn('  ⚠️ getThumbURL returned empty URL');
         resolve(err || !url ? null : url);

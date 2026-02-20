@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v9';
+  const _SAT_IMG_VER = 'v10';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -615,7 +615,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 60, dimensions: '800x560',
+              min: 0, max: 60,
+              scale: 500,      // VIIRS 750m → 500m scale, 30km bbox → ~120px
             };
 
             // 항상 mean() — 단월이든 다월이든 컬렉션이 비어도 안전
