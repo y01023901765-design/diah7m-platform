@@ -603,72 +603,98 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
           radiusKm: f.radiusKm || 5, sensors,
         });
 
-        // VIIRS 썸네일 이미지 생성 (NTL 있을 때)
+        // VIIRS 썸네일 + after/before 수치 — 단일 파이프 (동일 컬렉션/밴드/스케일/geometry)
         let viirsImg = null;
         if (sensors.includes('NTL') && f.lat && f.lng) {
           try {
             await fetchSat.authenticateGEE();
             const ee = require('@google/earthengine');
-            // 썸네일용 bbox: 최소 30km 반경으로 넓게 (VIIRS 750m 해상도에서 충분한 픽셀 확보)
-            const thumbRadiusKm = Math.max(f.radiusKm || 5, 30);
-            const bbox = fetchSat.facilityBbox(f.lat, f.lng, thumbRadiusKm);
-            const geometry = ee.Geometry.Rectangle(bbox);
-            // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
-            // 국가 VIIRS와 동일 파라미터/방식 — 잘 되는 방식 그대로
-            const THUMB_PARAMS = {
-              palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 80,
-              dimensions: '512x320',
-            };
+            const COL   = 'NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG';
+            const BAND  = 'avg_rad';
+            const SCALE = 500;   // VIIRS VCMSLCFG 권장 스케일
+            const UNITS = 'nW/cm²/sr';
 
-            // sort().first() — 지정 구간 내 가장 최신 이미지
-            // 단일 월 데이터 없을 경우 대비 3개월 확장 — after/before 윈도우는 겹치지 않게 유지
-            // after: start를 앞으로 당김 (최신 방향 유지)
-            // before: end를 뒤로 당김 (1년전 방향 유지) — before 윈도우는 after와 겹치지 않음
-            const afterStart3  = new Date(afterStart);  afterStart3.setMonth(afterStart3.getMonth() - 2);
-            const beforeEnd3   = new Date(beforeEnd);   beforeEnd3.setMonth(beforeEnd3.getMonth() + 2);
-            // beforeEnd3이 afterStart를 넘지 않도록 cap (윈도우 겹침 방지)
-            const beforeEnd3Capped = beforeEnd3 < afterStart ? beforeEnd3 : new Date(afterStart.getTime() - 1);
-            console.log('[Satellite] thumb', f.name,
-              fmt(afterStart3), '~', fmt(afterEnd), '/',
-              fmt(beforeStart), '~', fmt(beforeEnd3Capped));
-            const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry).filterDate(fmt(afterStart3), fmt(afterEnd))
-              .select('avg_rad').sort('system:time_start', false).first();
-            const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd3Capped))
-              .select('avg_rad').sort('system:time_start', false).first();
+            // 썸네일/수치 모두 동일 geometry — 최소 15km (픽셀 수 확보)
+            const calcKm   = Math.max(f.radiusKm || 5, 15);
+            const thumbKm  = Math.max(f.radiusKm || 5, 30); // 썸네일은 더 넓게
+            const calcGeom = ee.Geometry.Rectangle(fetchSat.facilityBbox(f.lat, f.lng, calcKm));
+            const thumbGeom= ee.Geometry.Rectangle(fetchSat.facilityBbox(f.lat, f.lng, thumbKm));
 
-            // after/before 평균값 계산 (수치 비교용)
-            const dataGeom = ee.Geometry.Rectangle(fetchSat.facilityBbox(f.lat, f.lng, Math.max(f.radiusKm||5, 15)));
-            function _rangeAvg(startD, endD) {
+            // ── 단일 meanForWindow: after도 before도 동일 로직 ──
+            // 윈도우 확장(±2개월)은 썸네일 이미지 전용 — 수치는 원본 윈도우 그대로
+            const afterStart3 = new Date(afterStart); afterStart3.setMonth(afterStart3.getMonth() - 2);
+            const beforeEnd3  = new Date(beforeEnd);  beforeEnd3.setMonth(beforeEnd3.getMonth() + 2);
+            const beforeEnd3C = beforeEnd3 < afterStart ? beforeEnd3 : new Date(afterStart.getTime() - 1);
+
+            function meanForWindow(startD, endD, geom) {
               return new Promise(resolve => {
-                ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-                  .filterBounds(dataGeom).filterDate(fmt(startD), fmt(endD))
-                  .select('avg_rad').mean()
-                  .reduceRegion({ reducer: ee.Reducer.mean(), geometry: dataGeom, scale: 500, maxPixels: 1e8 })
+                ee.ImageCollection(COL)
+                  .filterBounds(geom)
+                  .filterDate(fmt(startD), fmt(endD))
+                  .select(BAND)
+                  .mean()
+                  .reduceRegion({
+                    reducer: ee.Reducer.mean(),
+                    geometry: geom,
+                    scale: SCALE,
+                    bestEffort: true,
+                    maxPixels: 1e13,
+                    tileScale: 4,
+                  })
                   .evaluate((stats, err) => {
-                    resolve((stats && stats.avg_rad != null) ? Math.round(stats.avg_rad * 100) / 100 : null);
+                    const v = stats && stats[BAND] != null ? Math.round(stats[BAND] * 100) / 100 : null;
+                    resolve(v);
                   });
               });
             }
+
+            // 썸네일: 확장 윈도우 이미지
+            const afterImg = ee.ImageCollection(COL)
+              .filterBounds(thumbGeom).filterDate(fmt(afterStart3), fmt(afterEnd))
+              .select(BAND).sort('system:time_start', false).first();
+            const beforeImg = ee.ImageCollection(COL)
+              .filterBounds(thumbGeom).filterDate(fmt(beforeStart), fmt(beforeEnd3C))
+              .select(BAND).sort('system:time_start', false).first();
+
+            const THUMB_PARAMS = { palette:['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'], min:0, max:80, dimensions:'512x320' };
+
+            // 수치: 원본 윈도우, 동일 함수 — after/before 완전 동일 조건
             const [afterUrl, beforeUrl, afterVal, beforeVal] = await Promise.all([
-              fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),
-              fetchSat.getThumbPromise(beforeImg, geometry, THUMB_PARAMS),
-              _rangeAvg(afterStart3, afterEnd),
-              _rangeAvg(beforeStart, beforeEnd3Capped),
+              fetchSat.getThumbPromise(afterImg, thumbGeom, THUMB_PARAMS),
+              fetchSat.getThumbPromise(beforeImg, thumbGeom, THUMB_PARAMS),
+              meanForWindow(afterStart, afterEnd, calcGeom),    // ← 원본 윈도우
+              meanForWindow(beforeStart, beforeEnd, calcGeom),  // ← 원본 윈도우
             ]);
 
-            if (afterUrl || beforeUrl) {
+            // delta 계산 — 둘 중 하나라도 null이면 계산 안 함
+            const deltaPct = (afterVal != null && beforeVal != null && beforeVal > 0)
+              ? Math.round((afterVal - beforeVal) / beforeVal * 1000) / 10  // 소수 1자리 %
+              : null;
+
+            // quality 판정
+            const quality = afterVal == null ? 'poor'
+              : beforeVal == null ? 'poor'
+              : Math.abs(deltaPct) < 50 ? 'good' : 'ok';
+            const qualityReason = afterVal == null ? 'no_data_after'
+              : beforeVal == null ? 'no_data_before'
+              : 'ok';
+
+            console.log('[Satellite]', f.name, 'after:', afterVal, 'before:', beforeVal, 'delta:', deltaPct, '%');
+
+            if (afterUrl || beforeUrl || afterVal != null) {
               viirsImg = {
-                afterUrl,
-                beforeUrl,
-                afterDate: fmt(afterStart) + ' ~ ' + fmt(afterEnd),
+                afterUrl, beforeUrl,
+                afterDate:  fmt(afterStart)  + ' ~ ' + fmt(afterEnd),
                 beforeDate: fmt(beforeStart) + ' ~ ' + fmt(beforeEnd),
-                afterValue: afterVal,   // 해당 구간 평균 nW/cm²/sr
-                beforeValue: beforeVal, // 해당 구간 평균 nW/cm²/sr
+                afterValue:  afterVal,
+                beforeValue: beforeVal,
+                deltaPct,
+                units: UNITS,
+                quality, qualityReason,
+                obsMonthAfter:  fmt(afterEnd).slice(0,7),
+                obsMonthBefore: fmt(beforeEnd).slice(0,7),
                 palette: THUMB_PARAMS.palette,
-                paletteLabels: { min: '0 nW', max: '80 nW' },
+                paletteLabels: { min: '0 nW/cm²/sr', max: '80 nW/cm²/sr' },
               };
             }
           } catch (imgErr) {

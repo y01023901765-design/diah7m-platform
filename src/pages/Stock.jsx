@@ -409,14 +409,20 @@ function StockView({stock:s,lang,onBack}){
           const satFac=liveSatImg&&liveSatImg.find(sf=>sf.name===f.name);
           const imgs=satFac?.images||null;
           const ntl=satFac?.ntl||null;
-          const anomPct=ntl?.anomPct??ntl?.anomaly??f.viirs??null;
+          // 서버 계산 deltaPct 우선 (동일 조건 after/before), 없으면 ntl.anomPct 폴백
+          const deltaPct=imgs?.deltaPct??ntl?.anomPct??ntl?.anomaly??f.viirs??null;
+          const anomPct=deltaPct;
           const beforeUrl=imgs?.beforeUrl||null;
           const afterUrl=imgs?.afterUrl||null;
           const beforeDate=imgs?.beforeDate||null;
           const afterDate=imgs?.afterDate||null;
-          // ② after/before 별도 수치
-          const afterVal=imgs?.afterValue??ntl?.mean_60d??null;
+          // 서버에서 동일 윈도우/스케일로 계산된 값
+          const afterVal=imgs?.afterValue??null;
           const beforeVal=imgs?.beforeValue??null;
+          const units=imgs?.units||'nW/cm²/sr';
+          const imgQuality=imgs?.quality||qStatus||null;
+          const obsAfter=imgs?.obsMonthAfter||null;
+          const obsBefore=imgs?.obsMonthBefore||null;
           // ③ 가동 흐름 한줄 해석
           const flowText=anomPct==null?null
             :anomPct>15?'야간 운영 강화 패턴 — 가동 밀도 증가 추정'
@@ -424,10 +430,10 @@ function StockView({stock:s,lang,onBack}){
             :anomPct>-5?'가동 흐름 안정 — 전년과 유사 수준'
             :anomPct>-15?'작업 밀도 소폭 감소 — 모니터링 권장'
             :'야간 활동 감소 감지 — 가동률 하락 가능성';
-          // ④ 센서 신뢰도
-          const qStatus=ntl?.quality?.status||null;
-          const qIcon=qStatus==='GOOD'?'🟢':qStatus==='PARTIAL'?'🟡':'🔴';
-          const qLabel=qStatus==='GOOD'?'신뢰 높음':qStatus==='PARTIAL'?'관측 보통':'관측 제한';
+          // ④ 센서 신뢰도 — 서버 images.quality 우선, 없으면 ntl.quality 폴백
+          const qStatus=imgQuality||(ntl?.quality?.status||null);
+          const qIcon=qStatus==='good'||qStatus==='GOOD'?'🟢':qStatus==='ok'||qStatus==='PARTIAL'?'🟡':'🔴';
+          const qLabel=qStatus==='good'||qStatus==='GOOD'?'신뢰 높음':qStatus==='ok'||qStatus==='PARTIAL'?'관측 보통':'관측 제한';
           // ⑤ stage 아이콘
           const stageIcon=f.stage==='input'?'📥':f.stage==='output'?'📤':'⚙️';
           // ⑥ 약신호 판정 (NTL < 1 nW = 사막/외곽)
@@ -456,7 +462,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
-                  {beforeVal!=null?`${beforeVal.toFixed(1)} nW/cm²/sr`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW/cm²/sr`:'—'}
+                  {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
                 </div>
                 {beforeUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
                   <span style={{fontSize:10,color:LT.textDim}}>어두움</span>
@@ -474,7 +480,7 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} nW/cm²/sr`:'—'}</span>
+                  <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
                   {anomPct!=null&&<span style={{fontSize:14,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
                 {afterUrl&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
