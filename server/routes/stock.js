@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v8';
+  const _SAT_IMG_VER = 'v9';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -545,9 +545,9 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
       const [aY, aM] = afterYM.split('-').map(Number);
       const [bY, bM] = beforeYM.split('-').map(Number);
       afterStart = new Date(aY, aM - 1, 1);
-      afterEnd   = new Date(aY, aM, 0); // 해당 월 마지막 날
+      afterEnd   = new Date(aY, aM, 1); // GEE filterDate exclusive → 다음달 1일
       beforeStart= new Date(bY, bM - 1, 1);
-      beforeEnd  = new Date(bY, bM, 0);
+      beforeEnd  = new Date(bY, bM, 1); // GEE filterDate exclusive → 다음달 1일
     } else {
       // 기본: 최근 3개월 vs 1년전 동기
       afterEnd   = new Date(now); afterEnd.setDate(afterEnd.getDate() - pubOffset);
