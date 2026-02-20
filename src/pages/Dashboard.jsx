@@ -245,27 +245,36 @@ function DashboardPage({user,onNav,lang,country,city}){
                 console.log('[Dashboard] Setting live data with', latest.data.gauges.length, 'gauges');
                 setLiveData(latest.data);
                 setApiStatus('live');
-                return;
               } else {
                 console.log('[Dashboard] No gauges in response');
+                setApiStatus('demo');
               }
-            } catch(e) { console.log('Data fetch failed:', e.message); }
+            } catch(e) { console.log('Data fetch failed:', e.message); setApiStatus('demo'); }
           } else {
             console.log('[Dashboard] status.available is false');
+            setApiStatus('demo');
           }
         } else {
           // 글로벌: 20게이지 라이트 데이터
           try {
             const cData = await API.globalCountry(iso3);
             if (cancelled) return;
-            if (cData) { setCountryInfo(cData); setApiStatus('live'); return; }
-          } catch(e) { console.log('Global fetch failed:', e.message); }
+            if (cData) { setCountryInfo(cData); setApiStatus('live'); }
+            else setApiStatus('demo');
+          } catch(e) { console.log('Global fetch failed:', e.message); setApiStatus('demo'); }
         }
-        setApiStatus('demo');
       } catch {
         setApiStatus('demo');
       }
-      // 위성 데이터 독립 로드 (S2 야간광 + R6 도시열섬)
+    })();
+    return () => { cancelled = true; };
+  },[iso3, isKorea]);
+
+  // 위성 데이터 독립 로드 — 한국 모드 전용 (경제 데이터와 독립 실행)
+  useEffect(()=>{
+    if (!isKorea) return;
+    let cancelled = false;
+    (async()=>{
       try {
         const sat = await API.satelliteLatest();
         if (!cancelled && sat?.available) {
@@ -275,7 +284,7 @@ function DashboardPage({user,onNav,lang,country,city}){
       } catch { /* 위성 데이터 없어도 정상 동작 */ }
     })();
     return () => { cancelled = true; };
-  },[iso3, isKorea]);
+  },[isKorea]);
 
   // ── 세계경제 펄스 데이터 (탭 전환 시 재요청 방지 — 한 번 로드 후 캐시)
   useEffect(()=>{
