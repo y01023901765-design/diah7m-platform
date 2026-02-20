@@ -529,9 +529,10 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const profile = byTicker[ticker];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
-    // 캐시 확인
+    // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 캐시 무효화)
     const cached = _satImgCache[ticker];
-    if (cached && (Date.now() - cached.ts) < _satImgTTL) {
+    const cachedHasImages = cached && cached.data && cached.data.some(f => f.images && (f.images.afterUrl || f.images.beforeUrl));
+    if (cached && cachedHasImages && (Date.now() - cached.ts) < _satImgTTL) {
       return res.json({ ticker, fromCache: true, facilities: cached.data });
     }
 
