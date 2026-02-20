@@ -621,13 +621,16 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
               dimensions: '512x320',
             };
 
-            // sort().first() — 국가 VIIRS와 동일 (mean()은 빈 컬렉션에서 2×1px 빈 이미지 반환)
-            console.log('[Satellite] thumb', f.name, fmt(afterStart), '~', fmt(afterEnd), '/', fmt(beforeStart), '~', fmt(beforeEnd));
+            // sort().first() — 지정 구간 내 가장 최신 이미지
+            // 단일 월에 데이터 없을 수 있으므로 3개월 윈도우로 확장
+            const afterStart3 = new Date(afterStart); afterStart3.setMonth(afterStart3.getMonth() - 2);
+            const beforeStart3 = new Date(beforeStart); beforeStart3.setMonth(beforeStart3.getMonth() - 2);
+            console.log('[Satellite] thumb', f.name, fmt(afterStart3), '~', fmt(afterEnd), '/', fmt(beforeStart3), '~', fmt(beforeEnd));
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
+              .filterBounds(geometry).filterDate(fmt(afterStart3), fmt(afterEnd))
               .select('avg_rad').sort('system:time_start', false).first();
             const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-              .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
+              .filterBounds(geometry).filterDate(fmt(beforeStart3), fmt(beforeEnd))
               .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
