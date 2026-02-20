@@ -546,28 +546,28 @@ function StockView({stock:s,lang,onBack}){
                 if(!b) return null;
                 const hasData = b.val!=null;
                 return(
-                  <div key={sk} style={{display:'flex',alignItems:'center',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:10,overflow:'hidden',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
+                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
                     {/* 왼쪽: 아이콘 + 위성명 레이블 */}
-                    <div style={{width:96,minWidth:96,padding:'14px 12px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,borderRight:`1px solid ${LT.border}`,alignSelf:'stretch'}}>
-                      <span style={{fontSize:22}}>{b.icon}</span>
-                      <span style={{fontSize:11,fontWeight:700,color:LT.textMid,textAlign:'center',lineHeight:1.3}}>
+                    <div style={{width:120,minWidth:120,padding:'18px 14px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,borderRight:`1px solid ${LT.border}`}}>
+                      <span style={{fontSize:28}}>{b.icon}</span>
+                      <span style={{fontSize:14,fontWeight:700,color:LT.textMid,textAlign:'center',lineHeight:1.3}}>
                         {sk==='NTL'?'VIIRS':sk==='NO2'?'S-5P':sk==='THERMAL'?'LS-9':sk==='SAR'?'S-1':sk}
                       </span>
                     </div>
                     {/* 중앙: 수치 강조 */}
-                    <div style={{width:100,minWidth:100,padding:'14px 12px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`,alignSelf:'stretch'}}>
+                    <div style={{width:140,minWidth:140,padding:'18px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
                       {hasData
-                        ?<><span style={{fontSize:22,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
-                          <span style={{fontSize:12,color:LT.textDim,marginTop:3,lineHeight:1.3}}>{b.valLabel}</span></>
-                        :<span style={{fontSize:14,color:LT.textDim}}>— 대기</span>}
+                        ?<><span style={{fontSize:28,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
+                          <span style={{fontSize:14,color:LT.textDim,marginTop:5,lineHeight:1.4}}>{b.valLabel}</span></>
+                        :<span style={{fontSize:16,color:LT.textDim}}>— 대기</span>}
                     </div>
                     {/* 오른쪽: 설명 + 민감도 */}
-                    <div style={{flex:1,padding:'14px 14px',display:'flex',flexDirection:'column',justifyContent:'center',gap:5}}>
-                      <span style={{fontSize:13,color:LT.textMid,lineHeight:1.5}}>{b.desc}</span>
-                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:12,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'2px 9px',borderRadius:4,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
+                    <div style={{flex:1,padding:'18px 18px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
+                      <span style={{fontSize:15,color:LT.textMid,lineHeight:1.6}}>{b.desc}</span>
+                      {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:14,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'4px 12px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
                         {b.band.label}
                       </span>}
-                      {!hasData&&<span style={{fontSize:12,color:LT.textDim}}>데이터 수집 대기 중</span>}
+                      {!hasData&&<span style={{fontSize:14,color:LT.textDim}}>데이터 수집 대기 중</span>}
                     </div>
                   </div>
                 );
