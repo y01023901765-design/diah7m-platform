@@ -4,87 +4,89 @@
  * ssot_engine 입력 data.json 형식 변환
  */
 
-// pipeline ID → ssot_engine 코드 매핑
-// ssot_engine 기준: I1~I6, O1~O7, S1~S3, T1~T3, M1~M5,
-//   R1~R9, L1~L5, G1~G7, F1~F5, E1~E5, A1~A5
+// dataStore 실제 ID → ssot_engine 코드 매핑
+// dataStore ID는 data-pipeline.js의 GAUGE_MAP 키 기준 (실측값 기준)
+// ssot_engine GRADE_RULES: Input(I1~I6), Output(O1~O7),
+//   Axis2(S1~S3,T1~T3), Axis3(M1~M5), Axis4(R1~R9),
+//   Axis5(L1~L5), Axis6(G1~G7), Axis7(F1~F5), Axis8(E1~E5), Axis9(A1~A5)
 const ID_MAP = {
-  // ── Input (순환계/통화자금) ──
-  'I1_CA':          { code: 'I1', cat: 'Input',  name: '경상수지',      unit: '억$' },
-  'I2_CEMENT':      { code: 'I2', cat: 'Input',  name: '단기외채비율',   unit: '%' },
-  'I3_FX':          { code: 'I3', cat: 'Input',  name: '외환보유고',     unit: '억$' },
-  'I4_EXCHANGE':    { code: 'I4', cat: 'Input',  name: '환율',           unit: '원' },
-  'I5_SPREAD':      { code: 'I5', cat: 'Input',  name: '신용스프레드',   unit: 'bp' },
-  'I6_RATE':        { code: 'I6', cat: 'Input',  name: '국채금리',       unit: '%' },
+  // ══ A1 순환계 → Input (sec2) ══
+  // 경상수지·무역수지·외환보유·환율·신용·금리
+  'T1_TRADE_BALANCE':  { code: 'I1', cat: 'Input',  name: '무역수지(경상)',   unit: '억$' },
+  'T4_RESERVES':       { code: 'I3', cat: 'Input',  name: '외환보유고변동',   unit: '%' },
+  'F4_EXCHANGE':       { code: 'I4', cat: 'Input',  name: '환율(원/$)',        unit: '원' },
+  'S4_CREDIT':         { code: 'I5', cat: 'Input',  name: '신용스프레드',      unit: '%p' },
+  'F5_INTEREST':       { code: 'I6', cat: 'Input',  name: '국채/기준금리',     unit: '%' },
 
-  // ── Output (호흡계/무역수출입) ──
-  'O1_EXPORT':      { code: 'O1', cat: 'Output', name: '산업생산',       unit: '%' },
-  'O2_PMI':         { code: 'O2', cat: 'Output', name: '물가',           unit: '%' },
-  'O3_RETAIL':      { code: 'O3', cat: 'Output', name: '실업률',         unit: '%' },
-  'O4_INVESTMENT':  { code: 'O4', cat: 'Output', name: '주가',           unit: 'pt' },
-  'O5_SERVICE':     { code: 'O5', cat: 'Output', name: '주택가격',       unit: '%' },
-  'O6_CONSTRUCT':   { code: 'O6', cat: 'Output', name: '소비',           unit: '%' },
+  // ══ A2 호흡계 → Output (sec3) ══
+  // 수출입·PMI·산업생산·실업·주가·소비
+  'O1_EXPORT':         { code: 'O1', cat: 'Output', name: '수출(전년비)',       unit: '%' },
+  'O2_PMI':            { code: 'O2', cat: 'Output', name: '제조업PMI',          unit: 'pt' },
+  'L1_UNEMPLOYMENT':   { code: 'O3', cat: 'Output', name: '실업률변동',         unit: '%' },
+  'F1_KOSPI':          { code: 'O4', cat: 'Output', name: 'KOSPI(전일비)',       unit: 'pt' },
+  'S7_HOUSING':        { code: 'O5', cat: 'Output', name: '주택가격지수',        unit: 'pt' },
+  'S6_RETAIL':         { code: 'O6', cat: 'Output', name: '소매판매(전년비)',    unit: '%' },
+  'I1_CONSTRUCTION':   { code: 'O7', cat: 'Output', name: '건설생산(전년비)',    unit: '%' },
 
-  // ── Axis2 무역/제조 (S계열) ──
-  'S1_BSI':         { code: 'S1', cat: 'Axis2',  name: '선박대기',       unit: '일' },
-  'S2_NIGHTLIGHT':  { code: 'S2', cat: 'Axis2',  name: '야간광량',       unit: '%' },
-  'S3_NIGHTLIGHT':  { code: 'S3', cat: 'Axis2',  name: 'NO₂농도',        unit: 'ppb' },
-  'S4_CREDIT':      { code: 'T2', cat: 'Axis2',  name: '제조업BSI',      unit: 'pt' },
+  // ══ A3 소화계 → Axis2 (무역/제조) ══
+  'S1_BSI':            { code: 'T2', cat: 'Axis2',  name: '제조업BSI',          unit: 'pt' },
+  'S2_CSI':            { code: 'L5', cat: 'Axis5',  name: '소비자심리(CSI)',     unit: 'pt' },
+  'T6_CONTAINER':      { code: 'O1', cat: 'Axis2',  name: '수출(컨테이너)',      unit: '%' },
+  'T2_CURRENT_ACCOUNT':{ code: 'T1', cat: 'Axis2',  name: '경상수지',            unit: '억$' },
+  'T5_SHIPPING':       { code: 'S1', cat: 'Axis2',  name: '해운수지',            unit: '백만$' },
+  'E5_BALTIC':         { code: 'S1', cat: 'Axis2',  name: '발틱운임지수(BDI)',   unit: 'pt' },
+  'E1_CHINA_PMI':      { code: 'T3', cat: 'Axis2',  name: '중국PMI(대외)',       unit: 'pt' },
 
-  // ── 금융안정 (F계열) → Axis7 ──
-  'F1_KOSPI':       { code: 'F1', cat: 'Axis7',  name: '회사채스프레드', unit: 'bp' },
-  'F2_BOND':        { code: 'F2', cat: 'Axis7',  name: 'CP금리',         unit: '%' },
-  'F3_VIX':         { code: 'F3', cat: 'Axis7',  name: 'BIS비율',        unit: '%' },
-  'F4_CREDIT_CARD': { code: 'F4', cat: 'Axis7',  name: '코스피변동성',   unit: '%' },
-  'F5_INTEREST':    { code: 'F5', cat: 'Axis7',  name: '은행채스프레드', unit: 'bp' },
+  // ══ A4 신경계 → Axis3 (골목시장/소비내수) ══
+  'O3_IP':             { code: 'M3', cat: 'Axis3',  name: '전산업생산지수',      unit: '%' },
+  'O4_CAPACITY':       { code: 'M4', cat: 'Axis3',  name: '설비가동률',          unit: '%' },
+  'O5_INVENTORY':      { code: 'M1', cat: 'Axis3',  name: '재고지수',            unit: 'pt' },
+  'O6_SHIPMENT':       { code: 'M2', cat: 'Axis3',  name: '출하지수',            unit: 'pt' },
+  'O7_ORDER':          { code: 'M3', cat: 'Axis3',  name: '생산지수',            unit: 'pt' },
 
-  // ── 물가/재정 (P계열) → Axis8(에너지) ──
-  'P1_CPI':         { code: 'E1', cat: 'Axis8',  name: '유가',           unit: '$/bbl' },
-  'P2_PPI':         { code: 'E2', cat: 'Axis8',  name: '전력예비율',     unit: '%' },
-  'P3_CORE_CPI':    { code: 'E3', cat: 'Axis8',  name: 'LNG재고',        unit: '만톤' },
-  'P4_RENT':        { code: 'E4', cat: 'Axis8',  name: '산업전력',       unit: 'GWh' },
-  'P5_EXPECT':      { code: 'E5', cat: 'Axis8',  name: '원자재지수',     unit: 'pt' },
-  'P6_FISCAL':      { code: 'E5', cat: 'Axis8',  name: '원자재지수',     unit: 'pt' },
+  // ══ A5 면역계 → Axis4 (부동산/자산) ══
+  // 실측 부동산 데이터 없음 → 위성·건설 대리 사용
+  'I2_CEMENT':         { code: 'R2', cat: 'Axis4',  name: '비금속광물생산(착공)',  unit: '%' },
+  'I3_STEEL':          { code: 'R3', cat: 'Axis4',  name: '1차금속생산(미분양)',   unit: '%' },
+  'I4_VEHICLE':        { code: 'R4', cat: 'Axis4',  name: '자동차생산(경매)',      unit: '%' },
+  'R6_UHI':            { code: 'R6', cat: 'Axis4',  name: '도시열섬(UHI)',         unit: '°C' },
 
-  // ── 산업/생산 (R계열) → Axis4(부동산) ──
-  'R1_ELECTRICITY': { code: 'R1', cat: 'Axis4',  name: '실거래가',       unit: '만원/㎡' },
-  'R2_STEEL':       { code: 'R2', cat: 'Axis4',  name: '미분양',         unit: '호' },
-  'R3_PETRO':       { code: 'R3', cat: 'Axis4',  name: '전세가율',       unit: '%' },
-  'R4_SEMICON':     { code: 'R4', cat: 'Axis4',  name: '경매건수',       unit: '건/1000세대' },
-  'R5_SAR':         { code: 'R5', cat: 'Axis4',  name: 'SAR높이',        unit: 'm' },
-  'R6_UHI':         { code: 'R6', cat: 'Axis4',  name: '신축야간광',     unit: '%' },
+  // ══ A6 내분비계 → Axis5 (고용/가계) ══
+  'L2_PARTICIPATION':  { code: 'L2', cat: 'Axis5',  name: '경제활동참가율변동',   unit: '%' },
+  'L3_WAGE':           { code: 'L3', cat: 'Axis5',  name: '임금(전년비)',          unit: '%' },
+  'L4_HOURS':          { code: 'L4', cat: 'Axis5',  name: '근로시간변동',          unit: '%' },
+  'L5_YOUTH_UNEMP':    { code: 'L1', cat: 'Axis5',  name: '청년실업률',            unit: '%' },
+  'S5_EMPLOY':         { code: 'L1', cat: 'Axis5',  name: '취업자수증감',          unit: '천명' },
 
-  // ── 인구/취약 (D계열) → Axis9 ──
-  'D1_BIRTH':       { code: 'A1', cat: 'Axis9',  name: '출산율',         unit: '명' },
-  'D2_AGING':       { code: 'A2', cat: 'Axis9',  name: '고령화율',       unit: '%' },
-  'D3_WORKING':     { code: 'A3', cat: 'Axis9',  name: '생산인구',       unit: '만명' },
+  // ══ A7 근골격계 → Axis6 (지역균형/대외) ══
+  'T3_FDI':            { code: 'G1', cat: 'Axis6',  name: '서비스수지(FDI대리)',   unit: '백만$' },
+  'I5_CARGO':          { code: 'G2', cat: 'Axis6',  name: '운송수지(화물)',        unit: '백만$' },
+  'I6_AIRPORT':        { code: 'G3', cat: 'Axis6',  name: '항공운송수지',          unit: '백만$' },
+  'I7_RAILROAD':       { code: 'G4', cat: 'Axis6',  name: '운수창고취업자',        unit: '천명' },
+  'S3_NIGHTLIGHT':     { code: 'G6', cat: 'Axis6',  name: '야간광량(위성)',        unit: 'nW/cm²/sr' },
 
-  // ── 고용/취약 (L계열) → Axis5 ──
-  'L1_UNEMPLOYMENT':{ code: 'L1', cat: 'Axis5',  name: '고용동향',       unit: '만명' },
-  'L2_EMPLOYMENT':  { code: 'L2', cat: 'Axis5',  name: '실업급여',       unit: '%' },
-  'L3_HOUSEHOLD':   { code: 'L3', cat: 'Axis5',  name: '가계부채',       unit: '조원' },
-  'L4_DELINQUENCY': { code: 'L4', cat: 'Axis5',  name: '연체율',         unit: '%' },
+  // ══ A8 인구/취약 → Axis7 (금융스트레스) + Axis8 (에너지/물가) ══
+  'F2_KOSDAQ':         { code: 'F1', cat: 'Axis7',  name: 'KOSDAQ(코스닥)',        unit: '%' },
+  'F3_KOSPI_VOL':      { code: 'F4', cat: 'Axis7',  name: 'KOSPI거래량(변동성)',   unit: '천주' },
+  'F6_M2':             { code: 'F2', cat: 'Axis7',  name: 'M2통화(전년비)',        unit: '%' },
+  'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량',          unit: '천주' },
+  'F8_FOREIGN':        { code: 'F5', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
+  'P1_CPI':            { code: 'E1', cat: 'Axis8',  name: 'CPI(소비자물가전년비)', unit: '%' },
+  'P2_PPI':            { code: 'E2', cat: 'Axis8',  name: 'PPI(생산자물가전년비)', unit: '%' },
+  'P4_COMMODITY':      { code: 'E5', cat: 'Axis8',  name: '상품수지(원자재대리)', unit: '백만$' },
+  'P5_IMPORT':         { code: 'E3', cat: 'Axis8',  name: '수입물가지수',          unit: 'pt' },
+  'P6_EXPORT_PRICE':   { code: 'E4', cat: 'Axis8',  name: '수출물가지수',          unit: 'pt' },
 
-  // ── 재생/대외 (G계열) → Axis6(지역균형) ──
-  'G1_GLOBAL_TRADE':{ code: 'G1', cat: 'Axis6',  name: '소멸지수',       unit: '개지역' },
-  'G2_CHINA_TRADE': { code: 'G2', cat: 'Axis6',  name: '지역GRDP',       unit: '배' },
-  'G6_NIGHTLIGHT':  { code: 'G6', cat: 'Axis6',  name: '지역야간광',     unit: '%' },
-
-  // ── 소비/내수 (C계열) → Axis3(골목시장) ──
-  'C1_CONSUMPTION': { code: 'M3', cat: 'Axis3',  name: '카드매출',       unit: '조원' },
-  'C2_RETAIL':      { code: 'M2', cat: 'Axis3',  name: '유동인구',       unit: '만명' },
-  'C3_SERVICE':     { code: 'M1', cat: 'Axis3',  name: '개폐업',         unit: '배' },
-
-  // ── 심리/정책 (A계열 → Axis2 T계열) ──
-  'A1_CONF':        { code: 'T2', cat: 'Axis2',  name: '제조업BSI',      unit: 'pt' },
-  'A2_CSI':         { code: 'L5', cat: 'Axis5',  name: '체감경기',       unit: 'pt' },
-  'A3_PMI':         { code: 'T3', cat: 'Axis2',  name: '산업전력',       unit: '%' },
-  'A4_POLICY':      { code: 'I6', cat: 'Input',  name: '국채금리',       unit: '%' },
-
-  // ── 기타 ──
-  'E1_CHINA_PMI':   { code: 'T1', cat: 'Axis2',  name: '컨테이너',       unit: '만TEU' },
-  'E5_BALTIC':      { code: 'S1', cat: 'Axis2',  name: '선박대기(발틱)', unit: 'pt' },
-  'M1_IP':          { code: 'O1', cat: 'Output', name: '산업생산',       unit: '%' },
-  'M2_SERVICE':     { code: 'O6', cat: 'Output', name: '소비',           unit: '%' },
+  // ══ A9 재생/대외 → Axis9 (인구/노화/환경) ══
+  'R1_ELECTRICITY':    { code: 'A3', cat: 'Axis9',  name: '전기가스수도업생산',    unit: '%' },
+  'R2_WATER':          { code: 'A4', cat: 'Axis9',  name: '수도업생산',            unit: '%' },
+  'R3_GAS':            { code: 'A3', cat: 'Axis9',  name: '전기가스공급업생산',    unit: '%' },
+  'R4_COAL':           { code: 'A5', cat: 'Axis9',  name: '석탄광업생산',          unit: '%' },
+  'R7_WASTE':          { code: 'A2', cat: 'Axis9',  name: '폐기물처리업생산',      unit: '%' },
+  'R8_FOREST':         { code: 'A1', cat: 'Axis9',  name: '농림어업취업자',        unit: '천명' },
+  'E2_US_PMI':         { code: 'G5', cat: 'Axis6',  name: '미국경기(OECD CLI)',    unit: 'pt' },
+  'E3_VIX':            { code: 'F3', cat: 'Axis7',  name: 'VIX(공포지수)',         unit: 'pt' },
+  'E4_DOLLAR_INDEX':   { code: 'F2', cat: 'Axis7',  name: '달러인덱스(전일비)',    unit: '%' },
 };
 
 // cat → ssot_engine 배열 키 매핑
