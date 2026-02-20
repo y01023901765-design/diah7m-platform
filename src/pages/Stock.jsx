@@ -402,7 +402,7 @@ function StockView({stock:s,lang,onBack}){
           const satFac=liveSatImg&&liveSatImg.find(sf=>sf.name===f.name);
           const imgs=satFac?.images||null;
           const ntl=satFac?.ntl||null;
-          const anomPct=ntl?.anomaly??f.viirs??null;
+          const anomPct=ntl?.anomPct??ntl?.anomaly??f.viirs??null;
           const beforeUrl=imgs?.beforeUrl||null;
           const afterUrl=imgs?.afterUrl||null;
           const beforeDate=imgs?.beforeDate||null;
@@ -430,15 +430,23 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"none",background:LT.bg3,height:140,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW`:'—'}</span>
-                  {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{anomPct.toFixed(1)}%</span>}
+                  <span style={{fontSize:15,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{ntl?.mean_7d!=null?`${ntl.mean_7d.toFixed(1)} nW`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} nW`:'—'}</span>
+                  {anomPct!=null&&<span style={{fontSize:15,fontWeight:700,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
                 </div>
               </div>
             </div>
             {/* 팔레트 범례 */}
-            {(beforeUrl||afterUrl)&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:6}}>
-              <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
-              <span style={{fontSize:11,color:LT.textDim}}>NTL 강도</span>
+            {(beforeUrl||afterUrl)&&<div style={{marginTop:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>어두움</span>
+                <div style={{flex:1,height:6,borderRadius:3,background:"linear-gradient(to right,#000000,#1a1a5e,#0066cc,#00ccff,#ffff00,#ffffff)"}}/>
+                <span style={{fontSize:11,color:LT.textDim,whiteSpace:"nowrap"}}>밝음</span>
+              </div>
+              <div style={{fontSize:11,color:LT.textDim,marginTop:3,lineHeight:1.4}}>
+                야간 불빛 강도 — <span style={{color:"#00ccff"}}>파랑</span>=공장·도시 외곽 &nbsp;
+                <span style={{color:"#ffff00"}}>노랑</span>=공장 핵심·고밀도 가동 &nbsp;
+                <span style={{color:LT.textDim}}>검정</span>=무광(사막·바다)
+              </div>
             </div>}
           </div>
           );
