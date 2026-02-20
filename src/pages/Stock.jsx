@@ -437,12 +437,38 @@ function StockView({stock:s,lang,onBack}){
           const stageIcon=f.stage==='input'?'📥':f.stage==='output'?'📤':'⚙️';
           // ⑥ 약신호 판정 (NTL < 1 nW = 사막/외곽)
           const isLowSignal=afterVal!=null&&afterVal<1;
-          // 센서 → 위성 뱃지 매핑
+          // 센서별 실제 수치 (API satFac에서)
+          const no2Data   = satFac?.no2    || null;
+          const thermData = satFac?.thermal|| null;
+          // NTL anomPct: imgs.deltaPct 이미 계산됨 (anomPct)
+          // NO2: anomPct 필드
+          const no2Pct  = no2Data?.anomPct ?? no2Data?.anomaly ?? null;
+          // Thermal: anomaly_degC
+          const thermDeg = thermData?.anomaly_degC ?? thermData?.anomaly ?? null;
+          // 센서 → 위성 뱃지 매핑 (설명 + 실수치)
+          const _fmtPct = v => v==null ? null : `${v>0?'+':''}${v.toFixed(1)}%`;
+          const _fmtDeg = v => v==null ? null : `${v>0?'+':''}${v.toFixed(1)}°C`;
+          const _valColor = v => v==null ? LT.textDim : v > 5 ? LT.good : v < -5 ? LT.danger : LT.text;
           const SENSOR_BADGE={
-            NTL:    {label:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)'},
-            NO2:    {label:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·차량 배기의 이산화질소 농도를 일 단위로 측정)'},
-            THERMAL:{label:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)'},
-            SAR:    {label:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 여부 감지, Phase 3 예정)'},
+            NTL:    {
+              desc:'VIIRS · 야간광 (NASA 위성 — 공장·도시 불빛 밝기를 월 단위로 측정)',
+              val: _fmtPct(anomPct), valColor: _valColor(anomPct),
+              valLabel: anomPct==null?null:'전년 대비 밝기 변화',
+            },
+            NO2:    {
+              desc:'Sentinel-5P · NO₂ (ESA 위성 — 공장 굴뚝·차량 배기의 이산화질소 농도를 일 단위로 측정)',
+              val: _fmtPct(no2Pct), valColor: _valColor(no2Pct),
+              valLabel: no2Pct==null?null:'전년 대비 NO₂ 농도 변화',
+            },
+            THERMAL:{
+              desc:'Landsat-9 · 지표온도 (NASA 위성 — 공장 열 방출량을 16일 주기로 측정)',
+              val: _fmtDeg(thermDeg), valColor: _valColor(thermDeg),
+              valLabel: thermDeg==null?null:'전년 대비 온도 변화',
+            },
+            SAR:    {
+              desc:'Sentinel-1 · SAR (ESA 위성 — 레이더 반사파로 시설 가동 여부 감지, Phase 3 예정)',
+              val: null, valColor: LT.textDim, valLabel: null,
+            },
           };
           const sensors=f.sensors||['NTL'];
           return(
@@ -457,9 +483,22 @@ function StockView({stock:s,lang,onBack}){
               </div>
               {f.desc&&<div style={{fontSize:13,color:LT.textDim,textAlign:'right',lineHeight:1.4,maxWidth:'55%'}}>{f.desc}</div>}
             </div>
-            {/* 센서 뱃지 */}
-            <div style={{display:'flex',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-              {sensors.map(s=>{const b=SENSOR_BADGE[s];return b?(<span key={s} title={b.title} style={{fontSize:12,padding:'3px 8px',borderRadius:4,background:LT.bg2,border:`1px solid ${LT.border}`,color:LT.textDim,cursor:'default'}}>{b.label}</span>):null;})}
+            {/* 센서 뱃지 + 실수치 */}
+            <div style={{display:'flex',gap:6,marginBottom:6,flexWrap:'wrap'}}>
+              {sensors.map(s=>{
+                const b=SENSOR_BADGE[s];
+                if(!b) return null;
+                return(
+                  <div key={s} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:6,background:LT.bg2,border:`1px solid ${LT.border}`}}>
+                    <span style={{fontSize:12,color:LT.text}}>{b.desc}</span>
+                    {b.val!=null&&<>
+                      <span style={{fontSize:13,fontWeight:700,color:b.valColor,fontFamily:'monospace'}}>{b.val}</span>
+                      <span style={{fontSize:11,color:LT.textDim}}>{b.valLabel}</span>
+                    </>}
+                    {b.val==null&&<span style={{fontSize:12,color:LT.textDim}}>— 수집 대기</span>}
+                  </div>
+                );
+              })}
             </div>
             {/* 이미지 2컬럼 */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
