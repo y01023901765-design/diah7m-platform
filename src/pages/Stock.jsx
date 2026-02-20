@@ -598,9 +598,9 @@ function StockView({stock:s,lang,onBack}){
                     {/* 중앙: 수치 강조 */}
                     <div style={{width:140,minWidth:140,padding:'18px 16px',display:'flex',flexDirection:'column',justifyContent:'center',borderRight:`1px solid ${LT.border}`}}>
                       {hasData
-                        ?<><span style={{fontSize:28,fontWeight:900,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
-                          <span style={{fontSize:14,color:LT.textDim,marginTop:5,lineHeight:1.4}}>{b.valLabel}</span></>
-                        :<span style={{fontSize:16,color:LT.textDim}}>— 대기</span>}
+                        ?<><span style={{fontSize:20,fontWeight:800,color:b.valColor,fontFamily:'monospace',lineHeight:1}}>{b.val}</span>
+                          <span style={{fontSize:13,color:LT.textDim,marginTop:4,lineHeight:1.4}}>{b.valLabel}</span></>
+                        :<span style={{fontSize:15,color:LT.textDim}}>— 대기</span>}
                     </div>
                     {/* 오른쪽: 설명 + 민감도 */}
                     <div style={{flex:1,padding:'18px 18px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
