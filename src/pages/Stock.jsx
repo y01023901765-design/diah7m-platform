@@ -644,6 +644,14 @@ function StockView({stock:s,lang,onBack}){
                 </div>}
               </div>
             </div>
+            {/* ── 색상 범례 (이미지 아래) ── */}
+            {(beforeUrl||afterUrl)&&<div style={{display:'flex',gap:10,marginBottom:12,fontSize:12,color:LT.textDim,alignItems:'center',flexWrap:'wrap'}}>
+              <span style={{fontWeight:600,color:LT.textMid}}>색상 범례</span>
+              <span><span style={{color:'#222',fontWeight:700}}>■</span> 무광(사막·바다)</span>
+              <span><span style={{color:'#0077bb',fontWeight:700}}>■</span> 외곽·저밀도</span>
+              <span><span style={{color:'#cc9900',fontWeight:700}}>■</span> 핵심·고가동</span>
+              <span><span style={{color:'#fff',fontWeight:700,textShadow:'0 0 2px #999'}}>■</span> 극강 밀집</span>
+            </div>}
 
             {/* ── 센서 패널 — satMode 기반 필터 ── */}
             {(()=>{
