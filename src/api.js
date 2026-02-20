@@ -361,21 +361,6 @@ export async function getGaugeDetail(country, gaugeId) {
   return api(`/api/v1/diagnosis/${country}/gauge/${gaugeId}`);
 }
 
-/**
- * 서사 보고서 API — 엔티티 공용
- * @param {string} country - 'kr'
- * @param {Object} ctx - { entityType, entityName, entityCode, parentName }
- */
-export async function getNarrative(country = 'kr', ctx = {}) {
-  const params = new URLSearchParams();
-  if (ctx.entityType) params.set('entityType', ctx.entityType);
-  if (ctx.entityName) params.set('entityName', ctx.entityName);
-  if (ctx.entityCode) params.set('entityCode', ctx.entityCode);
-  if (ctx.parentName) params.set('parentName', ctx.parentName);
-  const qs = params.toString();
-  return api(`/api/v1/diagnosis/${country}/narrative${qs ? '?' + qs : ''}`);
-}
-
 export function getStoredUser() {
   try {
     const u = localStorage.getItem('diah7m-user');

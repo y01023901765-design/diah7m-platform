@@ -7,7 +7,6 @@ import TierLock, { SYS, D, sysN, sysB, isSat, SAT_META, gN, SAT_XREF, TP } from 
 import { TIER_ACCESS } from '../data/gauges';
 import { SatXrefBanner, SatCompare, SatEvidencePanel } from '../components/Satellite';
 import GlobalPulse from '../components/GlobalPulse';
-import ReportPanel from '../components/ReportPanel';
 import * as API from '../api';
 
 // ── [Phase 1] 혼용 봉인 가드 + 엔티티 변환기 ──
@@ -530,13 +529,7 @@ function DashboardPage({user,onNav,lang,country,city}){
       </div>
     </>}
     {tab==='report'&&<>
-      {/* 서사 보고서 패널 — 한국 전용 */}
-      {isKorea && <ReportPanel lang={L}/>}
-      {/* 게이지 상세 (기존) */}
-      <div style={{marginTop:LT.sp['3xl'],marginBottom:LT.sp['2xl'],borderTop:`1px solid ${LT.border}`,paddingTop:LT.sp['3xl']}}>
-        <div style={{fontSize:LT.fs.xl,fontWeight:LT.fw.bold,color:LT.text,marginBottom:LT.sp.sm}}>{t("gaugeDetail",L)}</div>
-        <div style={{fontSize:LT.fs.md,color:LT.textMid,marginBottom:LT.sp['2xl']}}>{t("gaugeDetailSub",L)}</div>
-      </div>
+      <div style={{marginBottom:LT.sp['2xl']}}><div style={{fontSize:LT.fs['2xl'],fontWeight:LT.fw.extra,color:LT.text}}>{t("gaugeDetail",L)}</div><div style={{fontSize:LT.fs.xl,color:LT.textMid,marginTop:LT.sp.xs}}>{t("gaugeDetailSub",L)}</div></div>
       {Object.entries(activeSys).map(([k,sys])=>{
         const tierKey = sys.tK || k;
         const needsTier=!TIER_ACCESS[demoUser?.plan||'FREE']?.systems?.includes(tierKey);

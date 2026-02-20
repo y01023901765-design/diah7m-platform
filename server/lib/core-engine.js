@@ -133,9 +133,17 @@ function diagnoseSystem(systemId, gaugeData) {
   const gaugeCount = matchedGauges.length;
 
   if (values.length === 0) {
-    // 게이지 데이터 없는 축 → 완전 제외 (null 반환)
-    // 강제로 2.5/트리거 채우면 하위 행정구역 보고서에서 오진단 발생
-    return null;
+    return {
+      system_id: systemId,
+      system_name: body.name,
+      body_name: body.body_name,
+      body_metaphor: body.body_metaphor,
+      score: 2.5,
+      level: 3,
+      status: '트리거',
+      gauge_count: gaugeCount,
+      tier_min: 'FREE',
+    };
   }
 
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
@@ -381,11 +389,6 @@ async function diagnose(gaugeData, options) {
   var countryName = options.countryName || '대한민국';
   var productType = options.productType || 'national';
   var frequency = options.frequency || 'daily';
-  // 엔티티 컨텍스트: 국가/광역시도/시군구 공통 파라미터
-  var entityType = options.entityType || 'country'; // country | province | district
-  var entityName = options.entityName || countryName;
-  var entityCode = options.entityCode || countryCode;
-  var parentName = options.parentName || null; // 상위 행정구역 (예: "서울특별시")
   var today = new Date().toISOString().split('T')[0];
 
   // 9축 진단
@@ -423,10 +426,6 @@ async function diagnose(gaugeData, options) {
     context: {
       country_code: countryCode,
       country_name: countryName,
-      entity_type: entityType,
-      entity_name: entityName,
-      entity_code: entityCode,
-      parent_name: parentName,
       date: today,
       period_label: today + ' ' + frequency,
       tier_min: 'FREE',
