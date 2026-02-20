@@ -2,17 +2,19 @@
   "$schema": "diah7m-report-template-v1",
   "id": "KR-ECON-MONTHLY-v1",
   "description": "DIAH-7M 경제건강검진 결과서 — 건강검진 스타일 월간 양식",
-  "updated": "2026-02-08",
+  "updated": "2026-02-21",
 
   "page": {
-    "width": 12240,
-    "height": 15840,
+    "size": "A4",
     "margin": { "top": 1440, "right": 1440, "bottom": 1440, "left": 1440 }
   },
 
+  "header": { "show": true, "format": "DIAH-7M | {{기준월}} 경제건강검진 | 대외비" },
+  "footer": { "show": true },
+
   "styles": {
     "font": "Malgun Gothic",
-    "fonts": { "body": "Malgun Gothic", "heading": "Malgun Gothic" },
+    "fonts": { "body": "Malgun Gothic", "heading": "Malgun Gothic", "mono": "Courier New" },
     "sizes": { "cover_title": 20, "cover_sub": 11, "cover_period": 18, "section": 14, "sub": 12, "body": 11, "table": 10 },
     "fills": { "header": "D9D9D9", "ok": "E8F5E9", "warn": "FFF9C4", "alert": "FFCDD2" },
     "colors": {
@@ -25,144 +27,119 @@
       "gray":     "757575",
       "white":    "FFFFFF"
     },
+    "status_map": {
+      "양호 ○": { "color_key": "green" },
+      "주의 ●": { "color_key": "accent" },
+      "경보 ★": { "color_key": "red" },
+      "양호":   { "color_key": "green" },
+      "주의":   { "color_key": "accent" },
+      "경보":   { "color_key": "red" }
+    },
     "separator": "━━━━━━━━━━━━━━━━━━━━━━━━━"
   },
 
-  "gauge_table": {
-    "columns": [
-      { "key": "cat",    "label": "분류",   "width": 1200, "center": true },
-      { "key": "code",   "label": "게이지", "width": 1800 },
-      { "key": "raw",    "label": "원자료", "width": 1600, "center": true },
-      { "key": "change", "label": "변동",   "width": 1400, "center": true },
-      { "key": "grade",  "label": "등급",   "width": 1200, "center": true, "color_by_grade": true },
-      { "key": "judge",  "label": "판정",   "width": 1200, "center": true, "color_by_grade": true }
-    ]
+  "cover": {
+    "title_main": "대한민국 경제건강검진 보고서",
+    "title_sub":  "DIAH-7M Economic Health Check — Monthly",
+    "fields": [
+      { "label": "검진 기간",  "value_key": "기준월" },
+      { "label": "발행일",     "value_key": "수집일" },
+      { "label": "엔진",       "value_key": "engine_id" },
+      { "label": "대상",       "value": "대한민국 (KR)" }
+    ],
+    "summary_box": {
+      "show": true,
+      "fields": [
+        { "label": "총 게이지",    "value_tpl": "{{총게이지}}개" },
+        { "label": "양호",         "value_tpl": "{{양호}}건" },
+        { "label": "주의",         "value_tpl": "{{주의}}건" },
+        { "label": "경보",         "value_tpl": "{{경보}}건" },
+        { "label": "이중봉쇄",     "format_true": "⚠ 발동", "format_false": "미발동" }
+      ]
+    }
   },
 
   "sections": [
-    { "type": "cover" },
-    { "type": "separator" },
+    { "type": "cover", "page_break_before": false },
 
-    { "type": "static_text", "id": "sec0",
-      "title": "0. 이 보고서의 작동 원리",
-      "content_key": "sec0_content" },
-    { "type": "separator" },
+    { "type": "verdict",
+      "heading": "1. 종합 판정 (Overall Vital Sign)",
+      "level": 1,
+      "subsections": [
+        { "label": "주요 경보 게이지", "source": "alert_gauges", "style": "accent" },
+        { "label": "주의 게이지",      "source": "caution_gauges", "style": "primary" },
+        { "label": "자동 감시 항목",   "source": "auto_watchpoints", "style": "green" }
+      ]
+    },
 
-    { "type": "overall_vitals", "id": "sec1",
-      "title": "1. 종합 판정 (Overall Vital Sign)",
-      "main_gauges_key": "gauges",
-      "aux_gauges_key": "auxGauges",
-      "aux_label": "▶ 보조 게이지 (5게이지)",
-      "alert_key": "sec1_alertNarrative",
-      "detail_key": "sec1_detail" },
-    { "type": "separator" },
+    { "type": "gauge_table",
+      "heading": "2. 게이지 채점표 (전체)",
+      "level": 1,
+      "columns": [
+        { "label": "코드",   "width_pct": 8  },
+        { "label": "지표명", "width_pct": 22 },
+        { "label": "흐름",   "width_pct": 10 },
+        { "label": "원값",   "width_pct": 18 },
+        { "label": "등급",   "width_pct": 12 },
+        { "label": "판정",   "width_pct": 30 }
+      ]
+    },
 
-    { "type": "axis_detail", "id": "sec2",
-      "title_key": "sec2_title",
-      "gauges_key": "sec2_gauges",
-      "summary_key": "sec2_summary",
-      "summary_narrative_key": "sec2_summaryNarrative" },
-    { "type": "separator" },
+    { "type": "dual_lock_analysis",
+      "heading": "3. 이중봉쇄 분석 (Dual Lock)",
+      "level": 1,
+      "summary_table": {
+        "show": true,
+        "columns": ["흐름", "경보점수", "임계값", "봉쇄여부"]
+      },
+      "contributor_sections": [
+        { "heading": "Input 기여 게이지 Top 3",  "level": 2, "flow": "input",  "top_n": 3 },
+        { "heading": "Output 기여 게이지 Top 3", "level": 2, "flow": "output", "top_n": 3 }
+      ]
+    },
 
-    { "type": "axis_detail", "id": "sec3",
-      "title_key": "sec3_title",
-      "gauges_key": "sec3_gauges",
-      "summary_key": "sec3_summary",
-      "summary_narrative_key": "sec3_summaryNarrative" },
-    { "type": "separator" },
+    { "type": "diah_analysis",
+      "heading": "4. DIAH 트리거 스위치",
+      "level": 1,
+      "table_columns": ["DIAH 코드", "게이지 코드", "게이지명", "세부 판정"],
+      "show_inactive": true,
+      "inactive_label": "미발동"
+    },
 
-    { "type": "axis_with_table", "id": "axis2",
-      "available_key": "axis2_available",
-      "title_key": "axis2_title",
-      "gauge_table_key": "axis2_gaugeTable",
-      "gauges_key": "axis2_gauges",
-      "summary_key": "axis2_summary",
-      "summary_narrative_key": "axis2_summaryNarrative" },
+    { "type": "cross_signal_analysis",
+      "heading": "5. 교차신호 (Cross Signals)",
+      "level": 1,
+      "show_inactive_pairs": false
+    },
 
-    { "type": "axis_with_table", "id": "axis3",
-      "available_key": "axis3_available",
-      "title_key": "axis3_title",
-      "gauge_table_key": "axis3_gaugeTable",
-      "gauges_key": "axis3_gauges",
-      "summary_key": "axis3_summary",
-      "summary_narrative_key": "axis3_summaryNarrative" },
+    { "type": "narrative",
+      "heading": "6. 서사 요약 (Narrative Summary)",
+      "level": 1,
+      "paragraphs": [
+        { "type": "auto", "source": "overall_narrative", "label": "종합 서사" },
+        { "type": "auto", "source": "input_narrative",  "label": "Input (유입계)" },
+        { "type": "auto", "source": "output_narrative", "label": "Output (배출계)" },
+        { "type": "auto", "source": "stage_narrative",  "label": "진행 단계" }
+      ]
+    },
 
-    { "type": "axis_with_table", "id": "axis4",
-      "available_key": "axis4_available",
-      "title_key": "axis4_title",
-      "gauge_table_key": "axis4_gaugeTable",
-      "gauges_key": "axis4_gauges",
-      "summary_key": "axis4_summary",
-      "summary_narrative_key": "axis4_summaryNarrative" },
+    { "type": "auxiliary_table",
+      "heading": "7. 보조 정보",
+      "level": 1,
+      "columns": [
+        { "label": "항목",  "width_pct": 30 },
+        { "label": "내용",  "width_pct": 70 }
+      ]
+    },
 
-    { "type": "axis_with_table", "id": "axis5",
-      "available_key": "axis5_available",
-      "title_key": "axis5_title",
-      "gauge_table_key": "axis5_gaugeTable",
-      "gauges_key": "axis5_gauges",
-      "summary_key": "axis5_summary",
-      "summary_narrative_key": "axis5_summaryNarrative" },
+    { "type": "raw_json",
+      "heading": "부록. 재현키 (Repro JSON)",
+      "level": 1
+    },
 
-    { "type": "axis_with_table", "id": "axis6",
-      "available_key": "axis6_available",
-      "title_key": "axis6_title",
-      "gauge_table_key": "axis6_gaugeTable",
-      "gauges_key": "axis6_gauges",
-      "summary_key": "axis6_summary",
-      "summary_narrative_key": "axis6_summaryNarrative" },
-
-    { "type": "axis_with_table", "id": "axis7",
-      "available_key": "axis7_available",
-      "title_key": "axis7_title",
-      "gauge_table_key": "axis7_gaugeTable",
-      "gauges_key": "axis7_gauges",
-      "summary_key": "axis7_summary",
-      "summary_narrative_key": "axis7_summaryNarrative" },
-
-    { "type": "axis_with_table", "id": "axis8",
-      "available_key": "axis8_available",
-      "title_key": "axis8_title",
-      "gauge_table_key": "axis8_gaugeTable",
-      "gauges_key": "axis8_gauges",
-      "summary_key": "axis8_summary",
-      "summary_narrative_key": "axis8_summaryNarrative" },
-
-    { "type": "axis_with_table", "id": "axis9",
-      "available_key": "axis9_available",
-      "title_key": "axis9_title",
-      "gauge_table_key": "axis9_gaugeTable",
-      "gauges_key": "axis9_gauges",
-      "summary_key": "axis9_summary",
-      "summary_narrative_key": "axis9_summaryNarrative" },
-
-    { "type": "separator" },
-    { "type": "diah_triggers", "id": "sec4",
-      "title_key": "sec4_title",
-      "verdict_key": "sec4_verdict",
-      "triggers_key": "sec4_triggers",
-      "summary_key": "sec4_summary" },
-    { "type": "separator" },
-
-    { "type": "mechanism_7m", "id": "sec5" },
-    { "type": "separator" },
-
-    { "type": "prognosis", "id": "sec6" },
-    { "type": "separator" },
-
-    { "type": "timeseries", "id": "sec7" },
-    { "type": "separator" },
-
-    { "type": "family_history", "id": "sec8" },
-    { "type": "separator" },
-
-    { "type": "prescription", "id": "sec9" },
-    { "type": "separator" },
-
-    { "type": "sources", "id": "sec10" },
-    { "type": "separator" },
-
-    { "type": "appendix" },
-    { "type": "separator" },
-    { "type": "endmark" }
+    { "type": "endmark",
+      "text": "END OF REPORT",
+      "show_meta": true
+    }
   ]
 }
