@@ -640,76 +640,110 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         console.warn('[DOCX] 서사엔진 오류 (무시):', ne.message);
       }
 
-      // DOCX 생성
-      const docx = require('docx');
-      const { Document, Paragraph, TextRun, HeadingLevel, Packer } = docx;
+      // DOCX 생성 (jszip 기반 raw XML — 외부 패키지 의존 없음)
+      const JSZip = require('jszip');
 
-      const h1 = text => new Paragraph({ children: [new TextRun({ text, bold: true, size: 32 })], heading: HeadingLevel.HEADING_1 });
-      const h2 = text => new Paragraph({ children: [new TextRun({ text, bold: true, size: 26 })], heading: HeadingLevel.HEADING_2 });
-      const p  = text => new Paragraph({ children: [new TextRun({ text: String(text ?? '—'), size: 22 })] });
-      const br = ()   => new Paragraph({ children: [new TextRun('')] });
-
-      // 모드별 표지 제목
       const modeTitles = {
         D: '일간 경제속보', W: '주간 경제검진',
         M: '월간 경제건강검진', Q: '분기 경제진단', A: '연간 경제진단',
       };
+      const countryLabel = country === 'KR' ? '대한민국' : country;
 
-      const children = [
-        h1(`DIAH-7M ${modeTitles[mode] || '경제건강검진'} 보고서`),
-        p(`기간: ${period}  |  대상: ${country === 'KR' ? '대한민국' : country}`),
-        p(`판정엔진: v5.1  |  서사엔진: v2.8  |  모드: ${mode}`),
-        p(`생성일시: ${new Date().toLocaleString('ko-KR')}`),
-        diagnosis._demo ? p('※ 실제 데이터 미수집, 데모 데이터 표시') : p(''),
-        br(),
+      // XML 특수문자 이스케이프
+      const esc = s => String(s ?? '—')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 
-        h2('1. 종합판정'),
-        p(D_obj.P1_표지 || D_obj.overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`),
-        br(),
+      // 단락 빌더
+      const wPara = (text, { bold=false, size=24, heading=false }={}) => {
+        const rPr = bold ? '<w:rPr><w:b/></w:rPr>' : '';
+        const pPr = heading
+          ? `<w:pPr><w:pStyle w:val="${heading}"/></w:pPr>`
+          : '';
+        return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${esc(text)}</w:t></w:r></w:p>`;
+      };
 
-        h2('2. 9축 채점표'),
-        ...Object.entries(diagnosis.axes || {}).map(([axId, ax]) =>
-          p(`${axId} ${ax.metaphor ?? ''}(${ax.name ?? axId}): ${ax.score ?? '—'}점  |  ${ax.gaugeCount ?? 0}개 게이지`)
-        ),
-        br(),
+      const axisRows = Object.entries(diagnosis.axes || {}).map(([axId, ax]) =>
+        wPara(`${axId} ${ax.metaphor ?? ''}(${ax.name ?? axId}): ${ax.score ?? '—'}점  |  ${ax.gaugeCount ?? 0}개 게이지`)
+      ).join('');
 
-        h2('3. 이중봉쇄 판정'),
-        p(D_obj.P3_이중봉쇄 || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동')),
-        br(),
+      const csRows = (diagnosis.crossSignals || []).slice(0, 15).map(cs =>
+        wPara(`${cs.pair ?? ''} ${cs.name ?? ''}: Lv.${cs.level?.level ?? '?'}`)
+      ).join('');
 
-        h2('4. 교차신호'),
-        ...(diagnosis.crossSignals || []).slice(0, 15).map(cs =>
-          p(`${cs.pair ?? ''} ${cs.name ?? ''}: Lv.${cs.level?.level ?? '?'}`)
-        ),
-        br(),
+      const bodyXml = [
+        wPara(`DIAH-7M ${modeTitles[mode] || '경제건강검진'} 보고서`, { heading:'Heading1', bold:true }),
+        wPara(`기간: ${period}  |  대상: ${countryLabel}`),
+        wPara(`판정엔진: v5.1  |  서사엔진: v2.8  |  모드: ${mode}`),
+        wPara(`생성일시: ${new Date().toLocaleString('ko-KR')}`),
+        diagnosis._demo ? wPara('※ 실제 데이터 미수집, 데모 데이터 표시') : '',
+        '<w:p/>',
+        wPara('1. 종합판정', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P1_표지 || D_obj.overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`),
+        '<w:p/>',
+        wPara('2. 9축 채점표', { heading:'Heading2', bold:true }),
+        axisRows,
+        '<w:p/>',
+        wPara('3. 이중봉쇄 판정', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P3_이중봉쇄 || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동')),
+        '<w:p/>',
+        wPara('4. 교차신호', { heading:'Heading2', bold:true }),
+        csRows,
+        '<w:p/>',
+        wPara('5. DIAH 트리거', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P5_DIAH || D_obj.diahNarrative || '해당 없음'),
+        '<w:p/>',
+        wPara('6. 7M 기전 분석', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P6_7M || D_obj.m7Narrative || '해당 없음'),
+        '<w:p/>',
+        wPara('7. 예후 3경로', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P7_예후 || D_obj.prognosisNarrative || '해당 없음'),
+        '<w:p/>',
+        wPara('8. 경제 가족력', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P8_가족력 || D_obj.familyNarrative || '해당 없음'),
+        '<w:p/>',
+        wPara('9. 명의 처방', { heading:'Heading2', bold:true }),
+        wPara(D_obj.P9_처방 || D_obj.prescriptionNarrative || '해당 없음'),
+        '<w:p/>',
+        wPara('10. 면책고지', { heading:'Heading2', bold:true }),
+        wPara('본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.'),
+        wPara('© 인체국가경제론 / DIAH-7M / 윤종원'),
+      ].join('');
 
-        h2('5. DIAH 트리거'),
-        p(D_obj.P5_DIAH || D_obj.diahNarrative || '해당 없음'),
-        br(),
+      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<w:body>${bodyXml}<w:sectPr/></w:body></w:document>`;
 
-        h2('6. 7M 기전 분석'),
-        p(D_obj.P6_7M || D_obj.m7Narrative || '해당 없음'),
-        br(),
+      const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
 
-        h2('7. 예후 3경로'),
-        p(D_obj.P7_예후 || D_obj.prognosisNarrative || '해당 없음'),
-        br(),
+      const appXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+<Application>DIAH-7M</Application></Properties>`;
 
-        h2('8. 경제 가족력'),
-        p(D_obj.P8_가족력 || D_obj.familyNarrative || '해당 없음'),
-        br(),
+      const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`;
 
-        h2('9. 명의 처방'),
-        p(D_obj.P9_처방 || D_obj.prescriptionNarrative || '해당 없음'),
-        br(),
+      const wordRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>`;
 
-        h2('10. 면책고지'),
-        p('본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.'),
-        p('© 인체국가경제론 / DIAH-7M / 윤종원'),
-      ];
+      const zip = new JSZip();
+      zip.file('[Content_Types].xml', contentTypesXml);
+      zip.file('_rels/.rels', relsXml);
+      zip.file('docProps/app.xml', appXml);
+      zip.file('word/document.xml', documentXml);
+      zip.file('word/_rels/document.xml.rels', wordRelsXml);
 
-      const doc = new Document({ sections: [{ properties: {}, children }] });
-      const buf = await Packer.toBuffer(doc);
+      const buf = await zip.generateAsync({ type:'nodebuffer', compression:'DEFLATE' });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
