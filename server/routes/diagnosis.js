@@ -561,6 +561,175 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
     }
   });
 
+  // ── DOCX 보고서 다운로드 ──
+  // GET /api/v1/report/docx?country=KR&mode=M&period=2026-01
+  // mode: D(일별) | W(주별) | M(월별, 기본) | Q(분기별) | A(연별)
+  // country: KR(기본), US, 서울특별시, ...
+  // period: 없으면 현재 기간 자동 산출
+  router.get('/report/docx', async (req, res) => {
+    try {
+      const mode    = (req.query.mode    || 'M').toUpperCase();
+      const country = req.query.country  || 'KR';
+      let   period  = req.query.period   || '';
+
+      if (!['D','W','M','Q','A'].includes(mode)) {
+        return res.status(400).json({ error: `mode must be D|W|M|Q|A, got: ${mode}` });
+      }
+
+      // 기간 자동산출
+      if (!period) {
+        const now = new Date();
+        if (mode === 'D') period = now.toISOString().slice(0, 10);
+        else if (mode === 'W') {
+          const d = new Date(now); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+          const wk = Math.ceil((((d - new Date(d.getFullYear(), 0, 1)) / 86400000) + 1) / 7);
+          period = `${d.getFullYear()}-W${String(wk).padStart(2, '0')}`;
+        } else if (mode === 'Q') {
+          const q = Math.ceil((now.getMonth() + 1) / 3);
+          period = `${now.getFullYear()}-Q${q}`;
+        } else if (mode === 'A') {
+          period = `${now.getFullYear()}`;
+        } else {
+          period = now.toISOString().slice(0, 7);
+        }
+      }
+
+      // 파일명 패턴 (마스터설계도 v2.7 기준)
+      const MODE_LABEL = { D:'일간속보', W:'주간검진', M:'경제건강검진', Q:'분기진단', A:'연간진단' };
+      const label = MODE_LABEL[mode] || '보고서';
+      const safeCountry = country.replace(/[^\w가-힣]/g, '');
+      const filename = `${label}_${period}_${safeCountry}.docx`;
+
+      // 게이지 데이터 수집
+      let gaugeData = {};
+      if (dataStore) {
+        // 스냅샷 우선 → 없으면 현재 캐시
+        if (dataStore.getSnapshot) {
+          gaugeData = await dataStore.getSnapshot(country, mode, period);
+        }
+        if (Object.keys(gaugeData).length === 0 && dataStore.toGaugeData) {
+          gaugeData = dataStore.toGaugeData();
+        }
+      }
+
+      // demo 폴백
+      let diagnosis;
+      if (Object.keys(gaugeData).length === 0) {
+        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
+        diagnosis = DEMO_DIAGNOSIS;
+        diagnosis._demo = true;
+      } else {
+        if (engine && engine.diagnose) {
+          diagnosis = engine.diagnose(gaugeData);
+        } else {
+          diagnosis = { overall: { score: 0 }, axes: {}, crossSignals: [], dualLock: {} };
+        }
+      }
+
+      // 서사엔진 실행
+      let D_obj = {};
+      try {
+        const narrativeEng = require('../lib/narrative-engine');
+        const countryNames = { KR: '대한민국', US: '미국', CN: '중국', JP: '일본' };
+        D_obj = narrativeEng.generateNarrative(diagnosis, gaugeData, {
+          period,
+          country: countryNames[country] || country,
+          mode,
+        });
+      } catch (ne) {
+        console.warn('[DOCX] 서사엔진 오류 (무시):', ne.message);
+      }
+
+      // DOCX 생성
+      const docx = require('docx');
+      const { Document, Paragraph, TextRun, HeadingLevel, Packer } = docx;
+
+      const h1 = text => new Paragraph({ children: [new TextRun({ text, bold: true, size: 32 })], heading: HeadingLevel.HEADING_1 });
+      const h2 = text => new Paragraph({ children: [new TextRun({ text, bold: true, size: 26 })], heading: HeadingLevel.HEADING_2 });
+      const p  = text => new Paragraph({ children: [new TextRun({ text: String(text ?? '—'), size: 22 })] });
+      const br = ()   => new Paragraph({ children: [new TextRun('')] });
+
+      // 모드별 표지 제목
+      const modeTitles = {
+        D: '일간 경제속보', W: '주간 경제검진',
+        M: '월간 경제건강검진', Q: '분기 경제진단', A: '연간 경제진단',
+      };
+
+      const children = [
+        h1(`DIAH-7M ${modeTitles[mode] || '경제건강검진'} 보고서`),
+        p(`기간: ${period}  |  대상: ${country === 'KR' ? '대한민국' : country}`),
+        p(`판정엔진: v5.1  |  서사엔진: v2.8  |  모드: ${mode}`),
+        p(`생성일시: ${new Date().toLocaleString('ko-KR')}`),
+        diagnosis._demo ? p('※ 실제 데이터 미수집, 데모 데이터 표시') : p(''),
+        br(),
+
+        h2('1. 종합판정'),
+        p(D_obj.P1_표지 || D_obj.overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`),
+        br(),
+
+        h2('2. 9축 채점표'),
+        ...Object.entries(diagnosis.axes || {}).map(([axId, ax]) =>
+          p(`${axId} ${ax.metaphor ?? ''}(${ax.name ?? axId}): ${ax.score ?? '—'}점  |  ${ax.gaugeCount ?? 0}개 게이지`)
+        ),
+        br(),
+
+        h2('3. 이중봉쇄 판정'),
+        p(D_obj.P3_이중봉쇄 || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동')),
+        br(),
+
+        h2('4. 교차신호'),
+        ...(diagnosis.crossSignals || []).slice(0, 15).map(cs =>
+          p(`${cs.pair ?? ''} ${cs.name ?? ''}: Lv.${cs.level?.level ?? '?'}`)
+        ),
+        br(),
+
+        h2('5. DIAH 트리거'),
+        p(D_obj.P5_DIAH || D_obj.diahNarrative || '해당 없음'),
+        br(),
+
+        h2('6. 7M 기전 분석'),
+        p(D_obj.P6_7M || D_obj.m7Narrative || '해당 없음'),
+        br(),
+
+        h2('7. 예후 3경로'),
+        p(D_obj.P7_예후 || D_obj.prognosisNarrative || '해당 없음'),
+        br(),
+
+        h2('8. 경제 가족력'),
+        p(D_obj.P8_가족력 || D_obj.familyNarrative || '해당 없음'),
+        br(),
+
+        h2('9. 명의 처방'),
+        p(D_obj.P9_처방 || D_obj.prescriptionNarrative || '해당 없음'),
+        br(),
+
+        h2('10. 면책고지'),
+        p('본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.'),
+        p('© 인체국가경제론 / DIAH-7M / 윤종원'),
+      ];
+
+      const doc = new Document({ sections: [{ properties: {}, children }] });
+      const buf = await Packer.toBuffer(doc);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.setHeader('Content-Length', buf.length);
+      res.end(buf);
+
+    } catch (e) {
+      console.error('[DOCX] 생성 오류:', e.message);
+      if (!res.headersSent) res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── 스냅샷 목록 조회 (GET /api/v1/report/snapshots?country=KR&mode=M) ──
+  router.get('/report/snapshots', async (req, res) => {
+    const country = req.query.country || 'KR';
+    const mode    = (req.query.mode || 'M').toUpperCase();
+    const list    = dataStore?.listSnapshots ? await dataStore.listSnapshots(country, mode) : [];
+    res.json({ success: true, data: list });
+  });
+
   // ── PDF 보고서 다운로드 (GET /api/v1/diagnosis/kr/pdf) ──
   // 인증 불필요 — 무료 체험용 (플랜 제한은 추후 추가)
   router.get('/diagnosis/kr/pdf', async (req, res) => {

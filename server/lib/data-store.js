@@ -219,6 +219,82 @@ class DataStore {
   getAll() {
     return { ...this.memCache };
   }
+
+  /**
+   * 현재 캐시를 gauge_snapshots에 아카이브 (기간별 DOCX 생성용)
+   * @param {string} country  - 'KR', 'US', '서울특별시', ...
+   * @param {string} mode     - 'D'|'W'|'M'|'Q'|'A'
+   * @param {string} period   - '2026-01-20'|'2026-W04'|'2026-01'|'2026-Q1'|'2026'
+   */
+  async saveSnapshot(country = 'KR', mode = 'M', period) {
+    if (!this.db) return;
+    if (!period) {
+      const now = new Date();
+      if (mode === 'D') period = now.toISOString().slice(0, 10);
+      else if (mode === 'W') {
+        const d = new Date(now); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const wk = Math.ceil((((d - new Date(d.getFullYear(), 0, 1)) / 86400000) + 1) / 7);
+        period = `${d.getFullYear()}-W${String(wk).padStart(2, '0')}`;
+      } else if (mode === 'Q') {
+        const q = Math.ceil((now.getMonth() + 1) / 3);
+        period = `${now.getFullYear()}-Q${q}`;
+      } else if (mode === 'A') {
+        period = `${now.getFullYear()}`;
+      } else {
+        period = now.toISOString().slice(0, 7);
+      }
+    }
+    let saved = 0;
+    for (const [gaugeId, cached] of Object.entries(this.memCache)) {
+      if (cached.status !== 'OK' || cached.value == null) continue;
+      try {
+        await this.db.run(
+          `INSERT INTO gauge_snapshots (country, mode, period, gauge_id, value, unit, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [country, mode, period, gaugeId, cached.value, cached.unit || '', cached.source || '']
+        );
+        saved++;
+      } catch (e) { /* ignore */ }
+    }
+    console.log(`[DataStore] saveSnapshot ${country}/${mode}/${period}: ${saved}개 저장`);
+    return { country, mode, period, saved };
+  }
+
+  /**
+   * 특정 기간 스냅샷 조회 → gauge map 반환
+   * @returns {{ gaugeId: value, ... }}
+   */
+  async getSnapshot(country = 'KR', mode = 'M', period) {
+    if (!this.db || !period) return {};
+    try {
+      const rows = await this.db.all(
+        'SELECT gauge_id, value FROM gauge_snapshots WHERE country=? AND mode=? AND period=? ORDER BY id DESC',
+        [country, mode, period]
+      );
+      const map = {};
+      for (const r of rows) {
+        if (!(r.gauge_id in map)) map[r.gauge_id] = r.value;
+      }
+      return map;
+    } catch (e) {
+      console.warn('[DataStore] getSnapshot 오류:', e.message);
+      return {};
+    }
+  }
+
+  /**
+   * 저장된 스냅샷 기간 목록 반환
+   */
+  async listSnapshots(country = 'KR', mode = 'M') {
+    if (!this.db) return [];
+    try {
+      const rows = await this.db.all(
+        'SELECT DISTINCT period FROM gauge_snapshots WHERE country=? AND mode=? ORDER BY period DESC LIMIT 24',
+        [country, mode]
+      );
+      return rows.map(r => r.period);
+    } catch (e) { return []; }
+  }
 }
 
 module.exports = DataStore;

@@ -151,6 +151,19 @@ class DBAdapter {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(id)
       );
+      CREATE TABLE IF NOT EXISTS gauge_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        country TEXT DEFAULT 'KR',
+        mode TEXT DEFAULT 'M',
+        period TEXT NOT NULL,
+        gauge_id TEXT NOT NULL,
+        value REAL,
+        unit TEXT,
+        source TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_gauge_snapshots_period ON gauge_snapshots(country, mode, period);
+      CREATE INDEX IF NOT EXISTS idx_gauge_snapshots_gauge ON gauge_snapshots(gauge_id, country, period);
     `;
     if (this.type === 'pg') {
       await this.db.query(schema.replace(/AUTOINCREMENT/g, 'GENERATED ALWAYS AS IDENTITY')
