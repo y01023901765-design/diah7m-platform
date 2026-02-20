@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v5';
+  const _SAT_IMG_VER = 'v7';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -616,23 +616,14 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
               min: 0, max: 80, dimensions: '800x560',
             };
 
-            // After: 최신 구간, Before: 비교 구간 (range별 계산)
-            // yoy/3y는 연간 평균 → mean(), recent는 최신 단월 → first()
-            const useMedian = (range === 'yoy' || range === '3y');
-            const afterImg = useMedian
-              ? ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-                  .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
-                  .select('avg_rad').mean()
-              : ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-                  .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
-                  .select('avg_rad').sort('system:time_start', false).first();
-            const beforeImg = useMedian
-              ? ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-                  .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
-                  .select('avg_rad').mean()
-              : ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
-                  .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
-                  .select('avg_rad').sort('system:time_start', false).first();
+            // 항상 mean() — 단월이든 다월이든 컬렉션이 비어도 안전
+            console.log('[Satellite] thumb', f.name, fmt(afterStart), '~', fmt(afterEnd), '/', fmt(beforeStart), '~', fmt(beforeEnd));
+            const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+              .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
+              .select('avg_rad').mean();
+            const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
+              .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
+              .select('avg_rad').mean();
 
             const [afterUrl, beforeUrl] = await Promise.all([
               fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),

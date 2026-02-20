@@ -96,9 +96,13 @@ function getThumbPromise(image, geometry, params) {
         palette: params.palette,
         min: params.min, max: params.max,
         format: 'png',
-      }, function(url, err) { resolve(err || !url ? null : url); });
+      }, function(url, err) {
+        if (err) console.warn('  ⚠️ getThumbURL callback err:', err);
+        else if (!url) console.warn('  ⚠️ getThumbURL returned empty URL');
+        resolve(err || !url ? null : url);
+      });
     } catch(e) {
-      console.warn('  ⚠️ getThumbURL error:', e.message);
+      console.warn('  ⚠️ getThumbURL exception:', e.message);
       resolve(null);
     }
   });
