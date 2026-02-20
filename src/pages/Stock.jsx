@@ -664,78 +664,39 @@ function StockView({stock:s,lang,onBack}){
               );
             })()}
 
-            {/* ── ④ 위성 이미지 ── */}
-            {(()=>{
-              // 프리셋 선택된 기간 라벨 — 이미지 헤더에 표시
-              const activePreset=_SAT_PRESETS.find(p=>p.after===satAfterYM&&p.before===satBeforeYM);
-              const beforeLabel = beforeDate || satBeforeYM || (activePreset?.id==='auto'?'기준(1년 전 슬라이딩)':'이전');
-              const afterLabel  = afterDate  || satAfterYM  || (activePreset?.id==='auto'?'최신(최근 6개월)':'최신');
-              return(<>
-              <div style={{fontSize:14,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
-                야간광(VIIRS) 위성 이미지 — 해당 기간 평균 신호, 실시간 사진 아님
-                {activePreset&&<span style={{marginLeft:8,fontWeight:700,color:LT.text}}>· {activePreset.label}</span>}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4}}>
-                {/* 이전 */}
-                <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                  <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{beforeLabel}</span></div>
-                  <div style={{borderRadius:6,overflow:"hidden",height:120}}>
-                  {beforeUrl
-                    ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
-                    :<div style={{background:LT.bg3,height:120,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>수집 대기</div>}
-                  <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>—</div>
-                  </div>
-                  <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
-                    {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
-                  </div>
-                  {/* 그라디언트 막대 */}
-                  <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}>
-                    <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>어두움</span>
-                    <div style={{flex:1,height:8,borderRadius:4,background:'linear-gradient(to right,#000,#0d2b6b,#c8a020,#fff)',border:'1px solid #ddd'}}/>
-                    <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>밝음</span>
-                  </div>
+            {/* ── ④ 위성 이미지 (보여주기식) ── */}
+            {(beforeUrl||afterUrl)&&<>
+            <div style={{fontSize:14,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
+              야간광(VIIRS) 위성 이미지 — 해당 기간 평균 신호, 실시간 사진 아님
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
+                <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
+                <div style={{borderRadius:6,overflow:"hidden",height:120}}>
+                {beforeUrl
+                  ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
+                  :<div style={{background:LT.bg3,height:120,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 이전</div>}
+                <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
                 </div>
-                {/* 최신 */}
-                <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                  <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{afterLabel}</span></div>
-                  <div style={{borderRadius:6,overflow:"hidden",height:120}}>
-                  {afterUrl
-                    ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
-                    :<div style={{background:LT.bg3,height:120,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>수집 대기</div>}
-                  <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>—</div>
-                  </div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                    <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
-                    {anomPct!=null&&<span style={{fontSize:16,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
-                  </div>
-                  {/* 그라디언트 막대 */}
-                  <div style={{display:'flex',alignItems:'center',gap:4,marginTop:6}}>
-                    <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>어두움</span>
-                    <div style={{flex:1,height:8,borderRadius:4,background:'linear-gradient(to right,#000,#0d2b6b,#c8a020,#fff)',border:'1px solid #ddd'}}/>
-                    <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>밝음</span>
-                  </div>
+                <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
+                  {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
+                </div>
+              </div>
+              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
+                <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
+                <div style={{borderRadius:6,overflow:"hidden",height:120}}>
+                {afterUrl
+                  ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:120,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
+                  :<div style={{background:LT.bg3,height:120,display:"flex",alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ 최신</div>}
+                <div style={{display:"none",background:LT.bg3,height:120,alignItems:"center",justifyContent:"center",color:LT.textDim,fontSize:14}}>🛰️ —</div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+                  <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
+                  {anomPct!=null&&<span style={{fontSize:15,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
+                </div>
               </div>
             </div>
-            {/* 색상 범례 — 항상 표시 */}
-            <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',padding:'8px 2px',borderTop:`1px solid ${LT.border}`,marginTop:8}}>
-              <span style={{fontSize:14,color:LT.textDim,fontWeight:600,flexShrink:0}}>색상 범례</span>
-              {[
-                {color:'#000000',label:'무광 (사막·바다)'},
-                {color:'#0d2b6b',label:'외곽·저밀도'},
-                {color:'#c8a020',label:'핵심·고가동'},
-                {color:'#ffffff',border:true,label:'극강 밀집'},
-              ].map((item,idx)=>(
-                <div key={idx} style={{display:'flex',alignItems:'center',gap:5}}>
-                  <span style={{width:14,height:14,borderRadius:3,flexShrink:0,
-                    background:item.color,
-                    border:item.border?'1px solid #aaa':'1px solid #555',
-                    display:'inline-block'}}/>
-                  <span style={{fontSize:14,color:LT.textDim}}>{item.label}</span>
-                </div>
-              ))}
-            </div>
-              </>);
-            })()}
+            </>}
 
           </div>
           );
