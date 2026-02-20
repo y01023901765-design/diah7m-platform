@@ -223,12 +223,24 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
   const n = {};
   const colors = { accent: "D4463A", dark: "1B2A4A", green: "2E7D32", primary: "2C5F8A" };
 
+  // ── 방어적 초기화: 누락 필드 보강 ──
+  if (!mini.in)  mini.in  = { score: 0, threshold: 0 };
+  if (!mini.out) mini.out = { score: 0, threshold: 0 };
+  if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, contributors: { input_top3: [], output_top3: [] } };
+  if (!diagnosis.dualLock.contributors) diagnosis.dualLock.contributors = { input_top3: [], output_top3: [] };
+  if (!diagnosis.diah) diagnosis.diah = { activatedLetters: [], activated: {}, summary: '미발동' };
+  if (!diagnosis.diah.activatedLetters) diagnosis.diah.activatedLetters = [];
+  if (!diagnosis.diah.activated) diagnosis.diah.activated = {};
+  if (!diagnosis.crossSignals) diagnosis.crossSignals = { active: [], inactive: [] };
+  if (Array.isArray(diagnosis.crossSignals)) diagnosis.crossSignals = { active: diagnosis.crossSignals, inactive: [] };
+  if (!diagnosis.crossSignals.active) diagnosis.crossSignals.active = [];
+
   // 단계 라벨
   const stageLabels = {
     factor: '요인 관측', trigger: '트리거 발동', dual_lock: '이중봉쇄(Dual Lock) 확정',
     manifestation: '발현 단계', result: '결과 확정'
   };
-  n.stage_label = stageLabels[mini.stage] || mini.stage;
+  n.stage_label = stageLabels[mini.stage] || mini.stage || '0M';
 
   // Input 서사
   const inContribs = diagnosis.dualLock.contributors.input_top3 || [];
