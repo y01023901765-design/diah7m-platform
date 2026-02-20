@@ -507,7 +507,7 @@ function DashboardPage({user,onNav,lang,country,city}){
               </div>
             ))}
           </div>
-          {/* 9축 인체명칭 */}
+          {/* 9축 — 경제용어 (인체명칭) */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:LT.sp.sm}}>
             {Object.entries(activeSys).slice(0,9).map(([k,v])=>{
               const axKey = k.startsWith('A') ? k : 'A'+k.replace(/\D/g,'');
@@ -516,8 +516,11 @@ function DashboardPage({user,onNav,lang,country,city}){
               return (
                 <div key={k} style={{padding:`${LT.sp.sm}px ${LT.sp.md}px`,borderRadius:LT.sp.sm,background:LT.bg2,border:`1px solid ${col}30`,textAlign:"center"}}>
                   <div style={{fontSize:LT.fs.md}}>{axName?.icon||'📊'}</div>
-                  <div style={{fontSize:LT.fs.xs,color:LT.text,fontWeight:LT.fw.semi,marginTop:2}}>{axName?.ko||k}</div>
-                  <div style={{fontSize:LT.fs.xs,color:col,fontWeight:LT.fw.bold}}>{v.g}</div>
+                  {/* 경제용어 */}
+                  <div style={{fontSize:LT.fs.xs,color:LT.textMid,marginTop:2}}>{axName?.metaphor||k}</div>
+                  {/* (인체명칭) */}
+                  <div style={{fontSize:'10px',color:LT.textDim,marginTop:1}}>({axName?.ko||k})</div>
+                  <div style={{fontSize:LT.fs.xs,color:col,fontWeight:LT.fw.bold,marginTop:2}}>{v.g}</div>
                 </div>
               );
             })}
