@@ -60,13 +60,20 @@ const CONFIG = {
 // ═══════════════════════════════════════════
 // HTTP 보호막 (한국 파이프라인에서 검증 완료)
 // ═══════════════════════════════════════════
-async function safeFetch(url, label, timeoutMs = 15000) {
+async function safeFetch(url, label, timeoutMs = 15000, extraHeaders = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const t0 = Date.now();
 
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; DIAH7M/1.0; +https://diah7m-platform.onrender.com)',
+        'Accept': 'application/json, text/csv, */*',
+        ...extraHeaders,
+      },
+    });
     const latency = Date.now() - t0;
     clearTimeout(timer);
 
@@ -115,7 +122,7 @@ async function fetchWorldBank(indicatorId, countryList = null) {
 
   for (const chunk of chunks) {
     const countryStr = chunk.join(';');
-    const url = `${CONFIG.worldBank.baseUrl}/country/${countryStr}/indicator/${indicatorId}?format=json&mrnev=${CONFIG.worldBank.mrnev}&per_page=${CONFIG.worldBank.perPage}`;
+    const url = `${CONFIG.worldBank.baseUrl}/country/${countryStr}/indicator/${indicatorId}?format=json&mrv=5&per_page=${CONFIG.worldBank.perPage}`;
 
     const result = await safeFetch(url, `WB:${indicatorId}`, CONFIG.worldBank.timeout);
 
@@ -128,8 +135,18 @@ async function fetchWorldBank(indicatorId, countryList = null) {
       const json = await result.res.json();
 
       // World Bank 응답: [metadata, data[]]
-      if (!Array.isArray(json) || json.length < 2 || !Array.isArray(json[1])) {
-        console.warn(`[WB] ${indicatorId}: unexpected response structure`);
+      // metadata가 배열인 경우(에러 응답)도 방어
+      if (!Array.isArray(json) || json.length < 2) {
+        console.warn(`[WB] ${indicatorId}: unexpected response structure (not array)`);
+        continue;
+      }
+      // json[0]이 에러 메시지 배열인 경우
+      if (Array.isArray(json[0]) && json[0][0]?.message) {
+        console.warn(`[WB] ${indicatorId}: API error — ${json[0][0].message?.[0]?.value || 'unknown'}`);
+        continue;
+      }
+      if (!Array.isArray(json[1])) {
+        console.warn(`[WB] ${indicatorId}: unexpected response structure (data not array)`);
         continue;
       }
 
@@ -305,10 +322,10 @@ async function fetchAllOECD() {
     const oecdSource = gauge.sources.find(s => s.provider === 'OECD');
     if (!oecdSource) continue;
 
-    // Rate limit: 20 req/min → 3초 간격
-    if (requestCount > 0 && requestCount % 15 === 0) {
-      console.log('[OECD] Rate limit pause (60s)...');
-      await sleep(60000);
+    // Rate limit: 20 req/min → 10개마다 90초 대기 (안전 마진 확보)
+    if (requestCount > 0 && requestCount % 10 === 0) {
+      console.log('[OECD] Rate limit pause (90s)...');
+      await sleep(90000);
     }
 
     try {
@@ -333,7 +350,7 @@ async function fetchAllOECD() {
       console.log(`[OECD] ${gaugeId} (${gauge.name.en}): ${data.length} records`);
       requestCount++;
 
-      await sleep(3000); // 3초 대기
+      await sleep(5000); // 5초 대기 (20 req/min 안전 마진)
     } catch (e) {
       errors.push({ gaugeId, provider: 'OECD', error: e.message });
     }
@@ -356,7 +373,10 @@ async function fetchIMF(indicatorId) {
   const periods = Array.from({ length: 6 }, (_, i) => currentYear - 5 + i).join(',');
   const url = `${CONFIG.imf.baseUrl}/${indicatorId}?periods=${periods}`;
 
-  const result = await safeFetch(url, `IMF:${indicatorId}`, CONFIG.imf.timeout);
+  const result = await safeFetch(url, `IMF:${indicatorId}`, CONFIG.imf.timeout, {
+    'Referer': 'https://www.imf.org/external/datamapper/',
+    'Accept': 'application/json',
+  });
 
   if (!result.ok) {
     console.warn(`[IMF] ${indicatorId} failed: ${result.error}`);
