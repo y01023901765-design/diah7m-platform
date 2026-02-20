@@ -7,25 +7,54 @@ import { TIER_ACCESS } from '../data/gauges';
 import { SAT_EV } from '../data/satellite';
 
 // GEE 실데이터가 있으면 SAT_EV에 머지 (이미지 URL + 팔레트 포함)
+// SAT_XREF ref 기반 게이지→위성 소스 매핑 (1차 소스)
+const GAUGE_SAT_MAP = {
+  S2:'S2', R6:'R6',                         // 위성 게이지 자체
+  E1:'S2', I2:'S2', I1:'S2', I4:'S2',       // VIIRS 야간광 기반
+  E4:'S2', F5:'S2', D1:'S2', R2:'S2',       // VIIRS 야간광 기반
+  O1:'S2', F3:'S2',                          // VIIRS + (R6 보조)
+  M1:'R6',                                   // Landsat 열적외선 기반
+};
 function mergedSatEv(code, liveSat) {
   const base = SAT_EV[code];
   if (!base || !liveSat) return base;
   const merged = { ...base };
-  if (code === 'S2' && liveSat.S2 && liveSat.S2.status === 'OK') {
+
+  // S2 실데이터 주입 (VIIRS 야간광)
+  const injectS2 = (m) => {
     const s = liveSat.S2;
-    merged.after = { date: s.date || merged.after.date, val: String(s.value), raw: s.value,
-      imageUrl: s.images?.after?.url };
-    if (s.baseline_365d) merged.before = { date: s.date ? new Date(new Date(s.date).getTime() - 30*86400000).toISOString().slice(0,10) : merged.before.date, val: String(s.baseline_365d), raw: s.baseline_365d,
-      imageUrl: s.images?.before?.url };
-    if (s.images?.palette) { merged.palette = s.images.palette; merged.paletteLabels = s.images.paletteLabels; }
-  }
-  if (code === 'R6' && liveSat.R6 && liveSat.R6.status === 'OK') {
+    if (!s || s.status !== 'OK') return;
+    m.after = { ...m.after, date: s.date || m.after.date, imageUrl: s.images?.after?.url };
+    if (s.images?.before?.url) m.before = { ...m.before, imageUrl: s.images.before.url };
+    if (s.images?.palette) { m.palette = s.images.palette; m.paletteLabels = s.images.paletteLabels; }
+    // S2 게이지 자체는 값도 업데이트
+    if (code === 'S2') {
+      m.after = { date: s.date || m.after.date, val: String(s.value), raw: s.value, imageUrl: s.images?.after?.url };
+      if (s.baseline_365d) m.before = { date: s.date ? new Date(new Date(s.date).getTime() - 30*86400000).toISOString().slice(0,10) : m.before.date, val: String(s.baseline_365d), raw: s.baseline_365d, imageUrl: s.images?.before?.url };
+    }
+  };
+
+  // R6 실데이터 주입 (Landsat 열적외선)
+  const injectR6 = (m) => {
     const r = liveSat.R6;
-    merged.after = { date: r.date || merged.after.date, val: String(r.value), raw: r.value,
-      imageUrl: r.images?.after?.url };
-    if (r.images?.before) merged.before = { ...merged.before, imageUrl: r.images.before.url };
-    if (r.images?.palette) { merged.palette = r.images.palette; merged.paletteLabels = r.images.paletteLabels; }
-  }
+    if (!r || r.status !== 'OK') return;
+    m.after = { ...m.after, date: r.date || m.after.date, imageUrl: r.images?.after?.url };
+    if (r.images?.before?.url) m.before = { ...m.before, imageUrl: r.images.before.url };
+    if (r.images?.palette) { m.palette = r.images.palette; m.paletteLabels = r.images.paletteLabels; }
+    // R6 게이지 자체는 값도 업데이트
+    if (code === 'R6') {
+      m.after = { date: r.date || m.after.date, val: String(r.value), raw: r.value, imageUrl: r.images?.after?.url };
+      if (r.images?.before) m.before = { ...m.before, imageUrl: r.images.before.url };
+    }
+  };
+
+  const primarySrc = GAUGE_SAT_MAP[code];
+  if (primarySrc === 'S2') injectS2(merged);
+  else if (primarySrc === 'R6') injectR6(merged);
+
+  // O1, F3은 S2 + R6 보조 이미지 둘 다 활용 (S2 우선, R6 미주입 시 R6)
+  if ((code === 'O1' || code === 'F3') && !merged.after?.imageUrl) injectR6(merged);
+
   return merged;
 }
 
