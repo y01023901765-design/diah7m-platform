@@ -650,7 +650,22 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         };
       }
 
-      // 3) miniJSON (재현키) 구성
+      // 3) ssot 요약에서 Input/Output 점수 계산
+      const _inGauges  = ssotData.sec2_gauges || [];
+      const _outGauges = ssotData.sec3_gauges || [];
+      const _calcScore = (arr) => {
+        let s = 0;
+        arr.forEach(g => {
+          const gr = g.grade || '';
+          if (gr.includes('경보') || gr.includes('★')) s += 2;
+          else if (gr.includes('주의') || gr.includes('●')) s += 1;
+        });
+        return s;
+      };
+      const _inScore  = _calcScore(_inGauges);
+      const _outScore = _calcScore(_outGauges);
+
+      // 3) miniJSON (재현키 + renderer 필수 필드)
       const miniJSON = {
         engine: 'DIAH-7M판정엔진v5.1+SSOTv1.0',
         mode,
@@ -660,21 +675,34 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         repro_key: `${country}-${mode}-${period}`,
         stage: ssotData.sec5_current || '0M',
         confidence: ssotData.freshnessAlert?.startsWith('✅') ? '높음' : '중간',
+        // report_renderer.generateNarratives()가 요구하는 필드
+        in:  { score: _inScore,  threshold: _inGauges.length  * 2 },
+        out: { score: _outScore, threshold: _outGauges.length * 2 },
       };
 
-      // 4) diagnosis 객체 (report_renderer용 — 있으면 엔진 결과, 없으면 ssot 요약)
+      // 4) diagnosis 객체 (report_renderer용 — renderer가 기대하는 전체 구조 보장)
       let diagnosis = {
         overall: { stage: '0M', score: 0, label: '정상' },
         dualLock: { active: false, contributors: { input_top3: [], output_top3: [] } },
-        crossSignals: [],
+        diah: { activatedLetters: [], activated: {}, summary: '미발동' },
+        crossSignals: { active: [], inactive: [] },
         axes: {},
       };
       if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
         try { diagnosis = engine.diagnose(gaugeData); } catch (_) { /* ignore */ }
       }
-      // dualLock.contributors 누락 방지
+      // 누락 필드 안전 보강
       if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, contributors: { input_top3: [], output_top3: [] } };
       if (!diagnosis.dualLock.contributors) diagnosis.dualLock.contributors = { input_top3: [], output_top3: [] };
+      if (!diagnosis.diah) diagnosis.diah = { activatedLetters: [], activated: {}, summary: '미발동' };
+      if (!diagnosis.diah.activatedLetters) diagnosis.diah.activatedLetters = [];
+      if (!diagnosis.diah.activated) diagnosis.diah.activated = {};
+      if (!diagnosis.crossSignals) diagnosis.crossSignals = { active: [], inactive: [] };
+      // 배열 형태로 넘어온 경우 { active, inactive } 구조로 변환
+      if (Array.isArray(diagnosis.crossSignals)) {
+        diagnosis.crossSignals = { active: diagnosis.crossSignals, inactive: [] };
+      }
+      if (!diagnosis.crossSignals.active) diagnosis.crossSignals.active = [];
 
       // 5) report_renderer.render() → DOCX 버퍼
       const buf = await reportRenderer.render({
