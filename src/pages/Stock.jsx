@@ -126,6 +126,7 @@ function StockView({stock:s,lang,onBack}){
   const [liveChart,setLiveChart]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
+  const [satRange,setSatRange]=useState('1y');
   const [chartRange,setChartRange]=useState('6mo');
   const [loading,setLoading]=useState(true);
 
@@ -167,14 +168,15 @@ function StockView({stock:s,lang,onBack}){
     return()=>{c=true};
   },[s.sid,chartRange]);
 
-  // 위성 이미지 — 위성 탭 진입 시 lazy load (GEE 수집 최대 30초 소요)
+  // 위성 이미지 — 위성 탭 진입 or satRange 변경 시 로드
   useEffect(()=>{
-    if(tab!=='sat'||liveSatImg||satImgLoading) return;
+    if(tab!=='sat'||satImgLoading) return;
     setSatImgLoading(true);
-    API.stockSatellite(s.sid).then(d=>{
+    setLiveSatImg(null);
+    API.stockSatellite(s.sid, satRange).then(d=>{
       if(d&&d.facilities) setLiveSatImg(d.facilities);
     }).catch(()=>{}).finally(()=>{ setSatImgLoading(false); });
-  },[tab,s.sid]);// eslint-disable-line
+  },[tab,s.sid,satRange]);// eslint-disable-line
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
   const stockEntity = liveGauges ? buildStockEntityData(liveGauges, liveHealth, L) : null;
@@ -311,7 +313,14 @@ function StockView({stock:s,lang,onBack}){
     {tab==='sat'&&<>
       {/* Before/After 비교 — 시설별 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
-        <div style={{fontSize:16,fontWeight:700,color:LT.text,marginBottom:12}}>🛰️ {t('svSatCompare',L)}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>🛰️ {t('svSatCompare',L)}</div>
+          <div style={{display:"flex",gap:4}}>
+            {[{v:'6mo',l:'6개월'},{v:'1y',l:'1년'},{v:'2y',l:'2년'},{v:'3y',l:'3년'}].map(({v,l})=>(
+              <button key={v} onClick={()=>setSatRange(v)} style={{padding:'4px 10px',fontSize:12,fontWeight:satRange===v?700:400,borderRadius:6,border:`1px solid ${satRange===v?LT.text:LT.border}`,background:satRange===v?LT.text:'transparent',color:satRange===v?LT.surface:LT.textDim,cursor:'pointer'}}>{l}</button>
+            ))}
+          </div>
+        </div>
         {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
         {!satImgLoading&&(()=>{
           // liveSatImg 있으면 이미지 있는 시설 우선, 없으면 facs.slice(0,3)

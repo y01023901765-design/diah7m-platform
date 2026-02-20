@@ -267,8 +267,8 @@ export async function stockFacilities(ticker) {
 export async function stockDelta(ticker) {
   return api(`/api/v1/stock/${ticker}/delta`);
 }
-export async function stockSatellite(ticker) {
-  return api(`/api/v1/stock/${ticker}/satellite`);
+export async function stockSatellite(ticker, range='1y') {
+  return api(`/api/v1/stock/${ticker}/satellite?range=${range}`);
 }
 export async function stockFlow(ticker) {
   return api(`/api/v1/stock/${ticker}/flow`);

@@ -531,8 +531,13 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
     const profile = byTicker[ticker];
     if (!profile) return res.status(404).json({ error: 'Stock not found' });
 
+    // range 파라미터: 6mo | 1y | 2y | 3y (기본 1y)
+    const RANGE_MAP = { '6mo': 180, '1y': 365, '2y': 730, '3y': 1095 };
+    const rangeDays = RANGE_MAP[req.query.range] || 365;
+    const range = req.query.range || '1y';
+
     // 캐시 확인 (images가 하나라도 있을 때만 캐시 사용 — 이미지 없는 구버전 또는 버전 다른 캐시 무효화)
-    const cacheKey = ticker + '_' + _SAT_IMG_VER;
+    const cacheKey = ticker + '_' + _SAT_IMG_VER + '_' + range;
     const cached = _satImgCache[cacheKey];
     const cachedHasImages = cached && cached.data && cached.data.some(f => f.images && (f.images.afterUrl || f.images.beforeUrl));
     if (cached && cachedHasImages && (Date.now() - cached.ts) < _satImgTTL) {
@@ -584,9 +589,9 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const bbox = fetchSat.facilityBbox(f.lat, f.lng, f.radiusKm || 5);
             const geometry = ee.Geometry.Rectangle(bbox);
             const endStr = new Date().toISOString().split('T')[0];
-            // VIIRS 월간 발행 2~3개월 지연 → After: 최근 180일, Before: 180~540일
+            // VIIRS 월간 발행 2~3개월 지연 → After: 최근 180일, Before: After - rangeDays
             const d180 = new Date(); d180.setDate(d180.getDate() - 180);
-            const d540 = new Date(); d540.setDate(d540.getDate() - 540);
+            const d540 = new Date(); d540.setDate(d540.getDate() - 180 - rangeDays);
             const THUMB_PARAMS = {
               palette: ['000014','0d0d2b','1a1a6e','0044aa','0088ff','00ccff','66ffcc','ffff00','ff8800','ffffff'],
               min: 0, max: 30, dimensions: '800x560',
