@@ -350,33 +350,33 @@ function StockView({stock:s,lang,onBack}){
         const stateColor = state==='ALARM'?LT.danger:state==='WARN'?LT.warn:state==='TREND'?LT.textDim:LT.good;
         const stateBg    = state==='ALARM'?'#fff0f0':state==='WARN'?'#fffbeb':state==='TREND'?'#f8f8f8':'#f0fdf4';
         const stateBorder= state==='ALARM'?`${LT.danger}33`:state==='WARN'?`${LT.warn}33`:state==='TREND'?`${LT.textDim}33`:`${LT.good}33`;
-        const stateLabel = state==='ALARM'?'🔴 공급망 급성 경보':state==='WARN'?'🟡 공급망 변화 감지':state==='TREND'?'📉 구조 추세 경고':'🟢 공급망 정상';
+        const stateLabel = state==='ALARM'?'공급망 급성 경보':state==='WARN'?'공급망 변화 감지':state==='TREND'?'구조 추세 경고':'공급망 정상';
         const stateDesc  = state==='ALARM'
           ?'NO₂ 급락 확인 — 최근 확인 가능한 물리 신호 기준 이상 감지'
           :state==='WARN'?'일부 실시간 센서 이상 — 지속 모니터링 권장'
           :state==='TREND'?'야간광 장기 하락 — VIIRS 구조 추세 경고 (D-90 기준)'
           :'관측 가능한 물리 신호 범위 내 정상';
         return(
-          <div style={{borderRadius:12,padding:'20px 22px',marginBottom:4,background:stateBg,border:`2px solid ${stateBorder}`}}>
+          <div style={{borderRadius:10,padding:'18px 20px',marginBottom:4,background:stateBg,border:`1px solid ${stateBorder}`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:11,fontWeight:700,color:stateColor,letterSpacing:'0.08em',marginBottom:6,textTransform:'uppercase'}}>공급망 조기경보 · 최근 확인 물리 신호 기준</div>
                 <div style={{fontSize:22,fontWeight:900,color:stateColor,marginBottom:6}}>
                   {stateLabel}
                   {/* 추세 경고 툴팁 */}
-                  {state==='TREND'&&<span title="장기 활동 감소 신호 — 급성 위험 아님. VIIRS D-90 기준 누적 하락." style={{fontSize:13,fontWeight:500,color:LT.textDim,marginLeft:10,cursor:'help',borderBottom:`1px dashed ${LT.textDim}`}}>ℹ️ 급성 위험 아님</span>}
+                  {state==='TREND'&&<span title="장기 활동 감소 신호 — 급성 위험 아님. VIIRS D-90 기준 누적 하락." style={{fontSize:13,fontWeight:500,color:LT.textDim,marginLeft:10,cursor:'help',borderBottom:`1px dashed ${LT.textDim}`}}>급성 위험 아님</span>}
                 </div>
                 <div style={{fontSize:14,color:stateColor,opacity:0.85,lineHeight:1.6}}>{stateDesc}</div>
               </div>
               <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
                 {(()=>{
                   const cards=[];
-                  if(worstNo2!==0) cards.push({icon:'🚛',label:'NO₂',fresh:'D-5',dot:'🟢',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
-                  if(worstTherm!==0) cards.push({icon:'🔥',label:'Thermal',fresh:'D-16',dot:'🟡',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
-                  if(worstViirs!==0) cards.push({icon:'🌙',label:'야간광',fresh:'D-90',dot:'🔵',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
+                  if(worstNo2!==0) cards.push({label:'NO₂',fresh:'D-5',val:worstNo2,alarm:worstNo2<-15,warn:worstNo2<-8});
+                  if(worstTherm!==0) cards.push({label:'Thermal',fresh:'D-16',val:worstTherm,alarm:worstTherm<-3,warn:worstTherm<-1,isDeg:true});
+                  if(worstViirs!==0) cards.push({label:'야간광',fresh:'D-90',val:worstViirs,alarm:worstViirs<-15,warn:worstViirs<-8});
                   return cards.map((c,ci)=>(
                     <div key={ci} style={{textAlign:'center',padding:'10px 18px',background:'#fff',borderRadius:10,border:`1px solid ${c.alarm?LT.danger:c.warn?LT.warn:LT.border}`,minWidth:90}}>
-                      <div style={{fontSize:12,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.icon} {c.label} <span style={{fontSize:11}}>{c.dot}</span> <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:11,fontWeight:700}}>{c.fresh}</span></div>
+                      <div style={{fontSize:12,color:LT.textDim,fontWeight:600,marginBottom:3}}>{c.label} <span style={{color:c.fresh==='D-5'?LT.good:c.fresh==='D-16'?LT.warn:LT.textDim,fontSize:11,fontWeight:700}}>{c.fresh}</span></div>
                       <div style={{fontSize:20,fontWeight:900,fontFamily:'monospace',color:c.alarm?LT.danger:c.warn?LT.warn:LT.good}}>{c.val>0?'+':''}{c.isDeg?c.val.toFixed(1)+'°C':c.val.toFixed(1)+'%'}</div>
                     </div>
                   ));
@@ -388,39 +388,39 @@ function StockView({stock:s,lang,onBack}){
       })()}
 
       {/* ── 경보 철학 한 줄 ── */}
-      <div style={{fontSize:13,color:LT.textDim,marginBottom:12,marginTop:6,padding:'6px 14px',background:'#f8f8f8',borderRadius:6,borderLeft:'3px solid #ccc'}}>
+      <div style={{fontSize:12,color:LT.textDim,marginBottom:10,marginTop:4,padding:'0 4px'}}>
         경보는 최근 관측 가능한 물리 신호 기준입니다. 미래 주가를 예측하지 않습니다.
       </div>
 
       {/* ── ② 시간축 스위치 + 신선도 안내 ── */}
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,marginBottom:12,padding:'12px 16px',background:LT.bg2,borderRadius:10,border:`1px solid ${LT.border}`}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,marginBottom:8,padding:'8px 0'}}>
         {/* 스위치 2버튼 */}
         <div style={{display:'flex',gap:0,borderRadius:8,overflow:'hidden',border:`1px solid ${LT.border}`}}>
           <button onClick={()=>setSatMode('now')} style={{padding:'8px 18px',fontSize:14,fontWeight:satMode==='now'?800:500,background:satMode==='now'?'#111':'#fff',color:satMode==='now'?'#fff':LT.textDim,border:'none',cursor:'pointer',borderRight:`1px solid ${LT.border}`}}>
-            🚨 지금 경보
+            지금 경보
           </button>
           <button onClick={()=>setSatMode('trend')} style={{padding:'8px 18px',fontSize:14,fontWeight:satMode==='trend'?800:500,background:satMode==='trend'?'#111':'#fff',color:satMode==='trend'?'#fff':LT.textDim,border:'none',cursor:'pointer'}}>
-            📉 구조 추세
+            구조 추세
           </button>
         </div>
         {/* 신선도 배지 */}
         <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#f0fdf4',border:`1px solid ${LT.good}`,color:LT.good,fontWeight:700}}>🟢 NO₂ D-5 최신</span>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#fffbeb',border:`1px solid ${LT.warn}`,color:LT.warn,fontWeight:700}}>🟡 Thermal D-16 중기</span>
-          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#eff6ff',border:'1px solid #2563eb',color:'#2563eb',fontWeight:700}}>🔵 VIIRS D-90 추세용</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#f0fdf4',border:`1px solid ${LT.good}`,color:LT.good,fontWeight:700}}>NO₂ D-5 최신</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#fffbeb',border:`1px solid ${LT.warn}`,color:LT.warn,fontWeight:700}}>Thermal D-16 중기</span>
+          <span style={{fontSize:13,padding:'3px 10px',borderRadius:20,background:'#eff6ff',border:'1px solid #2563eb',color:'#2563eb',fontWeight:700}}>VIIRS D-90 추세용</span>
         </div>
       </div>
       {/* 모드 설명 */}
-      <div style={{fontSize:13,color:LT.textMid,marginBottom:12,padding:'8px 14px',background:satMode==='now'?'#f0fdf4':'#f8f8f8',borderRadius:6,borderLeft:`3px solid ${satMode==='now'?LT.good:LT.textDim}`}}>
+      <div style={{fontSize:12,color:LT.textDim,marginBottom:12,padding:'0 4px'}}>
         {satMode==='now'
-          ?'🚨 지금 경보: NO₂(D-5)+Thermal(D-16) — 지금 공급망이 막히는지 확인. 급성 신호 중심.'
-          :'📉 구조 추세: VIIRS 야간광(D-90) — 공급망 구조가 무너지는지 장기 확인. 추세 신호 중심.'}
+          ?'지금 경보: NO₂(D-5)+Thermal(D-16) — 급성 공급망 막힘 확인.'
+          :'구조 추세: VIIRS 야간광(D-90) — 장기 구조 변화 확인.'}
       </div>
 
       {/* ── ③ 시설별 Before/After + 센서 상세 ── */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <div style={{fontSize:17,fontWeight:800,color:LT.text}}>🛰️ 시설별 위성 관측</div>
+          <div style={{fontSize:17,fontWeight:800,color:LT.text}}>시설별 위성 관측</div>
           {/* 프리셋 버튼 */}
           {(()=>{
             const activePreset=_SAT_PRESETS.find(p=>p.after===satAfterYM&&p.before===satBeforeYM);
@@ -456,10 +456,10 @@ function StockView({stock:s,lang,onBack}){
           );
         })()}
         <div style={{fontSize:13,color:LT.textDim,marginBottom:12,padding:'6px 10px',background:LT.bg2,borderRadius:6,display:'inline-block'}}>
-          {!satAfterYM&&!satBeforeYM?'📅 자동 — 최근 6개월 vs 1년 전 슬라이딩 비교':`📅 ${satBeforeYM} → ${satAfterYM}`}
-          &nbsp;·&nbsp; 🌐 계절 영향 제거: <strong>전년 동월 비교</strong> 권장
+          {!satAfterYM&&!satBeforeYM?'자동 — 최근 6개월 vs 1년 전 슬라이딩 비교':`${satBeforeYM} → ${satAfterYM}`}
+          &nbsp;·&nbsp; 계절 영향 제거: <strong>전년 동월 비교</strong> 권장
         </div>
-        {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
+        {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>위성 이미지 수집 중… (최대 30초)</div>}
         {!satImgLoading&&satImgError&&<div style={{textAlign:"center",padding:"16px 0",color:LT.danger,fontSize:14}}>⚠️ {satImgError}</div>}
         {!satImgLoading&&(()=>{
           // liveSatImg 있으면 이미지 있는 시설 우선, 없으면 facs.slice(0,3)
@@ -555,15 +555,15 @@ function StockView({stock:s,lang,onBack}){
             const ntlD=_dir(anomPct), no2D=_dir(no2Pct), thermD=_dir(thermDeg);
             const has=(a,b)=>a!==0&&b!==0;
             if(has(ntlD,no2D)&&ntlD<0&&no2D>0)
-              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + NO₂↑ — 야간→주간 교대 전환 또는 연료 전환 추정. 단순 가동 감소가 아닌 운영 구조 변화 가능', color:LT.warn, bg:'#fffbeb'};
+              return {label:'운영 패턴 전환 신호', sub:'야간광↓ + NO₂↑ — 야간→주간 교대 전환 또는 연료 전환 추정. 단순 가동 감소가 아닌 운영 구조 변화 가능', color:LT.warn, bg:'#fffbeb'};
             if(has(ntlD,thermD)&&ntlD<0&&thermD>0)
-              return {label:'⚠️ 운영 패턴 전환 신호', sub:'야간광↓ + 지표온도↑ — 공정 변경 또는 고열 설비 교체 추정. 물류 흐름보다 내부 공정 변화 가능성', color:LT.warn, bg:'#fffbeb'};
+              return {label:'운영 패턴 전환 신호', sub:'야간광↓ + 지표온도↑ — 공정 변경 또는 고열 설비 교체 추정. 물류 흐름보다 내부 공정 변화 가능성', color:LT.warn, bg:'#fffbeb'};
             if(has(ntlD,no2D)&&ntlD>0&&no2D>0)
-              return {label:'📈 생산 확대 신호', sub:'야간광↑ + NO₂↑ — 가동률·연소량 동반 상승. 증산 또는 신규 라인 가동 추정', color:LT.good, bg:'#f0fdf4'};
+              return {label:'생산 확대 신호', sub:'야간광↑ + NO₂↑ — 가동률·연소량 동반 상승. 증산 또는 신규 라인 가동 추정', color:LT.good, bg:'#f0fdf4'};
             if(has(ntlD,no2D)&&ntlD<0&&no2D<0)
-              return {label:'📉 생산 축소 신호', sub:'야간광↓ + NO₂↓ — 가동률·연소량 동반 하락. 감산 또는 유지보수 기간 추정', color:LT.danger, bg:'#fff0f0'};
+              return {label:'생산 축소 신호', sub:'야간광↓ + NO₂↓ — 가동률·연소량 동반 하락. 감산 또는 유지보수 기간 추정', color:LT.danger, bg:'#fff0f0'};
             if(has(ntlD,thermD)&&ntlD>0&&thermD>0)
-              return {label:'🔥 고부하 운영 신호', sub:'야간광↑ + 지표온도↑ — 고강도 가동. 풀가동 또는 비상 생산 추정', color:LT.warn, bg:'#fffbeb'};
+              return {label:'고부하 운영 신호', sub:'야간광↑ + 지표온도↑ — 고강도 가동. 풀가동 또는 비상 생산 추정', color:LT.warn, bg:'#fffbeb'};
             return null;
           };
           const patternTag = _patternTag();
@@ -602,13 +602,13 @@ function StockView({stock:s,lang,onBack}){
             {alignIcon?.detail&&<div style={{fontSize:13,color:LT.textMid,marginBottom:8,paddingLeft:4}}>{alignIcon.detail}</div>}
 
             {/* ── 이미지 2컬럼 ── */}
-            <div style={{fontSize:13,color:LT.textMid,marginBottom:8,padding:'6px 12px',background:'#f8f8f8',borderRadius:6,borderLeft:'3px solid #ccc'}}>
-              ℹ️ 이 이미지는 실시간이 아닌, 해당 기간 평균 신호(추세)입니다.
+            <div style={{fontSize:12,color:LT.textDim,marginBottom:6,padding:'0 2px'}}>
+              해당 기간 평균 신호(추세) — 실시간 사진 아님
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {/* 왼쪽: before */}
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>🕰 이전 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>이전 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{beforeDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {beforeUrl
                   ?<img src={beforeUrl} alt="before" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
@@ -625,8 +625,8 @@ function StockView({stock:s,lang,onBack}){
                 </div>}
               </div>
               {/* 오른쪽: after */}
-              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:anomPct!=null&&anomPct<-8?`2px solid ${LT.danger}`:`1px solid ${LT.border}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>📡 최신 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
+              <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:12,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
                 <div style={{borderRadius:6,overflow:"hidden",height:140}}>
                 {afterUrl
                   ?<img src={afterUrl} alt="after" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex';}} style={{width:"100%",height:140,objectFit:"cover",display:"block",filter:"blur(2px)",transform:"scale(1.04)"}}/>
@@ -662,10 +662,9 @@ function StockView({stock:s,lang,onBack}){
                 const fresh = FRESHNESS[sk]||{label:'',color:'#aaa',bg:'#f5f5f5'};
                 const isPrimary = sk==='NO2';
                 return(
-                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`${isPrimary?2:1}px solid ${isPrimary?LT.good:LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:isPrimary?'0 2px 8px rgba(5,150,105,0.12)':'0 1px 4px rgba(0,0,0,0.07)'}}>
-                    {/* 왼쪽: 아이콘 + 위성명 + 신선도 */}
-                    <div style={{width:120,minWidth:120,padding:'16px 12px',background:isPrimary?'#f0fdf4':LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:`1px solid ${isPrimary?LT.good:LT.border}`}}>
-                      <span style={{fontSize:26}}>{b.icon}</span>
+                  <div key={sk} style={{display:'flex',alignItems:'stretch',gap:0,background:'#fff',border:`1px solid ${LT.border}`,borderRadius:12,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
+                    {/* 왼쪽: 위성명 + 신선도 */}
+                    <div style={{width:110,minWidth:110,padding:'16px 12px',background:LT.bg2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,borderRight:`1px solid ${LT.border}`}}>
                       <span style={{fontSize:13,fontWeight:700,color:isPrimary?LT.good:LT.textMid,textAlign:'center'}}>
                         {sk==='NTL'?'VIIRS':sk==='NO2'?'Sentinel-5P':sk==='THERMAL'?'Landsat-9':sk==='SAR'?'Sentinel-1':sk}
                       </span>
@@ -680,7 +679,6 @@ function StockView({stock:s,lang,onBack}){
                     </div>
                     {/* 오른쪽: 설명 + 민감도 */}
                     <div style={{flex:1,padding:'16px 16px',display:'flex',flexDirection:'column',justifyContent:'center',gap:8}}>
-                      {isPrimary&&<span style={{fontSize:12,fontWeight:700,color:LT.good,marginBottom:2}}>★ 핵심 실시간 지표</span>}
                       <span style={{fontSize:14,color:LT.textMid,lineHeight:1.6}}>{b.desc}</span>
                       {hasData&&b.band&&<span title={b.band.tip} style={{display:'inline-block',fontSize:13,fontWeight:700,color:b.band.color,background:b.band.bg,padding:'3px 10px',borderRadius:6,alignSelf:'flex-start',cursor:'help',border:`1px solid ${b.band.color}44`}}>
                         {b.band.label}
@@ -706,18 +704,10 @@ function StockView({stock:s,lang,onBack}){
             </div>}
 
             {/* ── 약신호 안내 ── */}
-            {isLowSignal&&<div style={{fontSize:13,color:LT.textMid,marginTop:8,padding:'8px 12px',background:LT.bg2,borderRadius:6,border:`1px solid ${LT.border}`}}>
-              ℹ️ 야간조도 기반 분석 적합도 낮음 — 실내 생산 공정 또는 야간 운영 비중이 적은 시설
+            {isLowSignal&&<div style={{fontSize:12,color:LT.textDim,marginTop:6,padding:'0 2px'}}>
+              야간조도 기반 분석 적합도 낮음 — 실내 생산 공정 또는 야간 운영 비중이 적은 시설
             </div>}
 
-            {/* ── 색상 범례 ── */}
-            {(beforeUrl||afterUrl)&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10,fontSize:13,color:LT.textDim,alignItems:'center'}}>
-              <span style={{fontWeight:600,color:LT.textMid}}>색상 범례</span>
-              <span style={{background:"#222",padding:"2px 7px",borderRadius:3,color:"#ccc",fontSize:12}}>■ 무광(사막·바다)</span>
-              <span style={{color:"#0077bb",fontWeight:700}}>■</span><span>외곽·저밀도</span>
-              <span style={{color:"#cc9900",fontWeight:700}}>■</span><span>핵심·고가동</span>
-              <span style={{background:"#555",padding:"2px 7px",borderRadius:3,color:"#fff",fontSize:12}}>■ 극강 밀집</span>
-            </div>}
           </div>
           );
         })}
@@ -725,7 +715,7 @@ function StockView({stock:s,lang,onBack}){
       {/* Delta 괴리 차트 */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>📊 {t('svDeltaTitle',L)}</div>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('svDeltaTitle',L)}</div>
           <div style={{fontSize:13,color:LT.textDim,marginTop:3}}>최근 6개월 물리 신호 변화와 가격 반응의 동행 여부 — 예측이 아닌 상관 확인</div>
         </div>
         <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:16}}>
@@ -755,7 +745,7 @@ function StockView({stock:s,lang,onBack}){
       {/* Trust: Past→Present */}
       <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:20,border:`1px solid ${LT.border}`,marginBottom:12}}>
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>📡 {t('svTrustTitle',L)}</div>
+          <div style={{fontSize:16,fontWeight:700,color:LT.text}}>{t('svTrustTitle',L)}</div>
           <div style={{fontSize:13,color:LT.textDim,marginTop:3}}>과거 물리 신호가 실제 실적과 어떻게 연결됐는지 — 상관 검증 사례</div>
         </div>
         <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
