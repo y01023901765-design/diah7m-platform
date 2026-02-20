@@ -723,7 +723,7 @@ function renderSection(section, ctx) {
         children.push(new Paragraph({
           alignment: AlignmentType.CENTER, spacing: { before: 60 },
           children: [
-            new TextRun({ text: `DIAH-7M Core Engine v${profile.meta.version}  |  Profile: ${mini.profile_hash}  |  Repro: ${mini.repro_key}`, font: "Courier New", size: 14, color: "CCCCCC" }),
+            new TextRun({ text: `DIAH-7M Core Engine v${(profile.meta && profile.meta.version) || '5.1'}  |  Profile: ${mini.profile_hash}  |  Repro: ${mini.repro_key}`, font: "Courier New", size: 14, color: "CCCCCC" }),
           ]
         }));
       }
