@@ -127,9 +127,12 @@ function StockView({stock:s,lang,onBack}){
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
   // 위성 연월 피커: YYYY-MM 형식
+  // 기본값: VIIRS 발행지연 90일 기준 최신 가능 월(after) vs 3개월 전(before)
   const _now = new Date();
-  const _defAfter = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
-  const _defBefore = `${_now.getFullYear()-1}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+  const _afterD = new Date(_now); _afterD.setMonth(_afterD.getMonth()-3); // 발행 가능 최신월
+  const _beforeD = new Date(_now); _beforeD.setMonth(_beforeD.getMonth()-6); // 3개월 전
+  const _defAfter = `${_afterD.getFullYear()}-${String(_afterD.getMonth()+1).padStart(2,'0')}`;
+  const _defBefore = `${_beforeD.getFullYear()}-${String(_beforeD.getMonth()+1).padStart(2,'0')}`;
   const [satAfterYM,setSatAfterYM]=useState(_defAfter);
   const [satBeforeYM,setSatBeforeYM]=useState(_defBefore);
   const [chartRange,setChartRange]=useState('6mo');
