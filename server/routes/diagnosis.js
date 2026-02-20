@@ -671,42 +671,72 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         wPara(`${cs.pair ?? ''} ${cs.name ?? ''}: Lv.${cs.level?.level ?? '?'}`)
       ).join('');
 
+      // 서사엔진 D 객체 실제 키 매핑 (narrative-engine.js v2.8 기준)
+      const overall    = D_obj._v28_overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`;
+      const coverGrade = D_obj._v28_coverGrade || '';
+      const dualLockTxt = D_obj.sec4_verdict || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동');
+      const diahTxt    = D_obj.sec4_summary || '해당 없음';
+      const m7Txt      = D_obj.sec5_currentText || '해당 없음';
+      const progTxt    = (D_obj.sec6_paths || []).map(p => `${p.label}(${p.prob}): ${p.text}`).join('\n') || '해당 없음';
+      const familyTxt  = D_obj.sec8_common || '해당 없음';
+      const prescTxt   = (D_obj.sec9_prescriptions || []).map(p => `${p.title}: ${p.text}`).join('\n') || '해당 없음';
+      const disclaimer = D_obj.sec10_disclaimer || '본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.';
+
+      // 축 서사 (9축)
+      const axisNarrRows = [1,2,3,4,5,6,7,8,9].map(i => {
+        const title = D_obj[`axis${i}_title`] || '';
+        const narr  = D_obj[`axis${i}_summaryNarrative`] || D_obj[`axis${i}_summary`] || '';
+        return narr ? wPara(`${title}\n  → ${narr}`) : '';
+      }).filter(Boolean).join('');
+
+      // 교차신호 서사
+      const csNarrRows = (D_obj._v28_crossSignals || []).slice(0, 15).map(cs =>
+        wPara(`${cs.pair ?? ''} ${cs.name ?? ''} — ${cs.narrative ?? `Lv.${cs.level?.level ?? '?'}`}`)
+      ).join('') || csRows;
+
       const bodyXml = [
         wPara(`DIAH-7M ${modeTitles[mode] || '경제건강검진'} 보고서`, { heading:'Heading1', bold:true }),
+        coverGrade ? wPara(`종합등급: ${coverGrade}`) : '',
         wPara(`기간: ${period}  |  대상: ${countryLabel}`),
         wPara(`판정엔진: v5.1  |  서사엔진: v2.8  |  모드: ${mode}`),
         wPara(`생성일시: ${new Date().toLocaleString('ko-KR')}`),
         diagnosis._demo ? wPara('※ 실제 데이터 미수집, 데모 데이터 표시') : '',
         '<w:p/>',
         wPara('1. 종합판정', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P1_표지 || D_obj.overallNarrative || `종합점수: ${diagnosis.overall?.score ?? '—'}`),
+        ...overall.split('\n').map(line => wPara(line)),
         '<w:p/>',
         wPara('2. 9축 채점표', { heading:'Heading2', bold:true }),
         axisRows,
         '<w:p/>',
+        wPara('2-1. 9축 서사 요약', { heading:'Heading2', bold:true }),
+        axisNarrRows,
+        '<w:p/>',
         wPara('3. 이중봉쇄 판정', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P3_이중봉쇄 || (diagnosis.dualLock?.locked ? '이중봉쇄 발동' : '이중봉쇄 미발동')),
+        wPara(dualLockTxt),
         '<w:p/>',
         wPara('4. 교차신호', { heading:'Heading2', bold:true }),
-        csRows,
+        csNarrRows,
         '<w:p/>',
         wPara('5. DIAH 트리거', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P5_DIAH || D_obj.diahNarrative || '해당 없음'),
+        wPara(diahTxt),
         '<w:p/>',
         wPara('6. 7M 기전 분석', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P6_7M || D_obj.m7Narrative || '해당 없음'),
+        wPara(D_obj.sec5_currentName ? `현재 기전: ${D_obj.sec5_currentName}` : ''),
+        wPara(m7Txt),
         '<w:p/>',
         wPara('7. 예후 3경로', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P7_예후 || D_obj.prognosisNarrative || '해당 없음'),
+        wPara(D_obj.sec6_intro || ''),
+        ...progTxt.split('\n').map(line => wPara(line)),
         '<w:p/>',
         wPara('8. 경제 가족력', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P8_가족력 || D_obj.familyNarrative || '해당 없음'),
+        wPara(familyTxt),
         '<w:p/>',
         wPara('9. 명의 처방', { heading:'Heading2', bold:true }),
-        wPara(D_obj.P9_처방 || D_obj.prescriptionNarrative || '해당 없음'),
+        wPara(D_obj.sec9_intro || ''),
+        ...prescTxt.split('\n').map(line => wPara(line)),
         '<w:p/>',
         wPara('10. 면책고지', { heading:'Heading2', bold:true }),
-        wPara('본 보고서는 관찰 기반 도구이며 투자 조언이나 미래 예측을 보장하지 않습니다.'),
+        wPara(disclaimer),
         wPara('© 인체국가경제론 / DIAH-7M / 윤종원'),
       ].join('');
 
