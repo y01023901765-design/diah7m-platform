@@ -681,6 +681,12 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{fontSize:14,fontWeight:700,color:LT.text,marginTop:6,fontFamily:"monospace"}}>
                   {beforeVal!=null?`${beforeVal.toFixed(1)} ${units}`:ntl?.mean_60d!=null?`${ntl.mean_60d.toFixed(1)} ${units}`:'—'}
                 </div>
+                {/* 그라디언트 막대 */}
+                <div style={{display:'flex',alignItems:'center',gap:4,marginTop:5}}>
+                  <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>어두움</span>
+                  <div style={{flex:1,height:8,borderRadius:4,background:'linear-gradient(to right, #000000, #1a3a6b, #c8a020, #ffffff)',border:'1px solid #ccc'}}/>
+                  <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>밝음</span>
+                </div>
               </div>
               <div style={{background:LT.bg2,borderRadius:8,padding:12,border:`1px solid ${LT.border}`}}>
                 <div style={{fontSize:14,fontWeight:600,color:LT.textMid,marginBottom:6}}>최신 &nbsp;<span style={{fontSize:14,fontWeight:400,color:LT.textDim}}>{afterDate||'—'}</span></div>
@@ -693,6 +699,12 @@ function StockView({stock:s,lang,onBack}){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
                   <span style={{fontSize:14,fontWeight:700,color:LT.text,fontFamily:"monospace"}}>{afterVal!=null?`${afterVal.toFixed(1)} ${units}`:'—'}</span>
                   {anomPct!=null&&<span style={{fontSize:15,fontWeight:900,fontFamily:"monospace",color:anomPct>0?LT.good:LT.danger}}>{anomPct>0?'+':''}{typeof anomPct==='number'&&Math.abs(anomPct)<1?anomPct.toFixed(2):anomPct.toFixed(1)}%</span>}
+                </div>
+                {/* 그라디언트 막대 */}
+                <div style={{display:'flex',alignItems:'center',gap:4,marginTop:5}}>
+                  <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>어두움</span>
+                  <div style={{flex:1,height:8,borderRadius:4,background:'linear-gradient(to right, #000000, #1a3a6b, #c8a020, #ffffff)',border:'1px solid #ccc'}}/>
+                  <span style={{fontSize:14,color:LT.textDim,flexShrink:0}}>밝음</span>
                 </div>
               </div>
             </div>
