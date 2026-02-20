@@ -522,7 +522,7 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
   // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
   // v2: 해상도 800x560 (v1: 400x280)
-  const _SAT_IMG_VER = 'v2';
+  const _SAT_IMG_VER = 'v3';
   const _satImgCache = {};
   const _satImgTTL = 7 * 24 * 3600 * 1000;
 
@@ -588,8 +588,8 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const d180 = new Date(); d180.setDate(d180.getDate() - 180);
             const d540 = new Date(); d540.setDate(d540.getDate() - 540);
             const THUMB_PARAMS = {
-              palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 80, dimensions: '800x560',
+              palette: ['000014','0d0d2b','1a1a6e','0044aa','0088ff','00ccff','66ffcc','ffff00','ff8800','ffffff'],
+              min: 0, max: 30, dimensions: '800x560',
             };
 
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
