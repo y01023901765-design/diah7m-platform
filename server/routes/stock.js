@@ -614,20 +614,21 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
             const bbox = fetchSat.facilityBbox(f.lat, f.lng, thumbRadiusKm);
             const geometry = ee.Geometry.Rectangle(bbox);
             // range 기반 날짜 구간 (상위에서 계산된 afterStart/afterEnd/beforeStart/beforeEnd 사용)
+            // 국가 VIIRS와 동일 파라미터/방식 — 잘 되는 방식 그대로
             const THUMB_PARAMS = {
               palette: ['000000','1a1a5e','0066cc','00ccff','ffff00','ffffff'],
-              min: 0, max: 60,
-              scale: 500,      // VIIRS 750m → 500m scale, 30km bbox → ~120px
+              min: 0, max: 80,
+              dimensions: '512x320',
             };
 
-            // 항상 mean() — 단월이든 다월이든 컬렉션이 비어도 안전
+            // sort().first() — 국가 VIIRS와 동일 (mean()은 빈 컬렉션에서 2×1px 빈 이미지 반환)
             console.log('[Satellite] thumb', f.name, fmt(afterStart), '~', fmt(afterEnd), '/', fmt(beforeStart), '~', fmt(beforeEnd));
             const afterImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry).filterDate(fmt(afterStart), fmt(afterEnd))
-              .select('avg_rad').mean();
+              .select('avg_rad').sort('system:time_start', false).first();
             const beforeImg = ee.ImageCollection('NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG')
               .filterBounds(geometry).filterDate(fmt(beforeStart), fmt(beforeEnd))
-              .select('avg_rad').mean();
+              .select('avg_rad').sort('system:time_start', false).first();
 
             const [afterUrl, beforeUrl] = await Promise.all([
               fetchSat.getThumbPromise(afterImg, geometry, THUMB_PARAMS),
