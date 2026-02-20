@@ -520,11 +520,11 @@ module.exports = function createStockRouter({ db, auth, stockStore, stockPipelin
 
   // ── 시설 위성 이미지 (Tab2 위성 Before/After) ──
   // GEE fetchFacilityVIIRS/NO2/Thermal → 이미지 URL + 수치 반환
-  // TTL 7일 캐시 (VIIRS 월간 발행 특성 반영)
+  // TTL 50분 캐시 (GEE 썸네일 URL 유효시간 ~1시간, 만료 전 갱신)
   // 캐시 버전: 서버 시작 시각(epoch초) — 배포(재시작)마다 자동 무효화
   const _SAT_IMG_VER = Math.floor(Date.now() / 1000).toString(36); // e.g. 'lk3m2'
   const _satImgCache = {};
-  const _satImgTTL = 7 * 24 * 3600 * 1000;
+  const _satImgTTL = 50 * 60 * 1000; // 50분
 
   router.get('/stock/:ticker/satellite', optAuth, async (req, res) => {
     const ticker = req.params.ticker.toUpperCase();
