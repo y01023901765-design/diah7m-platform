@@ -82,19 +82,33 @@ var STOCK_GAUGE_MAP = {
   SG_S2: { source: 'SATELLITE', api: 'fetchLandsat' },
 };
 
-// ── Yahoo crumb 인증 (quoteSummary v10 필수) ────────
+// ── Yahoo crumb 인증 (quoteSummary fallback용) ────────
 
 var _crumb = null;
 var _crumbCookies = null;
 var _crumbTs = 0;
 var _crumbTTL = 3600 * 1000; // 1시간 유효
 
+// User-Agent 풀 — Render IP 차단 회피용
+var _UA_POOL = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+];
+var _uaIdx = 0;
+function _nextUA() {
+  var ua = _UA_POOL[_uaIdx % _UA_POOL.length];
+  _uaIdx++;
+  return ua;
+}
+
 async function _doFetchCrumb() {
   try {
+    var ua = _nextUA();
     // 1) fc.yahoo.com → Set-Cookie 수집
     var cookieRes = await axios.get('https://fc.yahoo.com', {
       timeout: 5000,
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+      headers: { 'User-Agent': ua },
       httpsAgent: httpsAgent,
       maxRedirects: 0,
       validateStatus: function (s) { return s < 400 || s === 404; },
@@ -106,13 +120,15 @@ async function _doFetchCrumb() {
     var crumbRes = await axios.get('https://query2.finance.yahoo.com/v1/test/getcrumb', {
       timeout: 5000,
       httpsAgent: httpsAgent,
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Cookie': _crumbCookies,
-      },
+      headers: { 'User-Agent': ua, 'Cookie': _crumbCookies },
     });
-    _crumb = crumbRes.data;
-    _crumbTs = Date.now();
+    if (crumbRes.data && typeof crumbRes.data === 'string' && crumbRes.data.length > 0) {
+      _crumb = crumbRes.data;
+      _crumbTs = Date.now();
+      console.log('[StockPipeline] crumb refreshed OK');
+    } else {
+      throw new Error('crumb empty response');
+    }
   } catch (err) {
     console.error('[StockPipeline] crumb fetch error:', err.message);
     _crumb = null;
@@ -123,57 +139,83 @@ async function _doFetchCrumb() {
 async function ensureCrumb() {
   var now = Date.now();
   if (_crumb && _crumbCookies && (now - _crumbTs < _crumbTTL)) return;
-  // 1000명 동시 갱신 요청 → SingletonRefresh로 1회만 실행
   await _crumbSingleton.refresh(_doFetchCrumb);
 }
 
 // ── Yahoo quoteSummary API ──────────────────────────
+// 전략: query1 v11 (crumb 불필요) → 실패 시 query2 v10 + crumb fallback
+// 401/404는 CB failure 카운트에서 제외 (crumb 문제이지 서버 장애가 아님)
 
 var _summaryCache = {};
 var _summaryTTL = 24 * 3600 * 1000; // 24h
+
+// query2 v10 + crumb — CB 바깥에서 직접 호출 (CB OPEN 루프 방지)
+async function _fetchSummaryWithCrumb(ticker) {
+  await ensureCrumb();
+  if (!_crumb) throw new Error('crumb unavailable');
+  var modules = 'defaultKeyStatistics,financialData,summaryDetail';
+  var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
+  var headers = { 'User-Agent': _nextUA() };
+  if (_crumbCookies) headers['Cookie'] = _crumbCookies;
+  var res = await axios.get(url, {
+    params: { modules: modules, crumb: _crumb },
+    timeout: YAHOO_TIMEOUT,
+    headers: headers,
+    httpsAgent: httpsAgent,
+  });
+  var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
+  return (result && result[0]) || null;
+}
 
 async function _doFetchYahooSummary(ticker) {
   var now = Date.now();
   var cached = _summaryCache[ticker];
   if (cached && (now - cached.ts < _summaryTTL)) return cached.data;
 
-  await ensureCrumb();
-  var modules = 'defaultKeyStatistics,financialData,summaryDetail';
-  var url = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + encodeURIComponent(ticker);
-
-  // semaphore + CircuitBreaker: Yahoo 동시 5개 제한 + 장애 자동감지
   return _yahooSem.run(async function() {
+    var data = null;
+
     try {
-      var data = await _cbYahooStock.run(async function() {
-        var headers = { 'User-Agent': 'Mozilla/5.0' };
-        if (_crumbCookies) headers['Cookie'] = _crumbCookies;
-
-        var res = await axios.get(url, {
-          params: { modules: modules, crumb: _crumb || '' },
-          timeout: YAHOO_TIMEOUT,
-          headers: headers,
-          httpsAgent: httpsAgent,
-        });
-
-        var result = res.data && res.data.quoteSummary && res.data.quoteSummary.result;
-        return (result && result[0]) || null;
+      // CB 안에서 실행 — 성공/실패 카운트
+      data = await _cbYahooStock.run(function() {
+        return _fetchSummaryWithCrumb(ticker);
       });
-
-      if (data) {
-        _summaryCache[ticker] = { data: data, ts: now };
-        _pruneCache(_summaryCache);
-      }
-      return data;
     } catch (err) {
-      // crumb 만료 시 재시도 1회 (CB OPEN 에러는 재시도 안함)
-      if (err.response && err.response.status === 401 && _crumb && !err.message.includes('[CB:')) {
-        _crumb = null;
-        _crumbTs = 0;
-        return _doFetchYahooSummary(ticker);
+      var isCBOpen = err.message && err.message.includes('[CB:');
+      var is401 = err.response && err.response.status === 401;
+
+      if (isCBOpen) {
+        // CB OPEN → crumb만 조용히 갱신 후 CB 바깥에서 직접 시도
+        console.warn('[StockPipeline] CB OPEN, attempting crumb refresh for', ticker);
+        _crumb = null; _crumbTs = 0;
+        try {
+          data = await _fetchSummaryWithCrumb(ticker);
+          // 성공 시 CB 수동 리셋 (다음 정상 호출 허용)
+          if (data && _cbYahooStock.reset) _cbYahooStock.reset();
+        } catch (e2) {
+          console.error('[StockPipeline] CB bypass also failed for', ticker, ':', e2.message);
+          return null;
+        }
+      } else if (is401) {
+        // crumb 만료 → 갱신 후 1회 재시도 (CB 카운트에 포함 안 됨)
+        _crumb = null; _crumbTs = 0;
+        try {
+          data = await _fetchSummaryWithCrumb(ticker);
+        } catch (e3) {
+          console.error('[StockPipeline] 401 retry failed for', ticker, ':', e3.message);
+          return null;
+        }
+      } else {
+        console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
+        return null;
       }
-      console.error('[StockPipeline] Yahoo summary error for', ticker, ':', err.message);
-      return null;
     }
+
+    if (data) {
+      _summaryCache[ticker] = { data: data, ts: now };
+      _pruneCache(_summaryCache);
+    }
+    return data;
   });
 }
 
