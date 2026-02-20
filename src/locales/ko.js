@@ -300,7 +300,7 @@ export default
   svEdge1:'증권사: 실적 발표 후 리포트',svEdge2:'뉴스: 내부자 소스 의존',svEdge3:'DIAH-7M: 실적 발표 전 공장 가동 직접 관측',
   svDisclaimer:'관측 전용 · 예측 금지',svDisclaimerDesc:'물리적 관측 사실만 표시. 투자 조언이 아닙니다.',
   svTabDiag:'진단',svTabSat:'위성',svTabFlow:'플로우',svTabSignal:'시그널',svTabMarket:'시장',
-  svSatCompare:'시설별 위성 비교',svBefore:'30일 전',svAfter:'최신',svLatest:'최신 촬영',
+  svSatCompare:'시설별 위성 비교',svBefore:'비교기준',svAfter:'발행 최신월',svLatest:'이미지 없음',
   svDeltaTitle:'괴리 감지 (위성 vs 시장)',svDeltaSat:'위성 지수',svDeltaMkt:'시장 지수',
   svDelta_ALIGNED:'일치',svDelta_POS_GAP:'위성 선행',svDelta_NEG_GAP:'위성 경고',svDelta_CONFLICT:'충돌',
   svDeltaAligned:'위성 관측과 시장 가격이 일치합니다.',svDeltaNeg:'위성 관측이 시장 가격보다 부정적입니다. 실적 발표 전 주의.',

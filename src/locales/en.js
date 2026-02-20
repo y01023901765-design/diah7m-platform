@@ -302,7 +302,7 @@ export default {
   svEdge1:'Brokerages: Report after earnings release',svEdge2:'News: Relies on insider sources',svEdge3:'DIAH-7M: Directly observes factory operations before earnings',
   svDisclaimer:'Observation only · No predictions',svDisclaimerDesc:'Shows physical observation facts only. Not investment advice.',
   svTabDiag:'Diagnosis',svTabSat:'Satellite',svTabFlow:'Flow',svTabSignal:'Signal',svTabMarket:'Market',
-  svSatCompare:'Facility Satellite Comparison',svBefore:'30 days ago',svAfter:'Latest',svLatest:'Latest capture',
+  svSatCompare:'Facility Satellite Comparison',svBefore:'Reference',svAfter:'Latest published',svLatest:'No image',
   svDeltaTitle:'Divergence (Satellite vs Market)',svDeltaSat:'Satellite Index',svDeltaMkt:'Market Index',
   svDelta_ALIGNED:'Aligned',svDelta_POS_GAP:'Satellite leading',svDelta_NEG_GAP:'Satellite warning',svDelta_CONFLICT:'Conflict',
   svDeltaAligned:'Satellite observation and market price are aligned.',svDeltaNeg:'Satellite observation is more negative than market price. Watch before earnings.',

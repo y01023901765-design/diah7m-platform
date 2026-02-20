@@ -144,6 +144,7 @@ function StockView({stock:s,lang,onBack}){
   const [liveChart,setLiveChart]=useState(null);
   const [liveSatImg,setLiveSatImg]=useState(null);
   const [satImgLoading,setSatImgLoading]=useState(false);
+  const [satImgError,setSatImgError]=useState(null);
   const [satAfterYM,setSatAfterYM]=useState(_SAT_DEFAULTS.after);
   const [satBeforeYM,setSatBeforeYM]=useState(_SAT_DEFAULTS.before);
   const [chartRange,setChartRange]=useState('6mo');
@@ -192,9 +193,11 @@ function StockView({stock:s,lang,onBack}){
     if(tab!=='sat') return;
     setSatImgLoading(true);
     setLiveSatImg(null);
+    setSatImgError(null);
     API.stockSatellite(s.sid,{afterYM:satAfterYM,beforeYM:satBeforeYM}).then(d=>{
-      if(d&&d.facilities) setLiveSatImg(d.facilities);
-    }).catch(()=>{}).finally(()=>{ setSatImgLoading(false); });
+      if(d&&d.facilities&&d.facilities.length>0) setLiveSatImg(d.facilities);
+      else setSatImgError(d?.error||'시설 데이터 없음');
+    }).catch(e=>{ setSatImgError(e?.message||'API 오류'); }).finally(()=>{ setSatImgLoading(false); });
   },[tab,s.sid,satAfterYM,satBeforeYM]);// eslint-disable-line
 
   // buildStockEntityData로 GaugeRow/SystemSection 데이터 변환
@@ -385,6 +388,7 @@ function StockView({stock:s,lang,onBack}){
           </>);
         })()}
         {satImgLoading&&<div style={{textAlign:"center",padding:"32px 0",color:LT.textDim,fontSize:15}}>🛰️ GEE 위성 이미지 수집 중… (최대 30초)</div>}
+        {!satImgLoading&&satImgError&&<div style={{textAlign:"center",padding:"16px 0",color:LT.danger,fontSize:14}}>⚠️ {satImgError}</div>}
         {!satImgLoading&&(()=>{
           // liveSatImg 있으면 이미지 있는 시설 우선, 없으면 facs.slice(0,3)
           const displayFacs = liveSatImg && liveSatImg.length>0
