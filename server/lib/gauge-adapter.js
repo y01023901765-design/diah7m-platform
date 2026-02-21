@@ -70,7 +70,7 @@ const ID_MAP = {
   'F3_KOSPI_VOL':      { code: 'F4', cat: 'Axis7',  name: 'KOSPI거래량(변동성)',   unit: '천주' },
   'F6_M2':             { code: 'F2', cat: 'Axis7',  name: 'M2통화(전년비)',        unit: '%' },
   'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량',          unit: '천주' },
-  'F8_FOREIGN':        { code: 'F5', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
+  'F8_FOREIGN':        { code: 'F8', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
   'P3_OIL':            { code: 'E1', cat: 'Axis8',  name: 'WTI유가($/bbl)',        unit: '$/bbl' },
   'P1_CPI':            { code: 'E1', cat: 'Axis8',  name: 'CPI(소비자물가전년비)', unit: '%' },
   'P2_PPI':            { code: 'E2', cat: 'Axis8',  name: 'PPI(생산자물가전년비)', unit: '%' },

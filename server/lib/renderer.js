@@ -165,7 +165,7 @@ const bNone4= { top: bNone, bottom: bNone, left: bNone, right: bNone };
 const pad   = { top: 60, bottom: 60, left: 100, right: 100 };
 
 // ── 경보 레이블 ───────────────────────────────────────────
-const ALERT_COLORS  = [C.lv0, C.lv1, C.lv2, C.lv3];
+const ALERT_COLORS  = [C.lv0, C.lv1, C.lv2, C.lv3, C.lv3, C.lv3]; // 0~5단계 (lv4/lv5 미정의 → lv3 폴백)
 const ALERT_LABELS  = ['0단계: 정상', '1단계: 안정', '2단계: 주의', '3단계: 경계', '4단계: 심각', '5단계: 위기'];
 const STATUS_MARK   = { normal: '○ 정상', caution: '● 주의', alert: '★ 경보' };
 const STATUS_COLOR  = { normal: C.lv0,   caution: C.lv1,    alert: C.lv2 };
@@ -742,7 +742,7 @@ function buildPrognosis(d) {
     ...paths.flatMap(path => [
       diagBox([
         p([t(path.label, { size: S.t3, bold: true, color: path.color })], { after: 60 }),
-        p([t(path.body,  { size: S.body })], { after: 0 }),
+        p([t(path.body ?? path.text ?? '',  { size: S.body })], { after: 0 }),
       ], C.bgLight),
     ]),
 
@@ -845,7 +845,7 @@ function buildPrescription(d) {
       { title: '처방 3: (제목)', body: '(서사엔진 생성)' },
     ]).flatMap(rx => [
       p([t(rx.title, { size: S.body, bold: true, color: C.navy })], { before: 160, after: 80 }),
-      p([t(rx.body,  { size: S.body })], { after: 120 }),
+      p([t(rx.body ?? rx.text ?? '',  { size: S.body })], { after: 120 }),
     ]),
 
     subHeader('경보 상향 규칙'),
@@ -886,13 +886,17 @@ function buildSourcesDisclaimer(d) {
     subHeader('데이터 출처'),
     tbl([
       rw([hcl('코드', 600), hcl('데이터', 1600), hcl('출처', 1800), hcl('발표기관', 1600), hcl('기준시점', 3426)]),
-      ...sources.map((s, i) => rw([
-        cl(s[0], { w: 600,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
-        cl(s[1], { w: 1600, fs: S.sm, bg: altBg(i) }),
-        cl(s[2], { w: 1800, fs: S.sm, bg: altBg(i) }),
-        cl(s[3], { w: 1600, fs: S.sm, bg: altBg(i) }),
-        cl(s[4], { w: 3426, fs: S.sm, bg: altBg(i) }),
-      ])),
+      ...sources.map((s, i) => {
+        // s가 객체(narrative-engine 반환)이면 필드명으로, 배열이면 인덱스로 접근
+        const v = (obj, key, idx) => Array.isArray(obj) ? (obj[idx] ?? '—') : (obj[key] ?? obj[idx] ?? '—');
+        return rw([
+          cl(v(s,'code',0),   { w: 600,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
+          cl(v(s,'name',1),   { w: 1600, fs: S.sm, bg: altBg(i) }),
+          cl(v(s,'source',2), { w: 1800, fs: S.sm, bg: altBg(i) }),
+          cl(v(s,'org',3),    { w: 1600, fs: S.sm, bg: altBg(i) }),
+          cl(v(s,'period',4), { w: 3426, fs: S.sm, bg: altBg(i) }),
+        ]);
+      }),
     ], [600, 1600, 1800, 1600, 3426]),
     p([t('※ 일부 지표는 발표 시차로 후행한다. 이 시스템은 그 한계를 전제로 오경보를 줄이는 규칙을 적용한다.',
         { size: S.sm, color: C.mid })], { after: 200 }),
@@ -1008,7 +1012,7 @@ function _buildDataObject(diagnosis, D, meta) {
     writeDate:    now.toLocaleDateString('ko-KR'),
     alertLevel,
     alertLabel:   `${alertLevel}단계 — ${['정상','안정','주의','경계','심각','위기'][alertLevel] || '미판정'}`,
-    alertSubtitle: D?.alertLevel != null ? `경보 ${D.alertLevel}단계` : '전체 게이지 종합판정',
+    alertSubtitle: '전체 게이지 종합판정',
     camStatus:    D?.camStatus  || camStatus,
     dltStatus:    D?.dltStatus  || dltStatus,
     camDetail:    D?.camStatus  || camStatus,
@@ -1059,7 +1063,7 @@ function _buildDataObject(diagnosis, D, meta) {
     timeSeriesRows:   diagnosis.timeSeries?.rows   || [],
     timeSeriesMonths: D?.sec7_months || diagnosis.timeSeries?.months || [],
     trendAnalysis:    D?.sec7_narrative || '',
-    trendWarning:     D?.sec7_monthly   || '',
+    trendWarning:     typeof D?.sec7_monthly === 'string' ? D.sec7_monthly : (D?.sec7_narrative || ''),
 
     // 가족력 — D.sec8_narrative1997 / D.sec8_narrative2008 / D.sec8_common
     familyNarratives: D ? [
@@ -1297,8 +1301,12 @@ function _buildFallbackD(diagnosis, meta) {
     sec9_prescriptions: [],
     sec10_disclaimer: '본 보고서는 DIAH-7M 시스템이 자동 생성한 진단 참고자료입니다.',
     _v28_crossSignals: cross.map(cs => ({
-      pair: cs.pair || '—', organLink: cs.organ || '—', direction: '—',
-      severity: 'medium', diagnosis: cs.desc || cs.name || '—',
+      pair:       cs.pair || cs.axes || '—',
+      organLink:  cs.organ || cs.organLink || '—',
+      direction:  cs.direction || (cs.positive ? '↑' : cs.negative ? '↓' : '→'),
+      severity:   cs.severity || 'medium',
+      leadMonths: cs.leadMonths || null,
+      diagnosis:  cs.desc || cs.description || cs.text || cs.name || '—',
     })),
   };
 
