@@ -759,7 +759,7 @@ const GAUGE_NARRATIVE = {
     satellite: {
       sensor: 'NASA VIIRS DNB',
       physicsChain: '공장·항만 가동 → 야간 조명 점등 → 빛 방사(nW/cm²/sr) → 위성 포착 → anomaly 계산',
-      physicsFlow: '공장이 가동되면 야간에 불빛이 발생한다. VIIRS 위성은 이 빛의 방사량(nW/cm²/sr)을 60일 평균과 365일 기준선으로 비교해 anomaly(%)를 산출한다. 통계청 발표보다 2~3개월 앞서 실물 경기를 포착하는 세계 최초 국가경제 위성 진단 지표다.',
+      physicsFlow: '공장이 가동되면 야간에 불빛이 발생한다. VIIRS 위성은 이 빛의 방사량(nW/cm²/sr)을 60일 평균과 365일 기준선으로 비교해 anomaly(%)를 산출한다. 통계청 발표보다 2~3개월 앞서 실물 경기를 포착하는 세계최초 위성 물리흐름 + 공공 수치지표 통합 진단 지표다.',
       leadTime: '2~3개월 선행',
       canFalsify: false,  // 조작 불가
     },

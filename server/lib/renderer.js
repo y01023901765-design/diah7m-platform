@@ -348,7 +348,7 @@ function buildCover(d) {
       { align: AlignmentType.CENTER, after: 40 }),
     p([t('진단 엔진: 판정 v5.1 / 서사 v2.9 / 위성 통합', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER, after: 40 }),
-    p([t('세계 최초 위성 실측 국가경제 진단 시스템', { size: S.sm, bold: true, color: C.accent })],
+    p([t('세계최초 위성 물리흐름 + 공공 수치지표 통합 진단 시스템', { size: S.sm, bold: true, color: C.accent })],
       { align: AlignmentType.CENTER, after: 40 }),
     p([t('인체국가경제론 / 윤종원', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER }),
@@ -468,14 +468,14 @@ function buildSatelliteOverview(d) {
 
   // ════ 섹션 헤더 ════
   elements.push(...sectionHeader('위성.', '물리흐름 진단 — 위성데이터 종합',
-    '세계 최초 위성 실측 국가경제 진단'));
+    '세계최초 위성 물리흐름 + 공공 수치지표 통합 진단'));
 
   // ════ [1] 세계 최초 선언문 박스 ════
   elements.push(diagBox([
-    p([t('[ 세계 최초 선언 ]', { size: S.sm, bold: true, color: C.mid })], { after: 60 }),
-    ...(SI.declaration || `DIAH-7M은 세계 최초로 위성 실측값을 국가경제 진단에 통합한 시스템이다.\n정부 통계는 사람이 보고한다. 위성은 물리 신호를 조작 없이 포착한다.\n통계가 거짓말을 해도, 위성은 하지 못한다.`)
+    p([t('[ 세계최초 선언 ]', { size: S.sm, bold: true, color: C.mid })], { after: 60 }),
+    ...(SI.declaration || `DIAH-7M은 세계최초로 위성 물리흐름과 공공 수치지표로 통합 진단한다.\n정부 통계는 사람이 보고한다. 위성은 물리 신호를 조작 없이 포착한다.\n통계가 거짓말을 해도, 위성은 하지 못한다.`)
       .split('\n').filter(l => l.trim()).map(line =>
-        p([t(line.trim(), { size: S.body, bold: line.includes('세계 최초') || line.includes('위성은 하지'), color: line.includes('세계 최초') ? C.navy : C.dark })], { after: 40 })
+        p([t(line.trim(), { size: S.body, bold: line.includes('세계최초') || line.includes('위성은 하지'), color: line.includes('세계최초') ? C.navy : C.dark })], { after: 40 })
       ),
     p([t(SI.bodyAnalogy || '환자의 자기 보고(정부 통계)만 믿지 않는다. CT·MRI·혈액검사(위성 실측)로 몸 속을 직접 확인한다.',
         { size: S.body, it: true, color: C.accent })], { after: 0 }),
