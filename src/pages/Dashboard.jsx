@@ -646,6 +646,43 @@ function DashboardPage({user,onNav,lang,country,city}){
         <span style={{fontSize:LT.fs.sm,color:LT.textDim}}>· {t('cnt_'+iso3,L)||iso3}</span>
         <span style={{fontSize:LT.fs.xs,padding:`2px ${LT.sp.md}px`,borderRadius:LT.sp.lg,background:`${LT.warn}15`,color:LT.warn,fontWeight:LT.fw.semi,marginLeft:"auto"}}>{t('cmCityComingSoon',L)||'Coming Soon'}</span>
       </div>}
+      {/* ★ Master Alarm 배너 — Layer A (acute-engine v5.0 CAM+DLT)
+          [CONTRACT Rule 4] 단일 점등 규칙:
+            alertLevel ≥ 2 → 빨간 배너 (확정 급성 경보)
+            alertLevel == 1 → 노란 배너 (주의, 확인 중)
+            alertLevel == 0 → 배너 없음
+          Layer A/B 합산 금지 — Layer B는 종합판정 카드에 별도 표시 */}
+      {isKorea && krDiagnosis?.layerA && krDiagnosis.layerA.alertLevel >= 1 && (()=>{
+        const la = krDiagnosis.layerA;
+        const isConfirmed = la.alertLevel >= 2;
+        const bgColor  = isConfirmed ? '#7f1d1d' : '#713f12';
+        const bdColor  = isConfirmed ? '#ef4444' : '#eab308';
+        const icon     = isConfirmed ? '🚨' : '⚠️';
+        const title    = isConfirmed
+          ? `Master Alarm L${la.alertLevel} — 급성 쇼크 감지 (CAM+DLT ${la.detail?.inputStars||0}★)`
+          : `주의 L1 — 급성 신호 감지 중 (CAM ${la.detail?.inputStars||0}★, 확인 중)`;
+        const subtext  = la.blockade?.dual
+          ? '⛔ CAM+DLT 이중봉쇄 발동 — IMF/외환위기형 패턴'
+          : la.blockade?.cam === '봉쇄' ? '⛔ CAM 봉쇄 (금융 공급 차단)'
+          : la.blockade?.dlt === '봉쇄' ? '⛔ DLT 봉쇄 (소비/물가 경색)'
+          : la.sustained ? '📌 2개월 연속 확인'
+          : '📌 단발 감지 — 다음 달 재확인 필요';
+        return (
+          <div style={{background:bgColor,borderRadius:LT.smRadius,padding:`${LT.sp.xl}px ${LT.sp['2xl']}px`,marginBottom:LT.sp.xl,border:`2px solid ${bdColor}`,display:"flex",alignItems:"flex-start",gap:LT.sp.xl,flexWrap:"wrap"}}>
+            <span style={{fontSize:'1.5rem',flexShrink:0}}>{icon}</span>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{fontSize:LT.fs.lg,fontWeight:LT.fw.bold,color:'#fff',marginBottom:4}}>{title}</div>
+              <div style={{fontSize:LT.fs.sm,color:'rgba(255,255,255,0.75)',marginBottom:6}}>{subtext}</div>
+              <div style={{display:"flex",gap:LT.sp.md,flexWrap:"wrap"}}>
+                {Object.entries(la.gauges||{}).filter(([,g])=>g.grade&&g.grade.includes('★')).map(([code,g])=>(
+                  <span key={code} style={{fontSize:LT.fs.xs,padding:`2px 8px`,borderRadius:4,background:'rgba(255,255,255,0.15)',color:'#fff'}}>{g.name} ★</span>
+                ))}
+              </div>
+            </div>
+            <div style={{fontSize:LT.fs.xs,color:'rgba(255,255,255,0.5)',flexShrink:0,alignSelf:"flex-end"}}>Layer A · v5.0</div>
+          </div>
+        );
+      })()}
       {/* ★ 종합판정 카드 (배포패키지 정본 기준 — Level 1~5) */}
       <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:LT.sp.xl,marginBottom:LT.sp['2xl']}}>
         <div style={{background:LT.surface,boxShadow:LT.cardShadow,borderRadius:LT.cardRadius,padding:LT.sp['3xl'],border:`2px solid ${levelInfo.color}40`}}>

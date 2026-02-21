@@ -305,6 +305,22 @@ function diagnose(gaugeData, options = {}) {
     alerts.unshift({ type: 'DUAL_LOCK', ...dualLock });
   }
 
+  // ─── Layer A: 급성 쇼크 판정 (acute-engine v5.0 CAM+DLT) ───
+  let acuteLayer = null;
+  let layerPriority = null;
+  try {
+    const acuteEngine = require('./acute-engine');
+    acuteLayer = acuteEngine.evaluateAcute(gaugeData, options.prevData || null);
+    layerPriority = acuteEngine.resolveLayerPriority(
+      acuteLayer,
+      { level: overallLevel.level },
+      null  // 위성 교차검증: 향후 연결
+    );
+  } catch (e) {
+    // acute-engine 오류는 무시하고 Layer B 결과만 반환
+    console.warn('[core-engine] acute-engine 로드 실패:', e.message);
+  }
+
   return {
     profileId,
     period,
@@ -326,6 +342,17 @@ function diagnose(gaugeData, options = {}) {
     dualLock,
     alerts,
     gaugeCount: Object.keys(gaugeData).length,
+    // ─── 3레이어 구조 ───
+    layerA: acuteLayer,         // 급성 쇼크 (Master Alarm, v5.0 CAM+DLT)
+    layerB: {                   // 구조적 침체 (Chronic, 59게이지 9축)
+      layer: 'B',
+      layerName: 'Chronic (Structural)',
+      description: '59게이지 9축 구조적 침체 — 장기 경제 체력 지도',
+      overallSeverity: overallScore,
+      level: overallLevel.level,
+      levelName: overallLevel.name,
+    },
+    layerPriority,              // 최종 통합 판정 (A우선 → B Hold → 정상)
   };
 }
 

@@ -269,12 +269,25 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         });
       }
       
-      // core-engine으로 진단 실행
+      // core-engine으로 진단 실행 (Layer B: 59게이지 구조적 침체)
       const diagnosis = await engine.diagnose(gaugeData, { prevData });
-      
+
+      // ── Layer A/B 교차검증 Hold 파생 필드 (엔진 외부, 표시 정책)
+      // [CONTRACT] Hold는 계산이 아닌 표시 정책 → 라우트에서만 파생
+      const acuteLevel   = diagnosis.layerA?.alertLevel ?? 0;
+      const chronicLevel = diagnosis.overall?.level ?? 1;
+      let holdSignal = null;
+      if (acuteLevel >= 1 && chronicLevel >= 3) {
+        holdSignal = { type: 'CONFIRMED', label: '확정 경보 — 급성+구조 이중 근거', acuteLevel, chronicLevel };
+      } else if (acuteLevel >= 1) {
+        holdSignal = { type: 'ACUTE_ONLY', label: '급성 경보 (구조 미확인)', acuteLevel, chronicLevel };
+      } else if (chronicLevel >= 3) {
+        holdSignal = { type: 'HOLD', label: 'HOLD — 구조 경보 (급성 미확인)', acuteLevel, chronicLevel };
+      }
+
       res.json({
         success: true,
-        data: diagnosis
+        data: { ...diagnosis, holdSignal }
       });
     } catch (error) {
       console.error('Error running diagnosis:', error);
