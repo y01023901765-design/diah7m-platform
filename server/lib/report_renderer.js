@@ -34,6 +34,14 @@ const {
   PageNumber, PageBreak
 } = require('docx');
 
+// ── 서사엔진 v2.8 안전 로드 ──
+let narrativeEngine = null;
+try {
+  narrativeEngine = require('./narrative-engine');
+} catch (e) {
+  console.warn('[report_renderer] narrative-engine 로드 실패 — 기본 서사 사용:', e.message);
+}
+
 // ═══════════════════════════════════════════════
 // 1. 유틸리티 — 템플릿에서 읽은 설정을 docx 요소로 변환
 // ═══════════════════════════════════════════════
@@ -203,13 +211,18 @@ function extractGaugeRows(data, profile, diagnosis) {
       const val = g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-');
       const grade = g.grade || statusMap[code] || '-';
 
+      // METAPHOR 테이블에서 인체비유 자동 주입
+      const _gradeKey = grade.includes('경보') ? '경보 ★' : grade.includes('주의') ? '주의 ●' : '양호 ○';
+      const _met = narrativeEngine?.METAPHOR?.[code];
+      const _metaphor = _met?.[_gradeKey]?.metaphor || _met?.name || '';
+
       rows.push({
         id: code,
         name,
         flow,
         val,
-        detail: g.judge || g.narrative || '',
-        metaphor: '',
+        detail: g.narrative || g.judge || '',
+        metaphor: _metaphor,
         status: grade,
         score: grade.includes('경보') ? 2 : grade.includes('주의') ? 1 : 0,
         source: g._source || '',
@@ -361,10 +374,13 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
     `${g.name}(${g.id}) 양호: ${g.detail}`
   );
 
-  // 관측 포인트 — 경보 게이지 기반
+  // 관측 포인트 — 경보+주의 게이지 기반 (상세 판정 포함)
   n.auto_watchpoints = [];
   alertGauges.forEach(g => {
-    n.auto_watchpoints.push(`${g.name}: 다음 월 개선 여부 모니터링 필요.`);
+    n.auto_watchpoints.push(`${g.name}(${g.id}): ${g.detail || '경보 수준'} — 다음 월 추이 모니터링 필요.`);
+  });
+  watchGauges.slice(0, 3).forEach(g => {
+    n.auto_watchpoints.push(`${g.name}(${g.id}): ${g.detail || '주의 수준'} — 완화 여부 확인.`);
   });
   // 교차신호 기반
   diagnosis.crossSignals.active.forEach(cs => {
@@ -374,6 +390,132 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
   activeLetters.forEach(l => {
     n.auto_watchpoints.push(`DIAH-${l}(${diahNames[l]}): 트리거 해소 여부 확인.`);
   });
+
+  // ── 서사엔진 v2.8 연결 ──
+  // gaugeRows + diagnosis → result 객체 조립 → generateNarrative(D) 호출
+  // D 객체 실제 구조: sec2_gauges[].narrative, sec1_alertNarrative, diahStatus 등
+  // 성공 시 기본 서사를 풍부한 인체비유 서사로 덮어씀
+  if (narrativeEngine && narrativeEngine.generateNarrative) {
+    try {
+      // result 객체: generateNarrative()가 기대하는 v5.1 호환 형식
+      const _gaugesForNE = {};
+      for (const row of gaugeRows) {
+        const _gradeKey = row.score === 2 ? '경보 ★' : row.score === 1 ? '주의 ●' : '양호 ○';
+        _gaugesForNE[row.id] = {
+          value: row.val,
+          score: row.score === 2 ? '★' : row.score === 1 ? '●' : '○',
+          grade: _gradeKey,
+        };
+      }
+      const _result = {
+        gauges: _gaugesForNE,
+        overallGrade: { level: mini.stage || '0M', code: mini.alert_level || 0 },
+        alert:     { level: mini.alert_level || 0, label: mini.stage || '0M' },
+        blockade:  { type: mini.dual_lock ? '이중봉쇄' : '미발동', dual: mini.dual_lock || false },
+        diah: {
+          triggers: diagnosis.diah.activatedLetters || [],
+          active:   diagnosis.diah.activatedLetters || [],
+          formula:  (diagnosis.diah.activatedLetters || []).join('+') || '미발동',
+        },
+        m7:          { pathways: [mini.stage || '0M'] },
+        crossSignals: (diagnosis.crossSignals.active || []).map(cs => ({
+          pair: `${cs.a}-${cs.b}`, severity: cs.tier || 1, boost: cs.boost || 0,
+        })),
+      };
+      const _rawData = {};
+      for (const row of gaugeRows) {
+        _rawData[row.id] = { value: row.val, change: row.raw?.change || '' };
+      }
+      const D = narrativeEngine.generateNarrative(_result, _rawData, {});
+
+      // ── D 객체 → n 4개 핵심 키 덮어쓰기 ──
+      // D의 실제 구조:
+      //   D.oneLiner              — 1줄 종합판정
+      //   D.sec1_alertNarrative   — 경보 종합 서사
+      //   D.sec2_gauges[]         — Input 게이지 배열 (각 요소: .metaphor, .narrative, .diagnosis, .grade)
+      //   D.sec2_summaryNarrative — Input 축 종합 서사
+      //   D.sec3_gauges[]         — Output 게이지 배열
+      //   D.sec3_summaryNarrative — Output 축 종합 서사
+      //   D.diahStatus            — DIAH 발동 문자열
+      //   D.sec4_summary          — DIAH 상세 서사
+
+      // 1) 인체 비유 종합 서사: sec1_alertNarrative + 경보 게이지 diagnosis 조합
+      {
+        const alertDiagnoses = [];
+        for (const sKey of ['sec2_gauges', 'sec3_gauges', 'axis2_gauges', 'axis3_gauges',
+            'axis4_gauges', 'axis5_gauges', 'axis6_gauges', 'axis7_gauges', 'axis8_gauges']) {
+          for (const dg of (D[sKey] || [])) {
+            if ((dg.grade || '').includes('★') || (dg.grade || '').includes('경보')) {
+              alertDiagnoses.push(dg.diagnosis || dg.narrative || '');
+            }
+          }
+        }
+        const base = D.sec1_alertNarrative || D.oneLiner || '';
+        n.body_metaphor_narrative = base
+          + (alertDiagnoses.length > 0 ? ' ' + alertDiagnoses.slice(0, 3).join(' ') : '');
+      }
+
+      // 2) Input 서사: sec2_summaryNarrative + 경보/주의 게이지 narrative
+      {
+        const sec2parts = (D.sec2_gauges || [])
+          .filter(dg => (dg.grade || '').includes('★') || (dg.grade || '').includes('●'))
+          .map(dg => dg.narrative || dg.diagnosis || '')
+          .filter(Boolean)
+          .slice(0, 4);
+        const sec2base = D.sec2_summaryNarrative || '';
+        const built = `Input 점수합 ${mini.in?.score || 0}/${mini.in?.threshold || 0}. `
+          + (sec2base && !sec2base.includes('meta에서 입력') ? sec2base + ' ' : '')
+          + sec2parts.join(' ');
+        if (built.length > 30) n.input_narrative = built;
+      }
+
+      // 3) Output 서사: sec3_summaryNarrative + 경보/주의 게이지 narrative
+      {
+        const sec3parts = (D.sec3_gauges || [])
+          .filter(dg => (dg.grade || '').includes('★') || (dg.grade || '').includes('●'))
+          .map(dg => dg.narrative || dg.diagnosis || '')
+          .filter(Boolean)
+          .slice(0, 4);
+        const sec3base = D.sec3_summaryNarrative || '';
+        const built = `Output 점수합 ${mini.out?.score || 0}/${mini.out?.threshold || 0}. `
+          + (sec3base && !sec3base.includes('meta에서 입력') ? sec3base + ' ' : '')
+          + sec3parts.join(' ');
+        if (built.length > 30) n.output_narrative = built;
+      }
+
+      // 4) DIAH 서사: diahStatus + sec4_summary
+      {
+        const diahStatus = D.diahStatus || '';
+        const diahDetail = D.sec4_summary || D.sec4_verdict || '';
+        if (diahStatus && diahStatus !== '미발동') {
+          n.diah_narrative = `DIAH 트리거: ${diahStatus} 발동. ${diahDetail}`;
+        } else {
+          n.diah_narrative = `DIAH 트리거: 미발동. ${diahDetail || '국가 경제 4대 병리 현재 비활성.'}`;
+        }
+      }
+
+      // 5) gaugeRows의 metaphor/narrative 필드를 D.sec*_gauges에서 보강
+      // D에서 code→게이지 역참조 맵 구성
+      const _dGaugeMap = {};
+      for (const sKey of ['sec2_gauges', 'sec3_gauges', 'axis2_gauges', 'axis3_gauges',
+          'axis4_gauges', 'axis5_gauges', 'axis6_gauges', 'axis7_gauges', 'axis8_gauges', 'axis9_gauges']) {
+        for (const dg of (D[sKey] || [])) {
+          // dg.code 형식: "I1 경상수지"
+          const _id = (dg.code || '').split(' ')[0];
+          if (_id) _dGaugeMap[_id] = dg;
+        }
+      }
+      for (const row of gaugeRows) {
+        const dg = _dGaugeMap[row.id];
+        if (dg) {
+          if (!row.metaphor && dg.metaphor) row.metaphor = dg.metaphor;
+          if (dg.narrative) row.detail = dg.narrative;  // narrative 항상 우선 적용
+        }
+      }
+    } catch (neErr) {
+      console.warn('[report_renderer] narrative-engine 서사 생성 실패 — 기본 서사 유지:', neErr.message);
+    }
+  }
 
   return n;
 }

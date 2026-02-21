@@ -79,9 +79,9 @@
       "heading": "1. 종합 판정 (Overall Vital Sign)",
       "level": 1,
       "subsections": [
-        { "label": "주요 경보 게이지", "source": "alert_gauges", "style": "accent" },
-        { "label": "주의 게이지",      "source": "caution_gauges", "style": "primary" },
-        { "label": "자동 감시 항목",   "source": "auto_watchpoints", "style": "green" }
+        { "label": "주요 경보·주의 게이지", "source": "auto_risks",       "style": "accent"  },
+        { "label": "양호 게이지",           "source": "auto_positives",   "style": "green"   },
+        { "label": "자동 감시 항목",        "source": "auto_watchpoints", "style": "primary" }
       ]
     },
 
@@ -129,10 +129,10 @@
       "heading": "6. 서사 요약 (Narrative Summary)",
       "level": 1,
       "paragraphs": [
-        { "type": "auto", "source": "overall_narrative", "label": "종합 서사" },
-        { "type": "auto", "source": "input_narrative",  "label": "Input (유입계)" },
-        { "type": "auto", "source": "output_narrative", "label": "Output (배출계)" },
-        { "type": "auto", "source": "stage_narrative",  "label": "진행 단계" }
+        { "type": "auto", "source": "body_metaphor_narrative", "label": "인체 비유 요약" },
+        { "type": "auto", "source": "input_narrative",         "label": "Input (유입계)" },
+        { "type": "auto", "source": "output_narrative",        "label": "Output (배출계)" },
+        { "type": "auto", "source": "diah_narrative",          "label": "DIAH 트리거" }
       ]
     },
 

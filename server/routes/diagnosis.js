@@ -676,7 +676,7 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         repro_key: `${country}-${mode}-${period}`,
         stage: ssotData.sec5_current || '0M',
         alert_level: _stageNum,
-        dual_lock: false,
+        dual_lock: false,   // diagnosis 확정 후 아래에서 패치
         diah_detail: ssotData.diahStatus || 'DIAH 트리거 미발동',
         confidence: ssotData.freshnessAlert?.startsWith('✅') ? '높음' : '중간',
         // report_renderer.generateNarratives() / renderSection() 필수 필드
@@ -693,7 +693,15 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         axes: {},
       };
       if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
-        try { diagnosis = engine.diagnose(gaugeData); } catch (_) { /* ignore */ }
+        try {
+          // core-engine.diagnose()는 { ID: 숫자 } 맵을 기대함
+          const numericMap = {};
+          for (const [k, v] of Object.entries(gaugeData)) {
+            const num = typeof v === 'number' ? v : (typeof v === 'object' && v !== null ? (v.value ?? null) : null);
+            if (num !== null) numericMap[k] = num;
+          }
+          diagnosis = engine.diagnose(numericMap);
+        } catch (_) { /* ignore */ }
       }
       // 누락 필드 안전 보강
       if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, contributors: { input_top3: [], output_top3: [] } };
@@ -707,6 +715,8 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         diagnosis.crossSignals = { active: diagnosis.crossSignals, inactive: [] };
       }
       if (!diagnosis.crossSignals.active) diagnosis.crossSignals.active = [];
+      // dual_lock 패치 (miniJSON은 위에서 먼저 생성됐으므로 여기서 갱신)
+      miniJSON.dual_lock = diagnosis.dualLock?.locked || diagnosis.dualLock?.active || false;
 
       // 5) report_renderer.render() → DOCX 버퍼
       const buf = await reportRenderer.render({
