@@ -37,6 +37,62 @@ try {
   console.warn('[renderer] narrative-engine 로드 실패:', e.message);
 }
 
+// ── 게이지 어댑터 안전 로드 ──────────────────────────────────
+let gaugeAdapter = null;
+try {
+  gaugeAdapter = require('./gauge-adapter');
+} catch (e) {
+  console.warn('[renderer] gauge-adapter 로드 실패:', e.message);
+}
+
+// ── diagnosis → narrative-engine result.gauges 딕셔너리 변환 ──
+// gauge-adapter.ID_MAP 역방향: 파이프라인ID → ssot코드 매핑
+// narrative-engine이 기대하는 { I1:{value,grade,change}, ... } 형태로 변환
+function _buildNarrativeGauges(diagnosis) {
+  if (!gaugeAdapter || !gaugeAdapter.ID_MAP) return {};
+  const ID_MAP = gaugeAdapter.ID_MAP;
+
+  // severity(0~5) → narrative-engine grade 문자열
+  function sevToGrade(sev) {
+    if (sev == null) return '양호 ○';
+    if (sev >= 4.0) return '경보 ★';
+    if (sev >= 2.5) return '주의 ●';
+    return '양호 ○';
+  }
+
+  // diagnosis.axes에서 게이지 평탄화: { pipelineId: {raw, severity} }
+  const flatGauges = {};
+  if (diagnosis && diagnosis.axes) {
+    for (const ax of Object.values(diagnosis.axes)) {
+      const gauges = ax.gauges || [];
+      for (const g of gauges) {
+        const pid = g.gaugeId || g.code || g.id;
+        if (pid) flatGauges[pid] = { raw: g.raw, severity: g.severity };
+      }
+    }
+  }
+
+  // 파이프라인ID → ssot코드로 변환하여 게이지 딕셔너리 생성
+  const result = {};
+  for (const [pid, mapping] of Object.entries(ID_MAP)) {
+    const gData = flatGauges[pid];
+    if (!gData) continue;
+    const code = mapping.code;
+    if (result[code]) continue;  // 중복 ssot코드 방지
+    // value는 반드시 숫자 또는 null (narrative-engine fmtValue가 ${v}로 사용)
+    const rawVal = gData.raw;
+    const numVal = (rawVal != null && !isNaN(Number(rawVal))) ? Number(rawVal) : null;
+    result[code] = {
+      available: numVal !== null,
+      value: numVal,
+      change: null,  // 변화량 미보유
+      grade: sevToGrade(gData.severity),
+      name: mapping.name || pid,
+    };
+  }
+  return result;
+}
+
 // ══════════════════════════════════════════════════════════
 // DESIGN TOKENS
 // ══════════════════════════════════════════════════════════
@@ -1175,14 +1231,37 @@ async function renderDOCX(diagnosis, meta = {}) {
   let D = null;
   if (narrativeEngine && narrativeEngine.generateNarrative) {
     try {
-      D = narrativeEngine.generateNarrative(
-        diagnosis, {},
-        {
-          month:         meta.month || diagnosis.period || new Date().toISOString().slice(0, 7),
-          writeDate:     new Date().toLocaleDateString('ko-KR'),
-          engineVersion: 'DIAH-7M v5.1 + 서사엔진 v2.8',
-        }
-      );
+      // gauge-adapter로 변환된 { I1:{value,grade}, ... } 딕셔너리 생성
+      const narGauges = _buildNarrativeGauges(diagnosis);
+      const narResult = {
+        // narrative-engine이 기대하는 최소 구조
+        gauges: narGauges,
+        alert: {
+          level: Math.min(2, Math.max(0, Math.round((diagnosis.overall?.score || 0) / 2))),
+          label: `Lv.${Math.min(2, Math.round((diagnosis.overall?.score || 0) / 2))} 경보`,
+        },
+        blockade: {
+          type: (diagnosis.dualLock && diagnosis.dualLock.active) ? '이중봉쇄' : '미발동',
+          label: (diagnosis.dualLock && diagnosis.dualLock.active) ? 'CAM+DLT 이중봉쇄' : '봉쇄 미발동',
+          cam: '양호',
+          dlt: '양호',
+          dual: !!(diagnosis.dualLock && diagnosis.dualLock.active),
+        },
+        diah: { label: '미발동', active: [] },
+        m7: { current: '0M', next: '1M' },
+        overallGrade: {
+          level: diagnosis.overall?.levelName || '미판정',
+          code: diagnosis.overall?.level || 0,
+          display: diagnosis.overall?.levelName || '미판정',
+        },
+      };
+      const narMeta = {
+        month:         meta.month || diagnosis.period || new Date().toISOString().slice(0, 7),
+        writeDate:     new Date().toLocaleDateString('ko-KR'),
+        engineVersion: 'DIAH-7M v5.1 + 서사엔진 v2.8',
+      };
+      console.log(`[renderer] narrative-engine 호출: ${Object.keys(narGauges).length}개 게이지 주입 (${Object.keys(narGauges).join(', ').slice(0,60)}...)`);
+      D = narrativeEngine.generateNarrative(narResult, {}, narMeta);
     } catch (ne) {
       console.warn('[renderer] generateNarrative 실패:', ne.message);
     }
