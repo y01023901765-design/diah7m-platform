@@ -724,14 +724,23 @@ function buildFamilyHistory(d) {
       }),
     ], [1800, 2200, 2200, 2826]),
 
-    ...(d.familyNarratives || [
-      { title: '▶ 1997년: D+H 동시 활성 — 급성 심근경색', body: '(서사엔진 생성)' },
-      { title: '▶ 2008년: H+A 동시 활성 — 패혈증 쇼크',  body: '(서사엔진 생성)' },
-      { title: '▶ 현재: 전원 비활성(잠복)',                body: '(서사엔진 생성)' },
-    ]).flatMap(fn => [
-      p([t(fn.title, { size: S.body, bold: true, color: C.navy })], { before: 200, after: 80 }),
-      p([t(fn.body,  { size: S.body })], { after: 120 }),
-    ]),
+    ...(d.familyNarratives && d.familyNarratives.length > 0
+      ? d.familyNarratives
+      : [
+          { year: '1997', text: '' },
+          { year: '2008', text: '' },
+          { year: '공통', text: '' },
+        ]
+    ).flatMap(fn => {
+      // { year, text } 구조와 { title, body } 구조 모두 지원
+      const title = fn.title || `▶ ${fn.year}년`;
+      const body  = fn.body  || fn.text || '';
+      if (!body) return [];
+      return [
+        p([t(title, { size: S.body, bold: true, color: C.navy })], { before: 200, after: 80 }),
+        p([t(body,  { size: S.body })], { after: 120 }),
+      ];
+    }),
   ];
 }
 
@@ -878,7 +887,7 @@ function _buildDataObject(diagnosis, D, meta) {
     };
   }
 
-  // 서사엔진 D 객체에서 섹션 데이터 추출
+  // ── 서사엔진 D 객체 → d 매핑 (실제 D 키 기준) ──────────
   const d = {
     // 기본 메타
     country:      '대한민국',
@@ -886,76 +895,92 @@ function _buildDataObject(diagnosis, D, meta) {
     writeDate:    now.toLocaleDateString('ko-KR'),
     alertLevel,
     alertLabel:   `${alertLevel}단계 — ${['정상','주의','경계','위험'][alertLevel]}`,
-    alertSubtitle: D?.sec1_alertSubtitle || '전체 게이지 종합판정',
-    camStatus, dltStatus,
-    camDetail:    camStatus,
-    dltDetail:    dltStatus,
-    camExplain:   D?.sec1_camExplain  || '',
-    dltExplain:   D?.sec1_dltExplain  || '',
-    dualBlockade: dualLock.active ? '이중봉쇄 발동' : '없음',
-    dualBlockadeDetail: dualLock.active ? '이중봉쇄 발동' : '없음',
+    alertSubtitle: D?.alertLevel != null ? `경보 ${D.alertLevel}단계` : '전체 게이지 종합판정',
+    camStatus:    D?.camStatus  || camStatus,
+    dltStatus:    D?.dltStatus  || dltStatus,
+    camDetail:    D?.camStatus  || camStatus,
+    dltDetail:    D?.dltStatus  || dltStatus,
+    camExplain:   '',
+    dltExplain:   '',
+    dualBlockade: D?.dualBlockade || (dualLock.active ? '이중봉쇄 발동' : '없음'),
+    dualBlockadeDetail: D?.dualBlockade || (dualLock.active ? '이중봉쇄 발동' : '없음'),
     diahTrigger,
 
-    // 임상 소견 (서사엔진 생성)
-    clinicalTitle:    D?.sec1_oneLiner || '',
-    clinicalOneLiner: D?.sec1_oneLiner || '(서사엔진이 생성하는 한 줄 종합 소견)',
-    clinicalBody:     D?.sec1_body     || '(서사엔진이 생성하는 심층 임상 소견)',
-    clinicalPathology:D?.sec1_pathology|| '(서사엔진 생성: 축 간 연결고리)',
+    // 임상 소견 — D.oneLiner / D.sec1_alertNarrative / D.sec1_detail
+    clinicalTitle:    D?.oneLiner || '',
+    clinicalOneLiner: D?.oneLiner || '',
+    clinicalBody:     D?.sec1_detail || '',
+    clinicalPathology:D?.sec1_alertNarrative || '',
 
     // 위성 데이터 (파이프라인 주입)
     satellite: diagnosis.satellite || {},
 
     // 9축 대시보드
     axes: axesData,
-    alertSummary: D?.sec1_alertSummary || '',
+    alertSummary: D ? `경보 ${D.alertLevel ?? 0}단계 | ${D._v28_gradeDisplay || ''}` : '',
 
-    // 섹션 0 잠복기 메시지
-    section0Incubation: D?.sec0_incubation || '',
+    // 섹션 0 잠복기 메시지 — D.sec1_detail 재활용
+    section0Incubation: D?.sec1_detail || '',
 
-    // DIAH 트리거 (서사엔진 생성)
-    diahIntro:     D?.sec4_intro     || '',
-    diahTriggers:  D?.sec4_triggers  || [],
-    diahConclusion:D?.sec4_summary   || '',
+    // DIAH 트리거 — D.sec4_verdict / D.sec4_triggers / D.sec4_summary
+    diahIntro:     D?.sec4_verdict  || '',
+    diahTriggers:  D?.sec4_triggers || [],
+    diahConclusion:D?.sec4_summary  || '',
 
-    // 7M 기전 (서사엔진 생성)
-    current7Mstage:  parseInt((D?.sec5_current || '0').replace(/\D/g,'')) || 0,
-    mStageExplain:   D?.sec5_currentText || '',
-    mStageProgression:D?.sec5_nextText   || '',
+    // 7M 기전 — D.sec5_current / D.sec5_currentName / D.sec5_currentText
+    current7Mstage:   parseInt((D?.sec5_current || '0').replace(/\D/g,'')) || 0,
+    mStageName:       D?.sec5_currentName || '',
+    mStageExplain:    D?.sec5_currentText || '',
+    mStageNext:       D?.sec5_nextM       || '',
+    mStageNextName:   D?.sec5_nextName    || '',
+    mStageProgression:D?.sec5_nextText    || '',
 
-    // 예후 (서사엔진 생성)
-    prognosisIntro:   D?.sec6_intro  || '',
-    prognosisPaths:   D?.sec6_paths  || [],
-    prognosisKeyVar:  D?.sec6_keyVar || '',
+    // 예후 — D.sec6_intro / D.sec6_paths / D.sec6_watchVars
+    prognosisIntro:   D?.sec6_intro     || '',
+    prognosisPaths:   D?.sec6_paths     || [],
+    prognosisKeyVar:  Array.isArray(D?.sec6_watchVars)
+                        ? D.sec6_watchVars.join(', ')
+                        : (D?.sec6_watchVars || ''),
 
-    // 시계열 (데이터스토어 주입)
+    // 시계열 — D.sec7_narrative / D.sec7_monthly
     timeSeriesRows:   diagnosis.timeSeries?.rows   || [],
-    timeSeriesMonths: diagnosis.timeSeries?.months || [],
-    trendAnalysis:    D?.sec7_analysis || '',
-    trendWarning:     D?.sec7_warning  || '',
+    timeSeriesMonths: D?.sec7_months || diagnosis.timeSeries?.months || [],
+    trendAnalysis:    D?.sec7_narrative || '',
+    trendWarning:     D?.sec7_monthly   || '',
 
-    // 가족력 (서사엔진 생성)
-    familyNarratives: D?.sec8_narratives || [],
-    currentDiagName:  D?.sec8_currentName || '',
+    // 가족력 — D.sec8_narrative1997 / D.sec8_narrative2008 / D.sec8_common
+    familyNarratives: D ? [
+      { year:'1997', text: D.sec8_narrative1997 || '' },
+      { year:'2008', text: D.sec8_narrative2008 || '' },
+      { year:'공통', text: D.sec8_common        || '' },
+    ].filter(r => r.text) : [],
+    currentDiagName: D?.sec5_currentName || '',
 
-    // 처방 (서사엔진 생성)
-    prescriptionSubtitle: D?.sec9_subtitle || '',
-    prescriptionIntro:    D?.sec9_intro    || '',
+    // 처방 — D.sec9_intro / D.sec9_prescriptions / D.sec9_rules
+    prescriptionSubtitle: D?.sec9_title  || '',
+    prescriptionIntro:    D?.sec9_intro  || '',
     prescriptions:        D?.sec9_prescriptions || [],
+    prescriptionRules:    D?.sec9_rules  || [],
 
-    // 출처 (자동)
-    sources: null,  // buildSourcesDisclaimer에서 기본값 사용
+    // 출처/면책 — D.sec10_sources / D.sec10_disclaimer
+    sources:     D?.sec10_sources     || null,
+    disclaimer:  D?.sec10_disclaimer  || null,
   };
 
-  // 교차신호 변환
-  const crossRaw = diagnosis.crossSignals || {};
-  const crossArr = Array.isArray(crossRaw) ? crossRaw : (crossRaw.active || []);
-  d._crossSignals = crossArr.map(cs => ({
-    pair:      cs.pair || cs.axes || '—',
-    organLink: cs.organLink || '—',
-    direction: cs.direction || '—',
-    severity:  cs.severity  || 'low',
-    leadMonths:cs.leadMonths|| null,
-    diagnosis: cs.diagnosis || cs.description || '—',
+  // 교차신호 변환 — D._v28_crossSignals 우선
+  const crossSignalsRaw = D?._v28_crossSignals?.length
+    ? D._v28_crossSignals
+    : (() => {
+        const raw = diagnosis.crossSignals || {};
+        return Array.isArray(raw) ? raw : (raw.active || []);
+      })();
+  d._crossSignals = crossSignalsRaw.map(cs => ({
+    pair:       cs.pair       || cs.axes || '—',
+    organLink:  cs.organLink  || cs.organ || '—',
+    direction:  cs.direction  || '—',
+    severity:   cs.severity   || 'low',
+    leadMonths: cs.leadMonths || null,
+    diagnosis:  cs.diagnosis  || cs.description || cs.text || '—',
   }));
 
   return d;
@@ -989,13 +1014,26 @@ function _buildAxisGauges(axisKey, diagnosis, D) {
 }
 
 function _axisSum(axisKey, diagnosis, D) {
+  // D 키: A1=sec2_summary/sec2_summaryNarrative, A2~A9=axis{N}_summary/axis{N}_summaryNarrative
   const sumKeyMap = {
-    A1: 'sec2_summary', A2: 'axis2_summary', A3: 'axis3_summary',
-    A4: 'axis4_summary', A5: 'axis5_summary', A6: 'axis6_summary',
-    A7: 'axis7_summary', A8: 'axis8_summary', A9: 'axis9_summary',
+    A1: ['sec2_summary',  'sec2_summaryNarrative'],
+    A2: ['axis2_summary', 'axis2_summaryNarrative'],
+    A3: ['axis3_summary', 'axis3_summaryNarrative'],
+    A4: ['axis4_summary', 'axis4_summaryNarrative'],
+    A5: ['axis5_summary', 'axis5_summaryNarrative'],
+    A6: ['axis6_summary', 'axis6_summaryNarrative'],
+    A7: ['axis7_summary', 'axis7_summaryNarrative'],
+    A8: ['axis8_summary', 'axis8_summaryNarrative'],
+    A9: ['axis9_summary', 'axis9_summaryNarrative'],
   };
-  const sumData = D && D[sumKeyMap[axisKey]];
-  if (sumData) return sumData;
+  const [titleKey, textKey] = sumKeyMap[axisKey] || [];
+  if (D && titleKey && (D[titleKey] || D[textKey])) {
+    return {
+      title:  D[titleKey] || '',
+      text:   D[textKey]  || '',
+      status: 'normal',
+    };
+  }
   const ax = (diagnosis.axes || {})[axisKey] || {};
   return { title: ax.summary || '', text: ax.summaryText || '', status: ax.status || 'normal' };
 }
