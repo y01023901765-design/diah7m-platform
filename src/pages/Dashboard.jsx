@@ -44,7 +44,7 @@ function DocxDownloadPanel({ lang, user }) {
 
   // 공통 다운로드 (Authorization 헤더 포함)
   const downloadFile = async (url, filename) => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    const token = localStorage.getItem('diah7m-token') || sessionStorage.getItem('diah7m-token') || '';
     const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
