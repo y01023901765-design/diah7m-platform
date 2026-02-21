@@ -80,7 +80,7 @@ const pad   = { top: 60, bottom: 60, left: 100, right: 100 };
 
 // ── 경보 레이블 ───────────────────────────────────────────
 const ALERT_COLORS  = [C.lv0, C.lv1, C.lv2, C.lv3];
-const ALERT_LABELS  = ['0단계: 정상', '1단계: 주의', '2단계: 경계', '3단계: 위험'];
+const ALERT_LABELS  = ['0단계: 정상', '1단계: 안정', '2단계: 주의', '3단계: 경계', '4단계: 심각', '5단계: 위기'];
 const STATUS_MARK   = { normal: '○ 정상', caution: '● 주의', alert: '★ 경보' };
 const STATUS_COLOR  = { normal: C.lv0,   caution: C.lv1,    alert: C.lv2 };
 
@@ -416,44 +416,46 @@ function buildSatelliteOverview(d) {
 // ── 종합 판정 ─────────────────────────────────────────────
 function buildOverallVital(d) {
   const axes9 = [
-    { id: '축1', name: '순환계/심장폐', organ: '심폐계', gauges: 12 },
-    { id: '축2', name: '무역/제조',     organ: '동맥혈류', gauges: 6 },
-    { id: '축3', name: '골목시장',      organ: '미세혈관', gauges: 5 },
-    { id: '축4', name: '부동산',        organ: '뼈',       gauges: 9 },
-    { id: '축5', name: '고용/가계',     organ: '근육신경', gauges: 5 },
-    { id: '축6', name: '지역균형',      organ: '좌우대칭', gauges: 7 },
-    { id: '축7', name: '금융스트레스',  organ: '혈액의질', gauges: 5 },
-    { id: '축8', name: '에너지/자원',   organ: '산소공급', gauges: 5 },
-    { id: '축9', name: '인구/노화',     organ: '신체나이', gauges: 5 },
+    { id: '축1', name: '순환계/심장폐', organ: '심폐계',   axKey: 'A1' },
+    { id: '축2', name: '무역/호흡계',   organ: '동맥혈류', axKey: 'A2' },
+    { id: '축3', name: '소화계/내수',   organ: '미세혈관', axKey: 'A3' },
+    { id: '축4', name: '신경계/심리',   organ: '신경계',   axKey: 'A4' },
+    { id: '축5', name: '면역계/금융',   organ: '혈액의질', axKey: 'A5' },
+    { id: '축6', name: '내분비/물가',   organ: '호르몬',   axKey: 'A6' },
+    { id: '축7', name: '근골격/산업',   organ: '근육뼈',   axKey: 'A7' },
+    { id: '축8', name: '인구/취약계층', organ: '신체나이', axKey: 'A8' },
+    { id: '축9', name: '재생/에너지',   organ: '산소공급', axKey: 'A9' },
   ];
+
+  const LEVEL_COLORS_DOCX = { 1: C.lv0, 2: C.lv1, 3: C.lv2, 4: C.lv3, 5: C.lv3 };
 
   return [
     ...sectionHeader('1.', '종합 판정 (Overall Vital Sign)', '전체 게이지 채점 결과'),
     subHeader('9축 대시보드'),
 
     tbl([
-      rw([hcl('축', 500), hcl('이름', 1400), hcl('장기비유', 1100), hcl('게이지', 600), hcl('상태', 700), hcl('경보', 900), hcl('한줄 소견', 3826)]),
+      rw([hcl('축', 500), hcl('이름', 1400), hcl('장기비유', 900), hcl('게이지수', 600), hcl('점수', 700), hcl('단계', 700), hcl('한줄 소견', 3226)]),
       ...axes9.map((ax, i) => {
         const ad  = (d.axes || {})[ax.id] || {};
-        const sc  = STATUS_COLOR[ad.status]  || C.mid;
-        const sl  = { normal: '정상', caution: '주의', alert: '경보' }[ad.status] || '—';
+        const lvC = LEVEL_COLORS_DOCX[ad.level] || C.mid;
+        const sc  = typeof ad.score === 'number' ? ad.score.toFixed(2) : '—';
+        const lname = ad.levelName || '—';
         return rw([
-          cl(ax.id,   { w: 500,  fs: S.sm, align: AlignmentType.CENTER, bold: true, bg: altBg(i) }),
-          cl(ax.name, { w: 1400, bold: true, fs: S.sm, bg: altBg(i) }),
-          cl(ax.organ,{ w: 1100, fs: S.sm, fc: C.accent, bg: altBg(i) }),
-          cl(`${ad.gaugeCount || ax.gauges}개`, { w: 600, fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
-          cl(sl,      { w: 700,  fs: S.sm, align: AlignmentType.CENTER, bold: true, fc: sc, bg: altBg(i) }),
-          cl(`${ad.stars || 0}★ / ${ad.cautions || 0}●`, { w: 900, fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
-          cl(ad.oneLiner || '—', { w: 3826, fs: S.sm, bg: altBg(i) }),
+          cl(ax.id,    { w: 500,  fs: S.sm, align: AlignmentType.CENTER, bold: true, bg: altBg(i) }),
+          cl(ax.name,  { w: 1400, bold: true, fs: S.sm, bg: altBg(i) }),
+          cl(ax.organ, { w: 900,  fs: S.sm, fc: C.accent, bg: altBg(i) }),
+          cl(`${ad.gaugeCount || 0}개`, { w: 600, fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
+          cl(sc,       { w: 700,  fs: S.sm, align: AlignmentType.CENTER, bold: true, fc: lvC, bg: altBg(i) }),
+          cl(lname,    { w: 700,  fs: S.sm, align: AlignmentType.CENTER, bold: true, fc: lvC, bg: altBg(i) }),
+          cl(ad.oneLiner || '—', { w: 3226, fs: S.sm, bg: altBg(i) }),
         ]);
       }),
-    ], [500, 1400, 1100, 600, 700, 900, 3826]),
+    ], [500, 1400, 900, 600, 700, 700, 3226]),
 
     subHeader('경보 판정'),
-    p([t(d.alertSummary || '• Input★ 합계: 0개  •  Output★ 합계: 0개', { size: S.body })],
-      { after: 80 }),
+    p([t(d.alertSummary || '', { size: S.body })], { after: 80 }),
     diagBox([
-      p([t(`→ 경보 단계: ${d.alertLabel || '0단계 — 정상'}`, { size: S.t3, bold: true, color: C.navy })],
+      p([t(`→ 경보 단계: ${d.alertLabel || '미판정'}`, { size: S.t3, bold: true, color: C.navy })],
         { after: 0 }),
     ], C.bgBox),
 
@@ -857,9 +859,9 @@ function _buildDataObject(diagnosis, D, meta) {
   const period  = meta?.month || diagnosis.period || new Date().toISOString().slice(0, 7);
   const now     = new Date();
 
-  // 경보 레벨 매핑 (0~3단계)
+  // 경보 레벨 매핑 (1~5단계 → 표시용)
   const rawLevel = overall.level ?? overall.stage ?? 0;
-  const alertLevel = Math.min(Math.max(parseInt(rawLevel) || 0, 0), 3);
+  const alertLevel = Math.min(Math.max(parseInt(rawLevel) || 0, 0), 5);
 
   // CAM/DLT 상태
   const dualLock = diagnosis.dualLock || {};
@@ -872,18 +874,43 @@ function _buildDataObject(diagnosis, D, meta) {
     ? (diah.activatedLetters || []).join('/') + ' 활성'
     : '전원 비활성';
 
-  // 9축 상태 매핑
+  // 9축 상태 매핑 — core-engine 점수 + narrative-engine 서사 결합
   const axesData = {};
   const axes = diagnosis.axes || {};
   const axMap = { A1:'축1', A2:'축2', A3:'축3', A4:'축4', A5:'축5', A6:'축6', A7:'축7', A8:'축8', A9:'축9' };
+  // D의 각 축 summary 키 매핑
+  const axSumKeyMap = {
+    A1: 'sec2_summary',   A2: 'axis2_summary', A3: 'axis3_summary',
+    A4: 'axis4_summary',  A5: 'axis5_summary', A6: 'axis6_summary',
+    A7: 'axis7_summary',  A8: 'axis8_summary', A9: 'axis9_summary',
+  };
+  const axNarKeyMap = {
+    A1: 'sec2_summaryNarrative',   A2: 'axis2_summaryNarrative', A3: 'axis3_summaryNarrative',
+    A4: 'axis4_summaryNarrative',  A5: 'axis5_summaryNarrative', A6: 'axis6_summaryNarrative',
+    A7: 'axis7_summaryNarrative',  A8: 'axis8_summaryNarrative', A9: 'axis9_summaryNarrative',
+  };
+  const LEVEL_LABELS = { 1:'안정', 2:'주의', 3:'경계', 4:'심각', 5:'위기' };
   for (const [key, axId] of Object.entries(axMap)) {
-    const ax = axes[key] || axes[axId] || {};
+    const ax = axes[key] || {};
+    const lv = ax.level?.level || 0;
+    // 경보 카운트 계산 (severity >= 4.0 이면 경보, 3.0~3.99면 주의)
+    const gs = ax.gauges || [];
+    const stars    = gs.filter(g => g.severity >= 4.0).length;
+    const cautions = gs.filter(g => g.severity >= 3.0 && g.severity < 4.0).length;
+    // 점수 표시
+    const scoreStr = typeof ax.score === 'number' ? ax.score.toFixed(2) + '점' : '—';
+    // 서사 — D 우선, 없으면 점수+등급
+    const narrative = (D && D[axNarKeyMap[key]]) || (D && D[axSumKeyMap[key]])
+      || (lv ? `${LEVEL_LABELS[lv] || ''} (${scoreStr})` : scoreStr);
     axesData[axId] = {
-      gaugeCount: ax.count || ax.gaugeCount || 0,
-      status:     ax.status || 'normal',
-      stars:      ax.stars  || ax.alertCount   || 0,
-      cautions:   ax.cautions || ax.cautionCount || 0,
-      oneLiner:   ax.oneLiner || ax.summary || '—',
+      gaugeCount: ax.count || gs.length || 0,
+      score:      ax.score,
+      level:      lv,
+      levelName:  LEVEL_LABELS[lv] || '—',
+      status:     lv >= 4 ? 'alert' : lv >= 3 ? 'caution' : 'normal',
+      stars,
+      cautions,
+      oneLiner:   narrative || '—',
     };
   }
 
@@ -894,7 +921,7 @@ function _buildDataObject(diagnosis, D, meta) {
     baseMonth:    period.replace('-', '년 ') + '월',
     writeDate:    now.toLocaleDateString('ko-KR'),
     alertLevel,
-    alertLabel:   `${alertLevel}단계 — ${['정상','주의','경계','위험'][alertLevel]}`,
+    alertLabel:   `${alertLevel}단계 — ${['정상','안정','주의','경계','심각','위기'][alertLevel] || '미판정'}`,
     alertSubtitle: D?.alertLevel != null ? `경보 ${D.alertLevel}단계` : '전체 게이지 종합판정',
     camStatus:    D?.camStatus  || camStatus,
     dltStatus:    D?.dltStatus  || dltStatus,
