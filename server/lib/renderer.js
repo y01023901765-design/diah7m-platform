@@ -1077,14 +1077,106 @@ function _axisSum(axisKey, diagnosis, D) {
 // renderDOCX — 메인 (v3.0)
 // ══════════════════════════════════════════════════════════
 
+// ── diagnosis 데이터 기반 D 보완 (narrative-engine이 구 ID 체계라 서사 생성 못할 때) ──
+function _buildFallbackD(diagnosis, meta) {
+  const overall  = diagnosis.overall || {};
+  const axes     = diagnosis.axes    || {};
+  const dualLock = diagnosis.dualLock|| {};
+  const cross    = Array.isArray(diagnosis.crossSignals)
+    ? diagnosis.crossSignals : (diagnosis.crossSignals?.active || []);
+  const period   = meta?.month || new Date().toISOString().slice(0,7);
+  const LNAMES   = { 1:'안정', 2:'주의', 3:'경계', 4:'심각', 5:'위기' };
+  const LCOLORS  = { 1:'#22c55e', 2:'#eab308', 3:'#f97316', 4:'#ef4444', 5:'#7f1d1d' };
+
+  // 축별 한줄 서사 생성
+  function axOneLiner(axId, ax) {
+    const lv = ax.level?.level || 0;
+    const sc = typeof ax.score === 'number' ? ax.score.toFixed(2) : '—';
+    const lname = LNAMES[lv] || '미판정';
+    const gs = ax.gauges || [];
+    const worst = gs.reduce((a,b) => (b.severity||0) > (a.severity||0) ? b : a, gs[0] || {});
+    const wname = worst?.name || '';
+    const wsev  = worst?.severity || 0;
+    if (lv >= 4) return `${lname} (${sc}점) — ${wname} 심각도 ${wsev.toFixed(1)}로 위험 수준`;
+    if (lv >= 3) return `${lname} (${sc}점) — ${wname} 경계 수준 주시 필요`;
+    if (lv >= 2) return `${lname} (${sc}점) — 일부 지표 주의 관찰`;
+    return `${lname} (${sc}점) — 안정적 범위 유지`;
+  }
+
+  // 게이지 배열 생성
+  const SEV_GRADE = sev => sev >= 4.5 ? '★★★ 경보' : sev >= 4.0 ? '★★ 경보' : sev >= 3.0 ? '★ 주의' : sev >= 2.0 ? '● 관찰' : '○ 정상';
+  function buildGaugeArr(ax) {
+    return (ax.gauges||[]).map(g => ({
+      code: g.gaugeId || '—',
+      name: g.name || '—',
+      value: g.raw != null ? (typeof g.raw==='number' ? g.raw.toFixed(2) : String(g.raw)) : '—',
+      change: g.unit || '—',
+      grade: SEV_GRADE(g.severity||0),
+      status: (g.severity||0) >= 4 ? 'alert' : (g.severity||0) >= 3 ? 'caution' : 'normal',
+      organMetaphor: '—',
+      narrative: [],
+      diagnosis: `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
+    }));
+  }
+
+  const AX_KEYS = ['A1','A2','A3','A4','A5','A6','A7','A8','A9'];
+  const sumMap = {
+    A1:'sec2_summary', A2:'axis2_summary', A3:'axis3_summary', A4:'axis4_summary',
+    A5:'axis5_summary', A6:'axis6_summary', A7:'axis7_summary', A8:'axis8_summary', A9:'axis9_summary'
+  };
+  const narMap = {
+    A1:'sec2_summaryNarrative', A2:'axis2_summaryNarrative', A3:'axis3_summaryNarrative',
+    A4:'axis4_summaryNarrative', A5:'axis5_summaryNarrative', A6:'axis6_summaryNarrative',
+    A7:'axis7_summaryNarrative', A8:'axis8_summaryNarrative', A9:'axis9_summaryNarrative'
+  };
+  const gaugeMap = {
+    A1:'sec2_gauges', A2:'axis2_gauges', A3:'axis3_gauges', A4:'axis4_gauges',
+    A5:'axis5_gauges', A6:'axis6_gauges', A7:'axis7_gauges', A8:'axis8_gauges', A9:'axis9_gauges'
+  };
+
+  const D = {
+    month: period, writeDate: new Date().toLocaleDateString('ko-KR'),
+    engineVersion: 'DIAH-7M v5.1',
+    alertLevel: overall.level || 0,
+    alertColor:  LCOLORS[overall.level] || '#64748b',
+    oneLiner: `종합 ${LNAMES[overall.level]||'미판정'} — 57개 게이지 종합 점수 ${typeof overall.score==='number'?overall.score.toFixed(2):'—'}/5.00`,
+    camStatus:    dualLock.locked ? '봉쇄' : '정상',
+    dltStatus:    dualLock.locked ? '봉쇄' : '정상',
+    dualBlockade: dualLock.locked ? '이중봉쇄 발동' : '해제',
+    sec1_alertNarrative: `${LNAMES[overall.level]||'미판정'} 단계 — 종합점수 ${typeof overall.score==='number'?overall.score.toFixed(2):'—'}/5.00`,
+    sec1_detail: dualLock.reason || (dualLock.locked ? '이중봉쇄 발동 상태입니다.' : '이중봉쇄 미발동 상태입니다.'),
+    sec4_triggers: [],
+    sec4_summary: `교차신호 ${cross.length}개 감지`,
+    sec5_current: '0M', sec5_currentName: '정상', sec5_currentText: '현재 기전 분석 대기 중입니다.',
+    sec6_paths: [],
+    sec8_narrative1997: '', sec8_narrative2008: '', sec8_common: '',
+    sec9_prescriptions: [],
+    sec10_disclaimer: '본 보고서는 DIAH-7M 시스템이 자동 생성한 진단 참고자료입니다.',
+    _v28_crossSignals: cross.map(cs => ({
+      pair: cs.pair || '—', organLink: cs.organ || '—', direction: '—',
+      severity: 'medium', diagnosis: cs.desc || cs.name || '—',
+    })),
+  };
+
+  // 축별 서사/게이지 주입
+  for (const axId of AX_KEYS) {
+    const ax = axes[axId] || {};
+    const oneLiner = axOneLiner(axId, ax);
+    D[sumMap[axId]]  = ax.name ? `${ax.name} 축` : axId;
+    D[narMap[axId]]  = oneLiner;
+    D[gaugeMap[axId]] = buildGaugeArr(ax);
+  }
+
+  return D;
+}
+
 async function renderDOCX(diagnosis, meta = {}) {
-  // 1) 서사엔진 실행
+  // 1) 서사엔진 실행 시도 (구 ID 체계라 서사는 비어있을 수 있음)
   let D = null;
   if (narrativeEngine && narrativeEngine.generateNarrative) {
     try {
       D = narrativeEngine.generateNarrative(
-        diagnosis,
-        {},
+        diagnosis, {},
         {
           month:         meta.month || diagnosis.period || new Date().toISOString().slice(0, 7),
           writeDate:     new Date().toLocaleDateString('ko-KR'),
@@ -1093,6 +1185,31 @@ async function renderDOCX(diagnosis, meta = {}) {
       );
     } catch (ne) {
       console.warn('[renderer] generateNarrative 실패:', ne.message);
+    }
+  }
+
+  // fallback D 항상 생성 후 D가 없거나 게이지/서사가 비어있으면 보완
+  const fallback = _buildFallbackD(diagnosis, meta);
+  if (!D) {
+    D = fallback;
+  } else {
+    // narrative-engine D가 있어도 게이지/서사가 비어있거나 "미입력" 문구면 fallback으로 덮어씀
+    const gaugeKeys = {
+      A1:'sec2_gauges', A2:'axis2_gauges', A3:'axis3_gauges', A4:'axis4_gauges',
+      A5:'axis5_gauges', A6:'axis6_gauges', A7:'axis7_gauges', A8:'axis8_gauges', A9:'axis9_gauges'
+    };
+    const narKeys = {
+      A1:'sec2_summaryNarrative', A2:'axis2_summaryNarrative', A3:'axis3_summaryNarrative',
+      A4:'axis4_summaryNarrative', A5:'axis5_summaryNarrative', A6:'axis6_summaryNarrative',
+      A7:'axis7_summaryNarrative', A8:'axis8_summaryNarrative', A9:'axis9_summaryNarrative'
+    };
+    for (const key of Object.values(gaugeKeys)) {
+      if (!D[key] || D[key].length === 0) D[key] = fallback[key] || [];
+    }
+    for (const key of Object.values(narKeys)) {
+      if (!D[key] || D[key].includes('미입력') || D[key].includes('meta에서 입력')) {
+        D[key] = fallback[key] || '';
+      }
     }
   }
 
