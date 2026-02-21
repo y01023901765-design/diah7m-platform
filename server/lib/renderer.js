@@ -348,7 +348,7 @@ function buildCover(d) {
       { align: AlignmentType.CENTER, after: 40 }),
     p([t('진단 엔진: 판정 v5.1 / 서사 v2.9 / 위성 통합', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER, after: 40 }),
-    p([t('세계최초 위성 물리흐름 + 공공 수치지표 통합 진단 시스템', { size: S.sm, bold: true, color: C.accent })],
+    p([t('위성 물리흐름 + 공공 수치지표 통합 진단 시스템', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER, after: 40 }),
     p([t('인체국가경제론 / 윤종원', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER }),
@@ -468,7 +468,7 @@ function buildSatelliteOverview(d) {
 
   // ════ 섹션 헤더 ════
   elements.push(...sectionHeader('위성.', '물리흐름 진단 — 위성데이터 종합',
-    '세계최초 위성 물리흐름 + 공공 수치지표 통합 진단'));
+    '정부 통계가 아닌 물리적 증거로 경제를 본다'));
 
   // ════ [1] 세계 최초 선언문 박스 ════
   elements.push(diagBox([
