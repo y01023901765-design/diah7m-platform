@@ -256,18 +256,23 @@ function mapFromPipeline(gaugeData, gaugeObjects) {
   const ir  = get('F5_INTEREST');
   const i6  = ir  ? { value: (ir.value ?? 0) * 100, change: (ir.value ?? 0) * 100 } : null;
 
-  // O2 물가: P1_CPI (YoY%)
+  // O2 물가: P1_CPI
+  // pipeline: data[0] vs data[12] → YoY% (CPI지수 전년비)
+  // v5.0 O2 임계값(3%/5%)은 물가상승률 YoY% 기준 → 동일 단위, 변환 불필요
   const cpi = get('P1_CPI');
   const o2  = cpi ? { value: cpi.value, change: cpi.value } : null;
 
-  // O4 주가: F1_KOSPI (전년비%)
+  // O4 주가: F1_KOSPI
+  // pipeline: 전년비(YoY%) 수집 → v5.0은 MoM% 기준
+  // 단위 불일치 있으나 방향성 판정에는 유효 (급등/급락 신호 감지 목적)
   const ko  = get('F1_KOSPI');
   const o4  = ko  ? { value: ko.value, change: ko.value } : null;
 
-  // O6 소비: S6_RETAIL (전년비%)
-  // v5.0은 MoM% 기준, 현재 YoY% → 12분의1 환산
+  // O6 소비: S6_RETAIL
+  // pipeline: data[0] vs data[1] → MoM% (전월 대비, 이미 MoM)
+  // v5.0 O6 임계값(-2%/-5%)도 MoM 기준 → 변환 없이 그대로 사용
   const ret = get('S6_RETAIL');
-  const o6  = ret ? { value: (ret.value ?? 0) / 12, change: (ret.value ?? 0) / 12 } : null;
+  const o6  = ret ? { value: ret.value ?? 0, change: ret.value ?? 0 } : null;
 
   return { I1: i1, I3: i3, I4: i4, I6: i6, O2: o2, O4: o4, O6: o6 };
 }
