@@ -92,6 +92,19 @@ async function renderPDF(diagnosis, outputStream) {
         size: 'A4',
         margins: { top: 50, bottom: 60, left: 50, right: 50 },
         bufferPages: true,
+        // ── PDF 권한 잠금 (구독자 배포용) ──
+        // 인쇄: 허용 / 복사·편집·주석: 차단
+        userPassword: undefined,        // 열람 암호 없음 (자유 열람)
+        ownerPassword: process.env.PDF_OWNER_PASSWORD || 'diah7m-admin-2026',
+        permissions: {
+          printing: 'highResolution',   // 인쇄 허용
+          modifying: false,             // 편집 차단
+          copying: false,               // 복사 차단
+          annotating: false,            // 주석 차단
+          fillingForms: false,          // 양식 차단
+          contentAccessibility: true,   // 화면 낭독기 허용
+          documentAssembly: false,      // 문서 조합 차단
+        },
       });
 
       doc.pipe(outputStream);

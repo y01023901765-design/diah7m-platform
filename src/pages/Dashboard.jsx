@@ -18,11 +18,15 @@ const DOCX_MODES = [
   { value:'D', ko:'일별', en:'Daily' },
 ];
 
-function DocxDownloadPanel({ lang }) {
+function DocxDownloadPanel({ lang, user }) {
   const L = lang || 'ko';
   const [mode, setMode] = useState('M');
   const [period, setPeriod] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+
+  const isAdmin = user?.role === 'admin';
+  const canPdf  = isAdmin || (user?.plan && user.plan !== 'FREE');
 
   // 기간 placeholder 자동산출
   const periodPlaceholder = () => {
@@ -38,18 +42,45 @@ function DocxDownloadPanel({ lang }) {
     return now.toISOString().slice(0,7);
   };
 
-  const handleDownload = async () => {
-    setLoading(true);
+  // 공통 다운로드 (Authorization 헤더 포함)
+  const downloadFile = async (url, filename) => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  };
+
+  const handleDocx = async () => {
+    setLoading(true); setErrMsg('');
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
       const p = period || periodPlaceholder();
       const url = `${apiBase}/api/v1/report/docx?country=KR&mode=${mode}&period=${encodeURIComponent(p)}`;
-      const a = document.createElement('a');
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch(e) { console.error('[DOCX]', e); }
+      await downloadFile(url, `경제건강검진_${p}_KR.docx`);
+    } catch(e) {
+      setErrMsg(e.message || '다운로드 실패');
+      console.error('[DOCX]', e);
+    }
+    setLoading(false);
+  };
+
+  const handlePdf = async () => {
+    setLoading(true); setErrMsg('');
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      await downloadFile(`${apiBase}/api/v1/diagnosis/kr/pdf`, `경제건강검진_KR.pdf`);
+    } catch(e) {
+      setErrMsg(e.message || '다운로드 실패');
+      console.error('[PDF]', e);
+    }
     setLoading(false);
   };
 
@@ -57,34 +88,62 @@ function DocxDownloadPanel({ lang }) {
 
   return (
     <div style={{marginTop:'12px',background:'#f0f4ff',borderRadius:'8px',padding:'12px 14px',border:'1px solid #c7d4f7'}}>
+
+      {/* DOCX — 관리자 전용 */}
+      {isAdmin && (
+        <>
+          <div style={{fontSize:'12px',fontWeight:600,color:'#1a56db',marginBottom:'8px'}}>
+            📝 {L==='ko'?'보고서 원본 (DOCX, 관리자 전용)':'Report Source (DOCX, Admin Only)'}
+            <span style={{marginLeft:'6px',fontSize:'10px',background:'#dc2626',color:'#fff',borderRadius:'4px',padding:'1px 6px'}}>ADMIN</span>
+          </div>
+          <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center',marginBottom:'8px'}}>
+            <select value={mode} onChange={e=>{ setMode(e.target.value); setPeriod(''); }}
+              style={{padding:'5px 8px',borderRadius:'6px',border:'1px solid #c7d4f7',fontSize:'13px',background:'#fff',cursor:'pointer'}}>
+              {DOCX_MODES.map(m=>(
+                <option key={m.value} value={m.value}>{L==='ko'?m.ko:m.en} ({m.value})</option>
+              ))}
+            </select>
+            <input type="text" value={period} onChange={e=>setPeriod(e.target.value)}
+              placeholder={periodPlaceholder()}
+              style={{padding:'5px 8px',borderRadius:'6px',border:'1px solid #c7d4f7',fontSize:'13px',width:'120px'}} />
+            <button onClick={handleDocx} disabled={loading}
+              style={{padding:'5px 16px',background:loading?'#aaa':'linear-gradient(135deg,#dc2626,#9f1239)',
+                color:'#fff',border:'none',borderRadius:'6px',fontSize:'13px',
+                fontWeight:600,cursor:loading?'not-allowed':'pointer',whiteSpace:'nowrap'}}>
+              {loading?(L==='ko'?'생성 중...':'Generating...'):(L==='ko'?`${modeLabel} DOCX 받기`:`Get ${modeLabel} DOCX`)}
+            </button>
+          </div>
+          <div style={{fontSize:'11px',color:'#888',marginBottom:'8px'}}>
+            {L==='ko'?'⚠ 편집 가능 파일. 관리자만 다운로드 가능합니다.':'⚠ Editable file. Admin access only.'}
+          </div>
+          <hr style={{border:'none',borderTop:'1px solid #c7d4f7',margin:'8px 0'}} />
+        </>
+      )}
+
+      {/* PDF — 구독자(BASIC 이상) + 관리자 */}
       <div style={{fontSize:'12px',fontWeight:600,color:'#1a56db',marginBottom:'8px'}}>
-        📄 {L==='ko'?'보고서 다운로드 (DOCX)':'Report Download (DOCX)'}
+        📄 {L==='ko'?'보고서 다운로드 (PDF, 열람 전용)':'Report Download (PDF, Read-only)'}
       </div>
-      <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center'}}>
-        <select value={mode} onChange={e=>{ setMode(e.target.value); setPeriod(''); }}
-          style={{padding:'5px 8px',borderRadius:'6px',border:'1px solid #c7d4f7',fontSize:'13px',background:'#fff',cursor:'pointer'}}>
-          {DOCX_MODES.map(m=>(
-            <option key={m.value} value={m.value}>{L==='ko'?m.ko:m.en} ({m.value})</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={period}
-          onChange={e=>setPeriod(e.target.value)}
-          placeholder={periodPlaceholder()}
-          style={{padding:'5px 8px',borderRadius:'6px',border:'1px solid #c7d4f7',fontSize:'13px',width:'120px'}}
-        />
-        <button onClick={handleDownload} disabled={loading}
-          style={{
-            padding:'5px 16px',background:loading?'#aaa':'linear-gradient(135deg,#1a56db,#6366f1)',
+      {canPdf ? (
+        <button onClick={handlePdf} disabled={loading}
+          style={{padding:'5px 16px',background:loading?'#aaa':'linear-gradient(135deg,#1a56db,#6366f1)',
             color:'#fff',border:'none',borderRadius:'6px',fontSize:'13px',
-            fontWeight:600,cursor:loading?'not-allowed':'pointer',whiteSpace:'nowrap',
-          }}>
-          {loading?(L==='ko'?'생성 중...':'Generating...'):(L==='ko'?`${modeLabel} 보고서 받기`:`Get ${modeLabel} Report`)}
+            fontWeight:600,cursor:loading?'not-allowed':'pointer',whiteSpace:'nowrap'}}>
+          {loading?(L==='ko'?'생성 중...':'Generating...'):(L==='ko'?'PDF 보고서 받기':'Get PDF Report')}
         </button>
-      </div>
+      ) : (
+        <div style={{fontSize:'12px',color:'#888',padding:'6px 0'}}>
+          🔒 {L==='ko'?'BASIC 이상 구독 시 PDF 다운로드 가능합니다.':'PDF download available for BASIC plan and above.'}
+        </div>
+      )}
+
+      {/* 오류 메시지 */}
+      {errMsg && (
+        <div style={{fontSize:'11px',color:'#dc2626',marginTop:'6px'}}>⚠ {errMsg}</div>
+      )}
+
       <div style={{fontSize:'11px',color:'#666',marginTop:'6px'}}>
-        {L==='ko'?`기간 미입력 시 현재 기간(${periodPlaceholder()}) 자동 적용`:`Defaults to current period (${periodPlaceholder()}) if left blank`}
+        {L==='ko'?`기준 기간: ${periodPlaceholder()}`:`Period: ${periodPlaceholder()}`}
       </div>
     </div>
   );
@@ -612,7 +671,7 @@ function DashboardPage({user,onNav,lang,country,city}){
           </div>
           <div style={{marginTop:LT.sp.xl}}><StateIndicator lang={L} levelInfo={levelInfo}/></div>
           {/* ★ DOCX 보고서 다운로드 (기간/모드 선택) */}
-          {isKorea&&<DocxDownloadPanel lang={L}/>}
+          {isKorea&&<DocxDownloadPanel lang={L} user={user}/>}
         </div>
         <div style={{background:LT.surface,borderRadius:LT.cardRadius,padding:LT.sp.xl,border:`1px solid ${LT.border}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <RadarChart lang={L} sysData={activeSys}/>

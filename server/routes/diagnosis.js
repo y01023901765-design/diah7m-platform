@@ -16,7 +16,11 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, state }) {
-  const requireAuth = auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' }));
+  const requireAuth  = auth?.authMiddleware || ((req, res) => res.status(503).json({ error: 'Auth unavailable' }));
+  const requireAdmin = auth?.requireRole ? auth.requireRole('admin') : [requireAuth, (req, res, next) => {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: '관리자 전용 기능입니다.' });
+    next();
+  }];
 
   // ==========================================
   // [신규] 데이터 수집 상태 API
@@ -566,7 +570,8 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   // mode: D(일별) | W(주별) | M(월별, 기본) | Q(분기별) | A(연별)
   // country: KR(기본), US, 서울특별시, ...
   // period: 없으면 현재 기간 자동 산출
-  router.get('/report/docx', async (req, res) => {
+  // DOCX — 관리자 전용 (편집 가능 원본)
+  router.get('/report/docx', ...requireAdmin, async (req, res) => {
     try {
       const mode    = (req.query.mode    || 'M').toUpperCase();
       const country = req.query.country  || 'KR';
@@ -748,8 +753,14 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   });
 
   // ── PDF 보고서 다운로드 (GET /api/v1/diagnosis/kr/pdf) ──
-  // 인증 불필요 — 무료 체험용 (플랜 제한은 추후 추가)
-  router.get('/diagnosis/kr/pdf', async (req, res) => {
+  // 로그인 필수 — 구독자(BASIC 이상) 또는 관리자
+  router.get('/diagnosis/kr/pdf', requireAuth, async (req, res) => {
+    // FREE 플랜은 PDF 불가
+    const plan = req.user?.plan || 'FREE';
+    const role = req.user?.role || 'user';
+    if (plan === 'FREE' && role !== 'admin') {
+      return res.status(403).json({ error: 'BASIC 이상 구독이 필요합니다.' });
+    }
     try {
       if (!engine || !engine.diagnose) {
         return res.status(503).json({ error: 'Engine unavailable' });

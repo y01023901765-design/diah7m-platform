@@ -80,7 +80,22 @@ function tierMiddleware(minTier) {
   };
 }
 
+// ── 역할 기반 접근 제어 ──
+// requireRole('admin') → admin만 허용
+// requireRole('admin','editor') → admin 또는 editor 허용
+function requireRole(...roles) {
+  return [
+    authMiddleware,   // 먼저 인증 확인
+    (req, res, next) => {
+      if (!roles.includes(req.user?.role)) {
+        return res.status(403).json({ error: `접근 권한이 없습니다. 필요 역할: ${roles.join('|')}` });
+      }
+      next();
+    }
+  ];
+}
+
 module.exports = {
   sign, verify, hashPassword, verifyPassword,
-  TIER_ACCESS, authMiddleware, adminMiddleware, tierMiddleware,
+  TIER_ACCESS, authMiddleware, adminMiddleware, tierMiddleware, requireRole,
 };
