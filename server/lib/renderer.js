@@ -48,6 +48,16 @@ try {
 // ── diagnosis → narrative-engine result.gauges 딕셔너리 변환 ──
 // gauge-adapter.ID_MAP 역방향: 파이프라인ID → ssot코드 매핑
 // narrative-engine이 기대하는 { I1:{value,grade,change}, ... } 형태로 변환
+//
+// ★ 핵심: narrative-engine fmtValue(code)가 `${v}단위` 템플릿을 쓰므로
+//   value는 적절한 소수점으로 반올림된 숫자여야 함.
+//   각 ssot코드별 기대 소수점:
+//   - 억$ 계열 (I1,I3): toFixed(2)
+//   - % 계열 (I2,I4,I6,O1~O3,O5,O6,S2,S3,T3,L1~L5,G2,G5,G6,F2,F3,F4,E2,E5,A2,A3,A4,A5): toFixed(2)
+//   - bp 계열 (I5,F1,F5): toFixed(2)
+//   - pt 계열 (T2,L5,E5,F4): toFixed(1)
+//   - 만TEU,만명,조원,만원 등 큰 숫자: toFixed(2)
+//   - 일 (S1): toFixed(1)
 function _buildNarrativeGauges(diagnosis) {
   if (!gaugeAdapter || !gaugeAdapter.ID_MAP) return {};
   const ID_MAP = gaugeAdapter.ID_MAP;
@@ -59,6 +69,21 @@ function _buildNarrativeGauges(diagnosis) {
     if (sev >= 2.5) return '주의 ●';
     return '양호 ○';
   }
+
+  // ssot코드별 소수점 자릿수 (narrative-engine fmtValue 기대치 맞춤)
+  const DECIMAL_MAP = {
+    I1:2, I2:2, I3:2, I4:2, I5:2, I6:2,
+    O1:2, O2:1, O3:2, O4:1, O5:2, O6:2, O7:2,
+    S1:1, S2:2, S3:2,
+    T1:2, T2:1, T3:2,
+    M1:2, M2:2, M3:2, M4:2, M5:1,
+    R1:1, R2:1, R3:2, R4:1, R5:2, R6:2, R7:2, R8:2, R9:1,
+    L1:1, L2:2, L3:2, L4:2, L5:1,
+    G1:1, G2:2, G3:2, G4:2, G5:2, G6:2, G7:1,
+    F1:3, F2:2, F3:2, F4:2, F5:1,
+    E1:2, E2:2, E3:2, E4:2, E5:2,
+    A1:3, A2:2, A3:2, A4:2, A5:2,
+  };
 
   // diagnosis.axes에서 게이지 평탄화: { pipelineId: {raw, severity} }
   const flatGauges = {};
@@ -79,14 +104,18 @@ function _buildNarrativeGauges(diagnosis) {
     if (!gData) continue;
     const code = mapping.code;
     if (result[code]) continue;  // 중복 ssot코드 방지
-    // value는 반드시 숫자 또는 null (narrative-engine fmtValue가 ${v}로 사용)
+
     const rawVal = gData.raw;
     const numVal = (rawVal != null && !isNaN(Number(rawVal))) ? Number(rawVal) : null;
+
+    // 소수점 반올림 (narrative-engine fmtValue 기대치 맞춤)
+    const dec = DECIMAL_MAP[code] ?? 2;
+    const roundedVal = (numVal !== null) ? parseFloat(numVal.toFixed(dec)) : null;
+
     result[code] = {
-      available: numVal !== null,
-      value: numVal,
-      // change는 0으로 설정 (fmtChange가 ""(empty)를 반환하여 value에 (0억$) 접미사 방지
-      change: null,
+      available: roundedVal !== null,
+      value: roundedVal,
+      change: null,  // 변화량 없음 — fmtChange가 빈 문자열 반환
       grade: sevToGrade(gData.severity),
       name: mapping.name || pid,
     };
@@ -1112,17 +1141,38 @@ function _buildAxisGauges(axisKey, diagnosis, D) {
     return '○ 정상';
   };
   const SEV_STATUS = (sev) => sev >= 4.0 ? 'alert' : sev >= 3.0 ? 'caution' : 'normal';
-  return gauges.map(g => ({
-    code:          g.gaugeId || g.code || g.id || '—',
-    name:          g.name || '—',
-    value:         g.raw != null ? (typeof g.raw === 'number' ? g.raw.toFixed(2) : String(g.raw)) : '—',
-    change:        g.unit || '—',
-    grade:         SEV_GRADE(g.severity),
-    status:        SEV_STATUS(g.severity),
-    organMetaphor: g.organMetaphor || g.metaphor || '—',
-    narrative:     g.narrative || [],
-    diagnosis:     g.diagnosis || `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
-  }));
+
+  // gauge-adapter ID_MAP에서 올바른 단위 가져오기 (core-engine unit보다 우선)
+  const idMapRef = (gaugeAdapter && gaugeAdapter.ID_MAP) ? gaugeAdapter.ID_MAP : {};
+
+  return gauges.map(g => {
+    const pid = g.gaugeId || g.code || g.id;
+    // gauge-adapter 단위 우선, 없으면 core-engine 단위
+    const correctUnit = (idMapRef[pid] && idMapRef[pid].unit) ? idMapRef[pid].unit : (g.unit || '');
+
+    // 소수점 포맷: raw + unit → "값단위" 형태
+    let valStr = '—';
+    if (g.raw != null) {
+      const n = typeof g.raw === 'number' ? g.raw : Number(g.raw);
+      if (!isNaN(n)) {
+        const dec = Math.abs(n) >= 1000 ? 0 : Math.abs(n) >= 100 ? 1 : 2;
+        valStr = correctUnit ? `${n.toFixed(dec)}${correctUnit}` : n.toFixed(dec);
+      } else {
+        valStr = String(g.raw);
+      }
+    }
+    return {
+      code:          g.gaugeId || g.code || g.id || '—',
+      name:          g.name || '—',
+      value:         valStr,
+      change:        '—',    // 변화량 미수집 — 항상 —
+      grade:         SEV_GRADE(g.severity),
+      status:        SEV_STATUS(g.severity),
+      organMetaphor: g.organMetaphor || g.metaphor || '—',
+      narrative:     g.narrative || [],
+      diagnosis:     g.diagnosis || `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
+    };
+  });
 }
 
 function _axisSum(axisKey, diagnosis, D) {
@@ -1182,18 +1232,35 @@ function _buildFallbackD(diagnosis, meta) {
 
   // 게이지 배열 생성
   const SEV_GRADE = sev => sev >= 4.5 ? '★★★ 경보' : sev >= 4.0 ? '★★ 경보' : sev >= 3.0 ? '★ 주의' : sev >= 2.0 ? '● 관찰' : '○ 정상';
+  const SEV_STATUS = sev => sev >= 4 ? 'alert' : sev >= 3 ? 'caution' : 'normal';
+  // 소수점 2자리 반올림 + 단위 붙이기 (단위가 있으면)
+  function fmtRaw(raw, unit) {
+    if (raw == null) return '—';
+    const n = typeof raw === 'number' ? raw : Number(raw);
+    if (isNaN(n)) return String(raw);
+    // 소수점 자릿수 결정: 정수에 가까우면 0, 소수 있으면 2자리
+    const dec = Math.abs(n) >= 100 ? 1 : Math.abs(n) >= 10 ? 2 : 2;
+    const formatted = n.toFixed(dec);
+    return unit ? `${formatted}${unit}` : formatted;
+  }
+  // gauge-adapter 단위 우선 사용
+  const idMapRef2 = (gaugeAdapter && gaugeAdapter.ID_MAP) ? gaugeAdapter.ID_MAP : {};
   function buildGaugeArr(ax) {
-    return (ax.gauges||[]).map(g => ({
-      code: g.gaugeId || '—',
-      name: g.name || '—',
-      value: g.raw != null ? (typeof g.raw==='number' ? g.raw.toFixed(2) : String(g.raw)) : '—',
-      change: g.unit || '—',
-      grade: SEV_GRADE(g.severity||0),
-      status: (g.severity||0) >= 4 ? 'alert' : (g.severity||0) >= 3 ? 'caution' : 'normal',
-      organMetaphor: '—',
-      narrative: [],
-      diagnosis: `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
-    }));
+    return (ax.gauges||[]).map(g => {
+      const pid = g.gaugeId || g.code || g.id;
+      const correctUnit = (idMapRef2[pid] && idMapRef2[pid].unit) ? idMapRef2[pid].unit : (g.unit || '');
+      return {
+        code: pid || '—',
+        name: g.name || '—',
+        value: fmtRaw(g.raw, correctUnit),
+        change: '—',   // 변화량 미수집 — 항상 —
+        grade: SEV_GRADE(g.severity||0),
+        status: SEV_STATUS(g.severity||0),
+        organMetaphor: '—',
+        narrative: [],
+        diagnosis: `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
+      };
+    });
   }
 
   const AX_KEYS = ['A1','A2','A3','A4','A5','A6','A7','A8','A9'];
@@ -1317,16 +1384,17 @@ async function renderDOCX(diagnosis, meta = {}) {
   const d = _buildDataObject(diagnosis, D, meta);
 
   // 3) 9축 게이지 데이터 빌드
+  // AX_DEF: axes9와 완전히 일치 (buildOverallVital 기준)
   const AX_DEF = [
-    { key:'A1', num:'A1.', name:'순환계 — 심장/폐', organ:'심폐계',    q:'심장과 폐가 정상인가?' },
-    { key:'A2', num:'A2.', name:'무역/제조업',        organ:'동맥 혈류', q:'대동맥에 피가 잘 흐르는가?' },
-    { key:'A3', num:'A3.', name:'골목시장',            organ:'미세혈관', q:'손끝 세포까지 산소가 가는가?' },
-    { key:'A4', num:'A4.', name:'부동산 X-ray',        organ:'뼈',       q:'뼈에 금이 갔는가?' },
-    { key:'A5', num:'A5.', name:'고용/가계',            organ:'근육+신경',q:'근육에 힘이 있는가?' },
-    { key:'A6', num:'A6.', name:'지역균형',             organ:'좌우 대칭',q:'한쪽이 마비되지 않았는가?' },
-    { key:'A7', num:'A7.', name:'금융스트레스',         organ:'혈액의 질',q:'피가 탁하지 않은가?' },
-    { key:'A8', num:'A8.', name:'에너지/자원',          organ:'산소 공급원',q:'산소통에 산소가 남아있는가?' },
-    { key:'A9', num:'A9.', name:'인구/노화',            organ:'신체 나이',q:'이 몸은 몇 살인가?' },
+    { key:'A1', num:'A1.', name:'순환계/심장폐',  organ:'심폐계',    q:'심장과 폐가 정상인가?' },
+    { key:'A2', num:'A2.', name:'무역/호흡계',    organ:'동맥 혈류', q:'대동맥에 피가 잘 흐르는가?' },
+    { key:'A3', num:'A3.', name:'소화계/내수',    organ:'미세혈관',  q:'손끝 세포까지 산소가 가는가?' },
+    { key:'A4', num:'A4.', name:'신경계/심리',    organ:'신경계',    q:'뼈에 금이 갔는가?' },
+    { key:'A5', num:'A5.', name:'면역계/금융',    organ:'혈액의 질', q:'혈액이 탁하지 않은가?' },
+    { key:'A6', num:'A6.', name:'내분비/물가',    organ:'호르몬',    q:'체내 호르몬이 균형인가?' },
+    { key:'A7', num:'A7.', name:'근골격/산업',    organ:'근육뼈',    q:'근육과 뼈가 튼튼한가?' },
+    { key:'A8', num:'A8.', name:'인구/취약계층',  organ:'신체 나이', q:'경제의 나이는 몇 살인가?' },
+    { key:'A9', num:'A9.', name:'재생/에너지',    organ:'산소 공급원',q:'산소통에 산소가 남아있는가?' },
   ];
 
   // 4) 문서 조립
