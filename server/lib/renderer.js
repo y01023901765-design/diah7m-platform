@@ -1024,19 +1024,27 @@ function _buildAxisGauges(axisKey, diagnosis, D) {
   const gaugeArr = (D && D[axKeyMap[axisKey]]) || [];
   if (gaugeArr.length > 0) return gaugeArr;
 
-  // fallback: diagnosis.axes 원본
+  // fallback: diagnosis.axes 원본 — 실제 구조: { gaugeId, name, raw, severity, unit }
   const axData = (diagnosis.axes || {})[axisKey] || {};
   const gauges = axData.gauges || [];
+  const SEV_GRADE = (sev) => {
+    if (sev >= 4.5) return '★★★ 경보';
+    if (sev >= 4.0) return '★★ 경보';
+    if (sev >= 3.0) return '★ 주의';
+    if (sev >= 2.0) return '● 관찰';
+    return '○ 정상';
+  };
+  const SEV_STATUS = (sev) => sev >= 4.0 ? 'alert' : sev >= 3.0 ? 'caution' : 'normal';
   return gauges.map(g => ({
-    code:          g.code || g.id || '—',
+    code:          g.gaugeId || g.code || g.id || '—',
     name:          g.name || '—',
-    value:         g.value != null ? String(g.value) : '—',
-    change:        g.change || '—',
-    grade:         g.grade || '—',
-    status:        g.status || 'normal',
+    value:         g.raw != null ? (typeof g.raw === 'number' ? g.raw.toFixed(2) : String(g.raw)) : '—',
+    change:        g.unit || '—',
+    grade:         SEV_GRADE(g.severity),
+    status:        SEV_STATUS(g.severity),
     organMetaphor: g.organMetaphor || g.metaphor || '—',
     narrative:     g.narrative || [],
-    diagnosis:     g.diagnosis || '—',
+    diagnosis:     g.diagnosis || `심각도 ${(g.severity||0).toFixed(2)} / 5.00`,
   }));
 }
 
