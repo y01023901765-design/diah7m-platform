@@ -1321,7 +1321,11 @@ function generateNarrative(result, rawData, meta) {
   };
 
   // ── v2.8 신규: 교차신호 서사 생성 ──
-  const _crossSignals = (result.crossSignals || []).map(cs => {
+  // crossSignals가 { active: [...], inactive: [] } 객체이거나 배열일 수 있음
+  const _crossSignalsRaw = Array.isArray(result.crossSignals)
+    ? result.crossSignals
+    : (result.crossSignals?.active || []);
+  const _crossSignals = _crossSignalsRaw.map(cs => {
     const tmpl = CROSS_SIGNAL_NARRATIVES[cs.pair] || {
       organ: '축간 연동', trigger: `${cs.pair}에서 교차 신호 감지`, risk: '축간 전이 위험',
     };
