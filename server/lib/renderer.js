@@ -1182,17 +1182,11 @@ async function renderPDF(diagnosis, outputStream) {
         size: 'A4',
         margins: { top: 50, bottom: 60, left: 50, right: 50 },
         bufferPages: true,
-        ownerPassword: process.env.PDF_OWNER_PASSWORD || 'diah7m-admin-2026',
-        permissions: {
-          printing: 'highResolution',
-          modifying: false,
-          copying: false,
-          annotating: false,
-          fillingForms: false,
-          contentAccessibility: true,
-          documentAssembly: false,
-        },
       });
+
+      // finish/end 이벤트를 doc에 먼저 붙인 뒤 pipe
+      doc.on('end', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
+      doc.on('error', reject);
       doc.pipe(outputStream);
 
       let D = null;
@@ -1308,15 +1302,6 @@ async function renderPDF(diagnosis, outputStream) {
       _pdfBodyText(doc, '© 인체국가경제론 / DIAH-7M / 윤종원');
 
       _pdfAddFooter(doc, pageNum);
-
-      // outputStream이 HTTP res(스트림)인 경우와 파일 WriteStream 양쪽 지원
-      if (typeof outputStream.on === 'function') {
-        outputStream.on('finish', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
-        outputStream.on('error', reject);
-      } else {
-        doc.on('end', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
-        doc.on('error', reject);
-      }
 
       doc.end();
     } catch (err) {
