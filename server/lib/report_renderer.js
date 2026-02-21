@@ -106,6 +106,61 @@ function resolveNested(obj, path) {
 }
 
 // ═══════════════════════════════════════════════
+// 1-b. 원값 포맷터 — 소수점 2자리 + 중복단위 제거
+// ═══════════════════════════════════════════════
+
+// 알려진 단위 목록 (긴 것 먼저)
+const KNOWN_UNITS = ['nW/cm²/sr','백만$','천명','억$','%p','pt','원','%','°C','bbl','조원','만원','만명','만TEU','TEU'];
+
+// narrative 문자열 내 중복 단위 및 긴 소수점 정리
+function cleanNarrative(text) {
+  if (!text) return text;
+  let s = text;
+  // 중복 단위 제거 (원원, %%, ptpt, 억$억$, 백만$백만$, 천명천명 등)
+  for (const u of KNOWN_UNITS) {
+    const esc = u.replace(/[$]/g, '\\$').replace(/[/]/g, '\\/').replace(/[°]/g, '\\°').replace(/[²]/g, '\\²');
+    try {
+      s = s.replace(new RegExp(`(\\d)(${esc})\\2`, 'g'), '$1$2');
+    } catch(e) { /* 정규식 오류 무시 */ }
+  }
+  // 긴 소수점 반올림 (4자리 이상 → 2자리)
+  s = s.replace(/([-\d]+\.\d{3,})/g, (m) => {
+    const n = parseFloat(m);
+    return isNaN(n) ? m : String(Math.round(n * 100) / 100);
+  });
+  return s;
+}
+
+function formatVal(raw) {
+  if (raw == null || raw === '' || raw === '-') return '-';
+  const s = String(raw).trim();
+
+  // 단위 분리: 끝에서 알려진 단위 찾기
+  let num = s, unit = '';
+  for (const u of KNOWN_UNITS) {
+    if (s.endsWith(u)) {
+      unit = u;
+      num = s.slice(0, s.length - u.length);
+      break;
+    }
+    // 중복 단위 (원원, %%, ptpt 등)
+    if (s.endsWith(u + u)) {
+      unit = u;
+      num = s.slice(0, s.length - u.length * 2);
+      break;
+    }
+  }
+
+  // 숫자 부분 소수점 2자리 반올림
+  const n = parseFloat(num);
+  if (!isNaN(n)) {
+    const rounded = Math.round(n * 100) / 100;
+    return `${rounded}${unit}`;
+  }
+  return s;  // 숫자가 아니면 원본 반환
+}
+
+// ═══════════════════════════════════════════════
 // 2. DOCX 빌더 프리미티브
 // ═══════════════════════════════════════════════
 
@@ -211,7 +266,7 @@ function extractGaugeRows(data, profile, diagnosis) {
       const code = codeFull.split(' ')[0];
       const name = codeFull.split(' ').slice(1).join(' ') || g.name || code;
       const flow = g.cat || (sectionKey === 'sec2_gauges' ? 'Input' : sectionKey === 'sec3_gauges' ? 'Output' : 'Axis');
-      const val = g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-');
+      const val = formatVal(g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-'));
       const grade = g.grade || statusMap[code] || '-';
 
       // METAPHOR 테이블에서 인체비유 자동 주입
@@ -224,7 +279,7 @@ function extractGaugeRows(data, profile, diagnosis) {
         name,
         flow,
         val,
-        detail: g.narrative || g.judge || '',
+        detail: cleanNarrative(g.narrative || g.judge || ''),
         metaphor: _metaphor,
         status: grade,
         score: grade.includes('경보') ? 2 : grade.includes('주의') ? 1 : 0,
@@ -517,7 +572,7 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
         const dg = _dGaugeMap[row.id];
         if (dg) {
           if (!row.metaphor && dg.metaphor) row.metaphor = dg.metaphor;
-          if (dg.narrative) row.detail = dg.narrative;  // narrative 항상 우선 적용
+          if (dg.narrative) row.detail = cleanNarrative(dg.narrative);  // narrative 항상 우선 적용
         }
       }
     } catch (neErr) {
@@ -869,9 +924,9 @@ function renderSection(section, ctx) {
       const axRows = axisGauges.map(g => {
         const code  = (g.code || '').split(' ')[0];
         const name  = (g.code || '').split(' ').slice(1).join(' ') || g.name || code;
-        const val   = g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-');
+        const val   = formatVal(g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-'));
         const grade = g.grade || '-';
-        const narr  = g.narrative || g.diagnosis || g.judge || '';
+        const narr  = cleanNarrative(g.narrative || g.diagnosis || g.judge || '');
         const sat   = g._source === 'satellite' || (narrativeEngine?.METAPHOR?.[code]?.satellite) ? ' 🛰' : '';
         const fill  = gradeColor(grade);
 
