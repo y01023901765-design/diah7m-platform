@@ -242,6 +242,29 @@ app.post('/api/admin/cb/reset', (req, res) => {
   res.json({ ok: true, reset: 'ALL' });
 });
 
+// ── [임시] admin 강제 초기화 (로그인 복구용, 사용 후 삭제) ──
+app.get('/api/debug/init-admin', async (req, res) => {
+  if (!db || !db.connected) return res.status(503).json({ error: 'DB unavailable' });
+  if (!auth || !auth.hashPassword) return res.status(503).json({ error: 'Auth unavailable' });
+  try {
+    const adminPw = process.env.ADMIN_PASSWORD || 'M12345678@';
+    const hash = auth.hashPassword(adminPw);
+    const existing = await db.get("SELECT id FROM users WHERE email='admin@diah7m.com'");
+    if (existing) {
+      await db.run("UPDATE users SET password_hash=?, plan='ENTERPRISE', role='admin' WHERE email='admin@diah7m.com'", [hash]);
+      return res.json({ ok: true, action: 'updated', email: 'admin@diah7m.com' });
+    } else {
+      await db.run(
+        "INSERT INTO users (email, password_hash, name, plan, role, mileage) VALUES ('admin@diah7m.com',?,'Admin','ENTERPRISE','admin',99999)",
+        [hash]
+      );
+      return res.json({ ok: true, action: 'created', email: 'admin@diah7m.com' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 관리자 계정 재생성 (패스워드 분실 복구용) ──
 // POST /api/admin/reset-admin?key=ADMIN_PASSWORD(또는 ADMIN_RESET_TOKEN)&newpw=새비밀번호
 app.post('/api/admin/reset-admin', async (req, res) => {
