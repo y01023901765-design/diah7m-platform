@@ -335,11 +335,14 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
     n.diah_narrative = "DIAH 트리거: 미발동.";
   }
 
-  // 교차신호 서사
+  // 교차신호 서사 (core-engine 필드: pair/name/desc 또는 a/b/tier/meaning 양쪽 대응)
   if (diagnosis.crossSignals.active.length > 0) {
-    n.cross_signal_narrative = diagnosis.crossSignals.active.map(cs =>
-      `${cs.a}↔${cs.b} (Tier ${cs.tier}): ${cs.meaning}`
-    ).join('. ');
+    n.cross_signal_narrative = diagnosis.crossSignals.active.map(cs => {
+      const pair    = cs.pair    || `${cs.a}↔${cs.b}` || '?↔?';
+      const meaning = cs.desc    || cs.meaning          || cs.name || '';
+      const tier    = cs.tier    || (cs.level?.label)   || '';
+      return `${pair}${tier ? ' (' + tier + ')' : ''}: ${meaning}`;
+    }).join('. ');
   } else {
     n.cross_signal_narrative = "활성 교차신호 없음.";
   }
@@ -384,7 +387,9 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
   });
   // 교차신호 기반
   diagnosis.crossSignals.active.forEach(cs => {
-    n.auto_watchpoints.push(`교차신호 ${cs.a}↔${cs.b}: ${cs.meaning} 지속 여부 관측.`);
+    const _pair = cs.pair || `${cs.a}↔${cs.b}` || '?↔?';
+    const _mean = cs.desc || cs.meaning || cs.name || '';
+    n.auto_watchpoints.push(`교차신호 ${_pair}: ${_mean} 지속 여부 관측.`);
   });
   // DIAH 기반
   activeLetters.forEach(l => {
@@ -419,7 +424,7 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
         },
         m7:          { pathways: [mini.stage || '0M'] },
         crossSignals: (diagnosis.crossSignals.active || []).map(cs => ({
-          pair: `${cs.a}-${cs.b}`, severity: cs.tier || 1, boost: cs.boost || 0,
+          pair: cs.pair || `${cs.a || '?'}-${cs.b || '?'}`, severity: cs.tier || cs.level || 1, boost: cs.boost || 0,
         })),
       };
       const _rawData = {};
@@ -777,12 +782,15 @@ function renderSection(section, ctx) {
 
       if (diagnosis.crossSignals.active.length > 0) {
         for (const cs of diagnosis.crossSignals.active) {
+          const _pair = cs.pair || `${cs.a || '?'}↔${cs.b || '?'}`;
+          const _tier = cs.tier || cs.level?.label || cs.level || '';
+          const _mean = cs.desc || cs.meaning || cs.name || '';
           children.push(makeMultiRunPara([
             { text: "활성 교차신호: ", bold: true },
-            { text: `${cs.a} ↔ ${cs.b}`, bold: true, color: colors.accent },
-            { text: ` (Tier ${cs.tier})` },
+            { text: _pair, bold: true, color: colors.accent },
+            { text: _tier ? ` (Tier ${_tier})` : '' },
           ]));
-          children.push(makePara(`의미: ${cs.meaning}`));
+          children.push(makePara(`의미: ${_mean}`));
         }
       } else {
         children.push(makePara("활성 교차신호 없음."));
@@ -800,6 +808,98 @@ function renderSection(section, ctx) {
         for (const p of inactivePairs) {
           children.push(makePara(`${p.a}↔${p.b}: ${p.meaning} — 미발동.`, { color: "777777" }));
         }
+      }
+      break;
+    }
+
+    // ─── 9축 개별 섹션 (axis2~axis9) ───
+    case 'axis_section': {
+      const axisKey    = section.data_key;
+      const availKey   = section.available_key;
+      const narrKey    = section.summary_key;
+      const axisGauges = (data[axisKey] || []);
+
+      children.push(makeHeading(interpolate(section.heading, ctx.vars), section.level));
+
+      // 데이터 없으면 스킵
+      if (!data[availKey] || axisGauges.length === 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: '수집 데이터 없음 (해당 축 게이지 미수집)', color: colors.gray, size: 18 })],
+          spacing: { after: 120 },
+        }));
+        break;
+      }
+
+      // 위성 포함 안내
+      if (section.satellite_note) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `※ ${section.satellite_note}`, color: colors.primary, size: 18, italics: true })],
+          spacing: { after: 80 },
+        }));
+      }
+
+      // 게이지 테이블 (코드 / 지표명 / 원값 / 등급 / 판정서사)
+      const axColWidths = [
+        Math.round(contentWidth * 0.08),
+        Math.round(contentWidth * 0.22),
+        Math.round(contentWidth * 0.15),
+        Math.round(contentWidth * 0.12),
+        Math.round(contentWidth * 0.43),
+      ];
+      const axHeaders = ['코드', '지표명', '원값', '등급', '판정 (인체비유)'];
+      const fills = template.styles?.fills || {};
+      const gradeColor = (grade) => {
+        if (!grade) return fills.header || 'D9D9D9';
+        if (grade.includes('경보') || grade.includes('★')) return fills.alert || 'FFCDD2';
+        if (grade.includes('주의') || grade.includes('●')) return fills.warn  || 'FFF9C4';
+        return fills.ok || 'E8F5E9';
+      };
+
+      const axHeaderRow = new TableRow({
+        children: axHeaders.map((h, i) => new TableCell({
+          width: { size: axColWidths[i], type: WidthType.DXA },
+          shading: { fill: fills.header || 'D9D9D9', type: ShadingType.CLEAR },
+          children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 18 })] })],
+        })),
+      });
+
+      const axRows = axisGauges.map(g => {
+        const code  = (g.code || '').split(' ')[0];
+        const name  = (g.code || '').split(' ').slice(1).join(' ') || g.name || code;
+        const val   = g.raw || g.value || (g._raw_num != null ? String(g._raw_num) : '-');
+        const grade = g.grade || '-';
+        const narr  = g.narrative || g.diagnosis || g.judge || '';
+        const sat   = g._source === 'satellite' || (narrativeEngine?.METAPHOR?.[code]?.satellite) ? ' 🛰' : '';
+        const fill  = gradeColor(grade);
+
+        return new TableRow({
+          children: [
+            new TableCell({ width: { size: axColWidths[0], type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: code + sat, size: 18 })] })] }),
+            new TableCell({ width: { size: axColWidths[1], type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: name, size: 18 })] })] }),
+            new TableCell({ width: { size: axColWidths[2], type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: String(val), size: 18 })] })] }),
+            new TableCell({ width: { size: axColWidths[3], type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: grade, size: 18, bold: grade.includes('경보') })] })] }),
+            new TableCell({ width: { size: axColWidths[4], type: WidthType.DXA }, shading: { fill, type: ShadingType.CLEAR },
+              children: [new Paragraph({ children: [new TextRun({ text: narr, size: 18 })] })] }),
+          ],
+        });
+      });
+
+      children.push(new Table({
+        width: { size: contentWidth, type: WidthType.DXA },
+        rows: [axHeaderRow, ...axRows],
+      }));
+
+      // 축 요약 서사
+      const axNarr = data[narrKey] || '';
+      if (axNarr) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: axNarr, size: 18, color: colors.dark })],
+          spacing: { before: 120, after: 120 },
+        }));
       }
       break;
     }

@@ -136,8 +136,73 @@
       ]
     },
 
+    { "type": "axis_section",
+      "heading": "7. A2 호흡계 — 무역/제조 (동맥 혈관)",
+      "level": 1,
+      "data_key": "axis2_gauges",
+      "summary_key": "axis2_summaryNarrative",
+      "available_key": "axis2_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "8. A3 소화계 — 골목시장/내수 (미세혈관)",
+      "level": 1,
+      "data_key": "axis3_gauges",
+      "summary_key": "axis3_summaryNarrative",
+      "available_key": "axis3_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "9. A4 신경계 — 부동산/자산 (골격)",
+      "level": 1,
+      "data_key": "axis4_gauges",
+      "summary_key": "axis4_summaryNarrative",
+      "available_key": "axis4_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "10. A5 면역계 — 고용/가계 (근육/신경)",
+      "level": 1,
+      "data_key": "axis5_gauges",
+      "summary_key": "axis5_summaryNarrative",
+      "available_key": "axis5_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "11. A6 내분비계 — 지역균형/대외 (좌우대칭)",
+      "level": 1,
+      "data_key": "axis6_gauges",
+      "summary_key": "axis6_summaryNarrative",
+      "available_key": "axis6_available",
+      "satellite_note": "S3_NIGHTLIGHT(야간광량) 위성 포함"
+    },
+
+    { "type": "axis_section",
+      "heading": "12. A7 근골격계 — 금융스트레스 (혈액의 질)",
+      "level": 1,
+      "data_key": "axis7_gauges",
+      "summary_key": "axis7_summaryNarrative",
+      "available_key": "axis7_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "13. A8 인구/취약 — 물가/재정 (산소 공급원)",
+      "level": 1,
+      "data_key": "axis8_gauges",
+      "summary_key": "axis8_summaryNarrative",
+      "available_key": "axis8_available"
+    },
+
+    { "type": "axis_section",
+      "heading": "14. A9 재생/대외 — 인구/노화 (신체 나이)",
+      "level": 1,
+      "data_key": "axis9_gauges",
+      "summary_key": "axis9_summaryNarrative",
+      "available_key": "axis9_available"
+    },
+
     { "type": "auxiliary_table",
-      "heading": "7. 보조 정보",
+      "heading": "15. 보조 정보 (위성·대외)",
       "level": 1,
       "columns": [
         { "label": "항목",  "width_pct": 30 },
