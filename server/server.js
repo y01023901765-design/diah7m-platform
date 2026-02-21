@@ -242,6 +242,37 @@ app.post('/api/admin/cb/reset', (req, res) => {
   res.json({ ok: true, reset: 'ALL' });
 });
 
+// ── 관리자 계정 재생성 (패스워드 분실 복구용) ──
+// POST /api/admin/reset-admin?key=ADMIN_PASSWORD&newpw=새비밀번호
+app.post('/api/admin/reset-admin', async (req, res) => {
+  const key   = req.query.key   || req.headers['x-admin-key'];
+  const newpw = req.query.newpw || req.body?.newpw;
+  if (!key || key !== process.env.ADMIN_PASSWORD) {
+    return res.status(403).json({ error: 'Admin key required' });
+  }
+  if (!newpw || newpw.length < 8) {
+    return res.status(400).json({ error: 'newpw must be at least 8 characters' });
+  }
+  if (!db || !db.connected) return res.status(503).json({ error: 'DB unavailable' });
+  if (!auth || !auth.hashPassword) return res.status(503).json({ error: 'Auth unavailable' });
+  try {
+    const hash = auth.hashPassword(newpw);
+    const existing = await db.get("SELECT id FROM users WHERE email='admin@diah7m.com'");
+    if (existing) {
+      await db.run("UPDATE users SET password_hash=?, plan='ENTERPRISE', role='admin' WHERE email='admin@diah7m.com'", [hash]);
+      return res.json({ ok: true, action: 'updated', email: 'admin@diah7m.com' });
+    } else {
+      await db.run(
+        "INSERT INTO users (email, password_hash, name, plan, role, mileage) VALUES ('admin@diah7m.com',?,'Admin','ENTERPRISE','admin',99999)",
+        [hash]
+      );
+      return res.json({ ok: true, action: 'created', email: 'admin@diah7m.com' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 관리자: SMS 테스트 알림 발송 ──
 app.post('/api/admin/alert/test', async (req, res) => {
   const key = req.query.key || req.headers['x-admin-key'];
