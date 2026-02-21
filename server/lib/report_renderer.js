@@ -110,20 +110,20 @@ function resolveNested(obj, path) {
 // ═══════════════════════════════════════════════
 
 function makeBorder(color) {
-  const b = { style: BorderStyle.SINGLE, size: 1, color: color || "BFC9D9" };
+  const b = { style: BorderStyle.SINGLE, size: 1, color: color || "CCCCCC" };
   return { top: b, bottom: b, left: b, right: b };
 }
 
 function makeHeaderCellEl(text, width, colors) {
   return new TableCell({
-    borders: makeBorder(colors.border),
+    borders: makeBorder("CCCCCC"),
     width: { size: width, type: WidthType.DXA },
-    shading: { fill: colors.primary, type: ShadingType.CLEAR },
+    shading: { fill: "D9D9D9", type: ShadingType.CLEAR },
     margins: { top: 60, bottom: 60, left: 100, right: 100 },
     verticalAlign: "center",
     children: [new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text, bold: true, color: "FFFFFF", font: "Arial", size: 18 })]
+      children: [new TextRun({ text, bold: true, color: "000000", font: "맑은 고딕", size: 18 })]
     })]
   });
 }
@@ -131,7 +131,7 @@ function makeHeaderCellEl(text, width, colors) {
 function makeCellEl(text, width, opts = {}) {
   const { bold, color, fill, align, size: sz, font: ft, borders: bd } = opts;
   return new TableCell({
-    borders: bd || makeBorder(opts.borderColor || "BFC9D9"),
+    borders: bd || makeBorder(opts.borderColor || "CCCCCC"),
     width: { size: width, type: WidthType.DXA },
     shading: fill ? { fill, type: ShadingType.CLEAR } : undefined,
     margins: { top: 60, bottom: 60, left: 100, right: 100 },
@@ -140,15 +140,18 @@ function makeCellEl(text, width, opts = {}) {
       alignment: align || AlignmentType.LEFT,
       children: [new TextRun({
         text: text || "", bold: bold || false, color: color || "333333",
-        font: ft || "Arial", size: sz || 18
+        font: ft || "맑은 고딕", size: sz || 18
       })]
     })]
   });
 }
 
 function makeHeading(text, level) {
-  const lvl = level === 1 ? HeadingLevel.HEADING_1 : HeadingLevel.HEADING_2;
-  return new Paragraph({ heading: lvl, spacing: { before: 280, after: 120 }, children: [new TextRun({ text, font: "Arial" })] });
+  const sz = level === 1 ? 28 : 24;  // 14pt / 12pt (half-pt 단위)
+  return new Paragraph({
+    spacing: { before: 320, after: 160 },
+    children: [new TextRun({ text, font: "맑은 고딕", size: sz, bold: true, color: "000000" })]
+  });
 }
 
 function makePara(text, opts = {}) {
@@ -156,7 +159,7 @@ function makePara(text, opts = {}) {
     spacing: { before: 60, after: 60, line: 320 },
     alignment: opts.align,
     children: [new TextRun({
-      text, font: opts.font || "Arial", size: opts.size || 20,
+      text, font: opts.font || "맑은 고딕", size: opts.size || 22,
       color: opts.color || "333333", bold: opts.bold || false, italics: opts.italics || false,
     })]
   });
@@ -167,7 +170,7 @@ function makeMultiRunPara(runs, opts = {}) {
     spacing: { before: opts.before || 60, after: opts.after || 60, line: opts.line || 320 },
     alignment: opts.align,
     children: runs.map(r => new TextRun({
-      text: r.text, font: r.font || "Arial", size: r.size || 20,
+      text: r.text, font: r.font || "맑은 고딕", size: r.size || 22,
       color: r.color || "333333", bold: r.bold || false, italics: r.italics || false,
     }))
   });
@@ -540,81 +543,85 @@ function renderSection(section, ctx) {
 
     // ─── 표지 ───
     case 'cover': {
-      children.push(spacer(2000));
-      children.push(new Paragraph({
-        alignment: AlignmentType.CENTER, spacing: { after: 100 },
-        children: [new TextRun({ text: section.title_main, font: "Arial", size: 56, bold: true, color: colors.primary })]
-      }));
+      const SEP = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+      children.push(spacer(1600));
+
+      // 🏥 이모지 (36pt)
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER, spacing: { after: 60 },
-        children: [new TextRun({ text: section.subtitle, font: "Arial", size: 24, color: "666666" })]
+        children: [new TextRun({ text: "🏥", font: "맑은 고딕", size: 72, bold: true })]
+      }));
+      // 메인 타이틀 (20pt 볼드)
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 60 },
+        children: [new TextRun({ text: section.title_main, font: "맑은 고딕", size: 40, bold: true })]
+      }));
+      // 영문 서브타이틀 (14pt)
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 120 },
+        children: [new TextRun({ text: section.subtitle, font: "맑은 고딕", size: 28, bold: true })]
       }));
       children.push(spacer(200));
 
+      // 기준월 (18pt 볼드) — 원본 스타일
       const dynTitle = interpolate(section.dynamic_title, ctx.vars);
-      const dynSub = interpolate(section.dynamic_subtitle, ctx.vars);
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER, spacing: { after: 80 },
-        children: [new TextRun({ text: dynTitle, font: "Arial", size: 36, bold: true, color: colors.dark })]
+        children: [new TextRun({ text: dynTitle, font: "맑은 고딕", size: 36, bold: true })]
+      }));
+
+      // 구분선
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 80 },
+        children: [new TextRun({ text: SEP, font: "맑은 고딕", size: 22 })]
+      }));
+
+      // 종합 판정 (28pt 볼드)
+      const alertLevel = mini.alert_level;
+      const dualLockText = mini.dual_lock
+        ? (section.summary_box?.fields?.find(f => f.label === "이중봉쇄")?.format_true || "⚠ 발동")
+        : (section.summary_box?.fields?.find(f => f.label === "이중봉쇄")?.format_false || "미발동");
+      const stageEmoji = alertLevel >= 5 ? "🔴" : alertLevel >= 3 ? "🟠" : alertLevel >= 1 ? "🟡" : "🟢";
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 80 },
+        children: [new TextRun({ text: `${stageEmoji} ${alertLevel}단계: ${mini.diah_detail?.split(' — ')[0] || '판정'}`, font: "맑은 고딕", size: 56, bold: true })]
+      }));
+
+      // 한줄 서사 (12pt 볼드)
+      const oneLiner = data.oneLiner || data.sec5_currentText || '';
+      if (oneLiner) {
+        children.push(new Paragraph({
+          alignment: AlignmentType.CENTER, spacing: { after: 80 },
+          children: [new TextRun({ text: oneLiner, font: "맑은 고딕", size: 24, bold: true })]
+        }));
+      }
+
+      // 구분선
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 80 },
+        children: [new TextRun({ text: SEP, font: "맑은 고딕", size: 22 })]
+      }));
+
+      // CAM/DLT + 이중봉쇄 (11pt 볼드)
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 60 },
+        children: [new TextRun({ text: `CAM(자본대사): ${data.camStatus || '-'}  |  DLT(말단순환): ${data.dltStatus || '-'}`, font: "맑은 고딕", size: 22, bold: true })]
+      }));
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 60 },
+        children: [new TextRun({ text: `이중봉쇄: ${mini.dual_lock ? '⚠ 발동' : '없음'}  |  DIAH 트리거: ${mini.diah_detail || '없음'}`, font: "맑은 고딕", size: 22, bold: true })]
+      }));
+
+      // 기준월/작성일 (10pt 볼드)
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER, spacing: { after: 40 },
+        children: [new TextRun({ text: `기준월: ${ctx.vars.기준월 || mini.period}  |  작성일: ${data["수집일"] || ''}`, font: "맑은 고딕", size: 20, bold: true })]
       }));
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER, spacing: { after: 40 },
-        children: [new TextRun({ text: dynSub, font: "Arial", size: 22, color: "888888" })]
+        children: [new TextRun({ text: `진단엔진: ${mini.engine}`, font: "맑은 고딕", size: 20, bold: true })]
       }));
 
-      // 요약 박스
-      if (section.summary_box && section.summary_box.show) {
-        children.push(spacer(300));
-        const alertLevel = mini.alert_level;
-        const dualLockText = mini.dual_lock
-          ? interpolate(section.summary_box.fields.find(f => f.label === "이중봉쇄")?.format_true || '', ctx.vars)
-          : interpolate(section.summary_box.fields.find(f => f.label === "이중봉쇄")?.format_false || '', ctx.vars);
-
-        const bigBorder = { style: BorderStyle.SINGLE, size: 3, color: colors.primary };
-        children.push(new Table({
-          width: { size: contentWidth, type: WidthType.DXA },
-          columnWidths: [contentWidth],
-          rows: [new TableRow({
-            children: [new TableCell({
-              borders: { top: bigBorder, bottom: bigBorder, left: bigBorder, right: bigBorder },
-              width: { size: contentWidth, type: WidthType.DXA },
-              shading: { fill: "EBF0F7", type: ShadingType.CLEAR },
-              margins: { top: 200, bottom: 200, left: 300, right: 300 },
-              children: [
-                new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 },
-                  children: [new TextRun({ text: `경보 ${alertLevel}단계 — ${dualLockText}`, font: "Arial", size: 28, bold: true, color: colors.accent })] }),
-                new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 },
-                  children: [
-                    new TextRun({ text: `Input ${mini.in.score}/${mini.in.threshold}`, font: "Arial", size: 20, color: colors.dark }),
-                    new TextRun({ text: "  |  ", font: "Arial", size: 20, color: "AAAAAA" }),
-                    new TextRun({ text: `Output ${mini.out.score}/${mini.out.threshold}`, font: "Arial", size: 20, color: colors.dark }),
-                    new TextRun({ text: "  |  ", font: "Arial", size: 20, color: "AAAAAA" }),
-                    new TextRun({ text: `DIAH: ${mini.diah_detail}`, font: "Arial", size: 20, bold: true, color: colors.accent }),
-                  ] }),
-                new Paragraph({ alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: `양호 ${ctx.vars.양호} / 주의 ${ctx.vars.주의} / 경보 ${ctx.vars.경보}`, font: "Arial", size: 20, color: "555555" })] }),
-              ]
-            })]
-          })]
-        }));
-      }
-
-      // 메타 라인
-      if (section.meta_line && section.meta_line.show) {
-        children.push(spacer(300));
-        children.push(new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: `Engine: ${mini.engine}  |  Profile: ${mini.profile_hash}  |  Repro: ${mini.repro_key}`, font: "Arial", size: 14, color: "999999" }),
-          ]
-        }));
-        children.push(new Paragraph({
-          alignment: AlignmentType.CENTER, spacing: { after: 100 },
-          children: [
-            new TextRun({ text: `수집일: ${data["수집일"]}  |  신뢰도: ${mini.confidence} (축1 ${data["수집상태"]})`, font: "Arial", size: 14, color: "999999" }),
-          ]
-        }));
-      }
       children.push(pageBreak());
       break;
     }
@@ -962,7 +969,7 @@ function renderSection(section, ctx) {
       children.push(spacer(300));
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: `——— ${section.text} ———`, font: "Arial", size: 16, color: "BBBBBB" })]
+        children: [new TextRun({ text: `——— ${section.text} ———`, font: "맑은 고딕", size: 16, color: "BBBBBB" })]
       }));
       if (section.show_meta) {
         children.push(new Paragraph({
@@ -1061,7 +1068,7 @@ async function render(opts) {
         default: new Header({
           children: [new Paragraph({
             alignment: AlignmentType.RIGHT,
-            children: [new TextRun({ text: headerText, font: "Arial", size: 14, color: "AAAAAA" })]
+            children: [new TextRun({ text: headerText, font: "맑은 고딕", size: 14, color: "AAAAAA" })]
           })]
         })
       } : undefined,
@@ -1070,8 +1077,8 @@ async function render(opts) {
           children: [new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
-              new TextRun({ text: "CONFIDENTIAL  |  Page ", font: "Arial", size: 14, color: "AAAAAA" }),
-              new TextRun({ children: [PageNumber.CURRENT], font: "Arial", size: 14, color: "AAAAAA" }),
+              new TextRun({ text: "CONFIDENTIAL  |  Page ", font: "맑은 고딕", size: 14, color: "AAAAAA" }),
+              new TextRun({ children: [PageNumber.CURRENT], font: "맑은 고딕", size: 14, color: "AAAAAA" }),
             ]
           })]
         })
