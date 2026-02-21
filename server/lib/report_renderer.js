@@ -340,7 +340,7 @@ function generateNarratives(mini, diagnosis, gaugeRows, profile, data) {
     n.cross_signal_narrative = diagnosis.crossSignals.active.map(cs => {
       const pair    = cs.pair    || `${cs.a}↔${cs.b}` || '?↔?';
       const meaning = cs.desc    || cs.meaning          || cs.name || '';
-      const tier    = cs.tier    || (cs.level?.label)   || '';
+      const tier    = cs.tier    || cs.level?.name || cs.level?.label || '';
       return `${pair}${tier ? ' (' + tier + ')' : ''}: ${meaning}`;
     }).join('. ');
   } else {
@@ -730,9 +730,11 @@ function renderSection(section, ctx) {
     // ─── DIAH 트리거 ───
     case 'diah_analysis': {
       children.push(makeHeading(interpolate(section.heading, ctx.vars), section.level));
+      // ssot_engine의 sec4_verdict (실제 데이터), 없으면 diah.summary 폴백
+      const _diahVerdict = data.sec4_verdict || data.diahStatus || diagnosis.diah.summary || '미발동';
       children.push(makeMultiRunPara([
-        { text: "발동 코드: ", bold: true },
-        { text: diagnosis.diah.summary, bold: true, color: colors.accent },
+        { text: "판정: ", bold: true },
+        { text: _diahVerdict, bold: true, color: colors.accent },
       ]));
       children.push(spacer(80));
 
@@ -783,7 +785,7 @@ function renderSection(section, ctx) {
       if (diagnosis.crossSignals.active.length > 0) {
         for (const cs of diagnosis.crossSignals.active) {
           const _pair = cs.pair || `${cs.a || '?'}↔${cs.b || '?'}`;
-          const _tier = cs.tier || cs.level?.label || cs.level || '';
+          const _tier = cs.tier || cs.level?.name || cs.level?.label || '';
           const _mean = cs.desc || cs.meaning || cs.name || '';
           children.push(makeMultiRunPara([
             { text: "활성 교차신호: ", bold: true },
