@@ -76,7 +76,8 @@ function DocxDownloadPanel({ lang, user }) {
     setLoading(true); setErrMsg('');
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
-      await downloadFile(`${apiBase}/api/v1/diagnosis/kr/pdf`, `경제건강검진_KR.pdf`);
+      const p2 = new Date().toISOString().slice(0,7);
+      await downloadFile(`${apiBase}/api/v1/diagnosis/kr/pdf`, `경제건강검진_${p2}_KR.docx`);
     } catch(e) {
       setErrMsg(e.message || '다운로드 실패');
       console.error('[PDF]', e);
@@ -120,20 +121,25 @@ function DocxDownloadPanel({ lang, user }) {
         </>
       )}
 
-      {/* PDF — 구독자(BASIC 이상) + 관리자 */}
+      {/* 보고서 DOCX — 구독자(BASIC 이상) + 관리자 */}
       <div style={{fontSize:'12px',fontWeight:600,color:'#1a56db',marginBottom:'8px'}}>
-        📄 {L==='ko'?'보고서 다운로드 (PDF, 열람 전용)':'Report Download (PDF, Read-only)'}
+        📄 {L==='ko'?'보고서 다운로드 (Word/DOCX)':'Report Download (Word/DOCX)'}
+      </div>
+      <div style={{fontSize:'11px',color:'#555',marginBottom:'6px'}}>
+        {L==='ko'
+          ? 'Word 또는 LibreOffice로 열어 PDF 저장 가능합니다.'
+          : 'Open with Word or LibreOffice and save as PDF.'}
       </div>
       {canPdf ? (
         <button onClick={handlePdf} disabled={loading}
           style={{padding:'5px 16px',background:loading?'#aaa':'linear-gradient(135deg,#1a56db,#6366f1)',
             color:'#fff',border:'none',borderRadius:'6px',fontSize:'13px',
             fontWeight:600,cursor:loading?'not-allowed':'pointer',whiteSpace:'nowrap'}}>
-          {loading?(L==='ko'?'생성 중...':'Generating...'):(L==='ko'?'PDF 보고서 받기':'Get PDF Report')}
+          {loading?(L==='ko'?'생성 중...':'Generating...'):(L==='ko'?'보고서 받기 (DOCX)':'Get Report (DOCX)')}
         </button>
       ) : (
         <div style={{fontSize:'12px',color:'#888',padding:'6px 0'}}>
-          🔒 {L==='ko'?'BASIC 이상 구독 시 PDF 다운로드 가능합니다.':'PDF download available for BASIC plan and above.'}
+          🔒 {L==='ko'?'BASIC 이상 구독 시 보고서 다운로드 가능합니다.':'Report download available for BASIC plan and above.'}
         </div>
       )}
 

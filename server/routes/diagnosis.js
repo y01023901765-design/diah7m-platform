@@ -683,9 +683,9 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
   });
 
   // ── PDF 보고서 다운로드 (GET /api/v1/diagnosis/kr/pdf) ──
-  // 로그인 필수 — 구독자(BASIC 이상) 또는 관리자
+  // 실제로는 DOCX를 반환 — PDFKit 한글 렌더링 이슈 우회
+  // Word/LibreOffice에서 열어 PDF로 저장 가능
   router.get('/diagnosis/kr/pdf', requireAuth, async (req, res) => {
-    // FREE 플랜은 PDF 불가
     const plan = req.user?.plan || 'FREE';
     const role = req.user?.role || 'user';
     if (plan === 'FREE' && role !== 'admin') {
@@ -696,15 +696,24 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         return res.status(503).json({ error: 'Engine unavailable' });
       }
 
+      const period = new Date().toISOString().slice(0, 7);
+
       // 1) 게이지 데이터 수집
       let gaugeData = {};
       if (dataStore) {
-        gaugeData = dataStore.toGaugeData ? dataStore.toGaugeData() : {};
+        if (dataStore.getSnapshot) gaugeData = await dataStore.getSnapshot('KR', 'M', period);
+        if (Object.keys(gaugeData).length === 0 && dataStore.toGaugeData) gaugeData = dataStore.toGaugeData();
       }
 
-      // 2) core-engine 진단 (DOCX 엔드포인트와 동일한 방식)
-      let diagnosis;
-      if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
+      // 2) core-engine 진단
+      let diagnosis = {
+        overall: { stage: '0M', score: 0, label: '정상' },
+        dualLock: { active: false, contributors: { input_top3: [], output_top3: [] } },
+        diah: { activatedLetters: [], activated: {}, summary: '미발동' },
+        crossSignals: { active: [], inactive: [] },
+        axes: {},
+      };
+      if (Object.keys(gaugeData).length > 0) {
         try {
           const numericMap = {};
           for (const [k, v] of Object.entries(gaugeData)) {
@@ -712,40 +721,39 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
             if (num !== null) numericMap[k] = num;
           }
           diagnosis = engine.diagnose(numericMap);
-        } catch (_) { /* ignore — 폴백으로 진행 */ }
+        } catch (_) { /* ignore */ }
       }
-      // 폴백: axes 구조를 갖춘 최소 진단 객체 (DEMO_DIAGNOSIS는 axes 없어서 사용 불가)
-      if (!diagnosis || !diagnosis.axes) {
-        diagnosis = {
-          overall: { score: 0, level: 1, levelName: '정상', color: '#22c55e' },
-          axes: {},
-          crossSignals: [],
-          dualLock: { active: false, criticalAxes: [] },
-          period: new Date().toISOString().slice(0, 7),
-        };
-      }
-      // 누락 필드 안전 보강
-      if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, criticalAxes: [] };
-      if (!diagnosis.dualLock.criticalAxes) diagnosis.dualLock.criticalAxes = [];
-      if (!diagnosis.crossSignals) diagnosis.crossSignals = [];
-      if (Array.isArray(diagnosis.crossSignals)) {
-        // crossSignals가 { active, inactive } 객체일 수도 있음 — cross 섹션은 배열로 쓰므로 active만 추출
-        // renderer.js cross는 직접 배열로 씀 — 그대로 유지
+      // 누락 필드 보강 (renderDOCX 와 동일)
+      if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, contributors: { input_top3: [], output_top3: [] } };
+      if (!diagnosis.dualLock.contributors) diagnosis.dualLock.contributors = { input_top3: [], output_top3: [] };
+      if (!diagnosis.diah) diagnosis.diah = { activatedLetters: [], activated: {}, summary: '미발동' };
+      if (!diagnosis.diah.activatedLetters) diagnosis.diah.activatedLetters = [];
+      if (!diagnosis.diah.activated) diagnosis.diah.activated = {};
+      if (!diagnosis.crossSignals) diagnosis.crossSignals = { active: [], inactive: [] };
+      if (Array.isArray(diagnosis.crossSignals)) diagnosis.crossSignals = { active: diagnosis.crossSignals, inactive: [] };
+      if (!diagnosis.crossSignals.active) diagnosis.crossSignals.active = [];
+
+      // 위성 데이터 주입
+      if (dataStore && dataStore.getSatelliteData) {
+        try {
+          const sat = await dataStore.getSatelliteData();
+          if (sat && Object.keys(sat).length > 0) diagnosis.satellite = sat;
+        } catch (_) { /* ignore */ }
       }
 
-      // 3) PDF 스트림 전송
+      // 3) DOCX Buffer 생성 후 전송 (PDF 버튼이지만 DOCX 반환 — 한글 완벽 지원)
       const renderer = require('../lib/renderer');
-      const filename = `DIAH-7M_${(diagnosis.period || new Date().toISOString().slice(0,7)).replace(/[^0-9\-]/g,'')}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      const buf = await renderer.renderDOCX(diagnosis, { month: period, mode: 'M', country: 'KR' });
+      const filename = `경제건강검진_${period}_KR.docx`;
 
-      await renderer.renderPDF(diagnosis, res);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.setHeader('Content-Length', buf.length);
+      res.end(buf);
 
     } catch (e) {
-      console.error('[PDF] 생성 오류:', e.message);
-      if (!res.headersSent) {
-        res.status(500).json({ error: e.message });
-      }
+      console.error('[PDF→DOCX] 생성 오류:', e.message, e.stack);
+      if (!res.headersSent) res.status(500).json({ error: e.message });
     }
   });
 

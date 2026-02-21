@@ -1150,29 +1150,50 @@ const AXIS_META = {
 // ── 한글 폰트 경로 ──────────────────────────────────────────
 const _FONT_PATH = require('path').join(__dirname, '..', 'fonts', 'NanumGothic.ttf');
 const _HAS_KR_FONT = require('fs').existsSync(_FONT_PATH);
-const _F  = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica';        // 본문
-const _FB = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica-Bold';   // 굵게 (NanumGothic은 단일 파일)
+const _F  = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica';
+const _FB = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica-Bold';
 
-function _pdfSectionTitle(doc, text) {
-  doc.moveDown(1.2);
-  doc.fontSize(13).font(_FB).fillColor('#1e293b').text(text);
-  doc.moveDown(0.3);
-  doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+// ── 순수 flow 헬퍼 (절대좌표 일절 사용 안 함) ───────────────
+
+// 페이지 여백 한계 (A4 841pt, 하단 margin 60pt → 781pt)
+const PAGE_BOTTOM = 781;
+const MARGIN_L = 50;
+const PAGE_W   = 495; // 595 - 50*2
+
+function _needPage(doc) {
+  return doc.y > PAGE_BOTTOM - 40;
+}
+
+function _secTitle(doc, text) {
+  if (_needPage(doc)) doc.addPage();
+  doc.moveDown(0.8);
+  doc.fontSize(13).font(_FB).fillColor('#1e293b')
+     .text(text, MARGIN_L, doc.y, { width: PAGE_W });
+  doc.moveDown(0.2);
+  // 구분선: save → stroke → restore로 커서 보존
+  const lineY = doc.y;
+  doc.save()
+     .moveTo(MARGIN_L, lineY).lineTo(MARGIN_L + PAGE_W, lineY)
+     .strokeColor('#cbd5e1').lineWidth(0.5).stroke()
+     .restore();
   doc.moveDown(0.5);
   doc.fontSize(10).font(_F).fillColor('#334155');
 }
 
-function _pdfBodyText(doc, text) {
+function _body(doc, text) {
   if (!text) return;
-  doc.fontSize(10).font(_F).fillColor('#334155').text(String(text), { lineGap: 3 });
+  if (_needPage(doc)) doc.addPage();
+  doc.fontSize(10).font(_F).fillColor('#334155')
+     .text(String(text), MARGIN_L, doc.y, { width: PAGE_W, lineGap: 2 });
   doc.moveDown(0.3);
 }
 
-function _pdfAddFooter(doc, pageNum) {
-  const bottom = doc.page.height - 35;
-  doc.fontSize(8).font(_F).fillColor('#94a3b8')
-     .text('DIAH-7M | 인체국가경제론 | 참고용 진단 보고서', 50, bottom, { align: 'left', width: 400 })
-     .text(`${pageNum}`, 50, bottom, { align: 'right', width: 495 });
+function _bold(doc, text) {
+  if (!text) return;
+  if (_needPage(doc)) doc.addPage();
+  doc.fontSize(10).font(_FB).fillColor('#1e293b')
+     .text(String(text), MARGIN_L, doc.y, { width: PAGE_W });
+  doc.moveDown(0.2);
 }
 
 async function renderPDF(diagnosis, outputStream) {
@@ -1180,128 +1201,135 @@ async function renderPDF(diagnosis, outputStream) {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margins: { top: 50, bottom: 60, left: 50, right: 50 },
-        bufferPages: true,
+        margins: { top: 50, bottom: 60, left: MARGIN_L, right: MARGIN_L },
+        autoFirstPage: true,
+        bufferPages: false,   // bufferPages OFF — 순서대로 단순 출력
       });
 
-      // finish/end 이벤트를 doc에 먼저 붙인 뒤 pipe
-      doc.on('end', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
+      doc.on('end',   () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
       doc.on('error', reject);
       doc.pipe(outputStream);
 
+      // ── 데이터 준비 ──────────────────────────────────────
       let D = null;
       if (narrativeEngine && narrativeEngine.generateNarrative) {
         try {
           D = narrativeEngine.generateNarrative(diagnosis, {}, {
-            month:    diagnosis.period || new Date().toISOString().slice(0, 7),
-            writeDate:new Date().toLocaleDateString('ko-KR'),
+            month:      diagnosis.period || new Date().toISOString().slice(0, 7),
+            writeDate:  new Date().toLocaleDateString('ko-KR'),
             engineVersion: 'DIAH-7M v5.1 + 서사엔진 v2.8',
           });
         } catch (ne) { console.warn('[renderer/pdf] generateNarrative 실패:', ne.message); }
       }
 
-      const overall = diagnosis.overall || {};
-      const axes    = diagnosis.axes    || {};
-      const cross   = diagnosis.crossSignals || [];
-      const dualLock= diagnosis.dualLock || {};
-      const period  = diagnosis.period || new Date().toISOString().slice(0, 7);
-      const lvColor = LEVEL_COLORS_HEX[overall.level] || '#64748b';
-      let pageNum = 1;
+      const overall  = diagnosis.overall  || {};
+      const axes     = diagnosis.axes     || {};
+      const dualLock = diagnosis.dualLock || {};
+      const period   = diagnosis.period   || new Date().toISOString().slice(0, 7);
+      const lvColor  = LEVEL_COLORS_HEX[overall.level] || '#64748b';
+      const lvName   = LEVEL_NAMES[overall.level]       || '미판정';
 
-      // 표지
+      // ── 1. 표지 ──────────────────────────────────────────
+      doc.moveDown(3);
       doc.fontSize(22).font(_FB).fillColor('#0f172a')
-         .text('DIAH-7M 경제 건강검진 보고서', { align: 'center' });
-      doc.moveDown(0.3);
+         .text('DIAH-7M 경제 건강검진 보고서', MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
+      doc.moveDown(0.4);
       doc.fontSize(13).font(_F).fillColor('#475569')
-         .text(`대한민국 | ${period}`, { align: 'center' });
-      doc.moveDown(1.5);
-      const bx = 150, bw = 295, bh = 80;
-      doc.roundedRect(bx, doc.y, bw, bh, 8).fillColor(lvColor + '18').fill();
-      const boxTop = doc.y + 12;
-      doc.fontSize(26).font(_FB).fillColor(lvColor)
-         .text(`L${overall.level || '?'} ${LEVEL_NAMES[overall.level] || '미판정'}`,
-                bx, boxTop, { width: bw, align: 'center' });
+         .text(`대한민국  |  ${period}`, MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
       doc.moveDown(2);
+      doc.fontSize(28).font(_FB).fillColor(lvColor)
+         .text(`L${overall.level || '?'}  ${lvName}`, MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
+      doc.moveDown(0.6);
+      doc.fontSize(14).font(_F).fillColor('#64748b')
+         .text(`종합점수 ${typeof overall.score === 'number' ? overall.score.toFixed(1) : 'N/A'} / 100`, MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
+      doc.moveDown(3);
       doc.fontSize(9).font(_F).fillColor('#94a3b8')
-         .text(`생성일: ${new Date().toLocaleDateString('ko-KR')} | DIAH-7M v5.1 + 서사엔진 v2.8`, { align: 'center' });
-      _pdfAddFooter(doc, pageNum++);
+         .text(`생성일: ${new Date().toLocaleDateString('ko-KR')}  |  DIAH-7M v5.1 + 서사엔진 v2.8`, MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
+
+      // ── 2. 9축 채점표 ────────────────────────────────────
       doc.addPage();
+      _secTitle(doc, '1. 9축 종합 채점표');
 
-      // 9축 채점표
-      _pdfSectionTitle(doc, '1. 9축 종합 채점표');
-      Object.entries(axes).forEach(([axId, ax]) => {
-        const meta = AXIS_META[axId] || { eco: axId, body: '' };
-        const lvC  = LEVEL_COLORS_HEX[ax.level?.level] || '#64748b';
-        const sc   = typeof ax.score === 'number' ? ax.score.toFixed(2) : 'N/A';
-        const rowY = doc.y;
-        doc.fontSize(10).font(_FB).fillColor('#1e293b')
-           .text(`${axId} ${meta.eco}`, 50, rowY, { width: 220 });
-        doc.fontSize(9).font(_F).fillColor('#64748b')
-           .text(`(${meta.body})`, 50, rowY + 14, { width: 220 });
-        doc.fontSize(10).font(_FB).fillColor(lvC)
-           .text(sc, 290, rowY + 5, { width: 120 });
-        doc.moveDown(1.4);
-        if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-      });
-
-      // 이중봉쇄
-      if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-      _pdfSectionTitle(doc, '2. 이중봉쇄 (CAM + DLT)');
-      _pdfBodyText(doc, `상태: ${dualLock.active ? '이중봉쇄 발동' : '이중봉쇄 해제'}`);
-      _pdfBodyText(doc, `경계축: ${(dualLock.criticalAxes||[]).join(', ') || '없음'}`);
-
-      // 서사엔진 섹션들
-      if (D) {
-        if (doc.y > 600) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-        _pdfSectionTitle(doc, '4. DIAH 트리거 분석');
-        if (D.sec4_triggers) D.sec4_triggers.forEach(tr => {
-          doc.fontSize(11).font(_FB).fillColor('#475569').text(`${tr.code} — ${tr.name}`);
-          _pdfBodyText(doc, tr.text);
-          if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
+      const axEntries = Object.entries(axes);
+      if (axEntries.length === 0) {
+        _body(doc, '(진단 데이터 없음 — 게이지 수집 후 재시도하세요)');
+      } else {
+        axEntries.forEach(([axId, ax]) => {
+          if (_needPage(doc)) doc.addPage();
+          const meta = AXIS_META[axId] || { eco: axId, body: '' };
+          const lvC  = LEVEL_COLORS_HEX[ax.level?.level] || '#64748b';
+          const sc   = typeof ax.score === 'number' ? ax.score.toFixed(2) : 'N/A';
+          const lv   = ax.level?.level   ? `L${ax.level.level}` : '';
+          const lname= ax.level?.levelName || '';
+          doc.fontSize(10).font(_FB).fillColor('#1e293b')
+             .text(`${axId}  ${meta.eco}`, MARGIN_L, doc.y, { width: 260, continued: false });
+          const savedY = doc.y;
+          // 점수/등급을 같은 행 오른쪽에 — moveUp으로 한 줄 올린 뒤 오른쪽 쓰기
+          doc.fontSize(10).font(_FB).fillColor(lvC)
+             .text(`${sc}점  ${lv} ${lname}`.trim(), MARGIN_L + 270, savedY - doc.currentLineHeight(true), { width: 220 });
+          doc.fontSize(9).font(_F).fillColor('#94a3b8')
+             .text(`(${meta.body})`, MARGIN_L, doc.y, { width: PAGE_W });
+          doc.moveDown(0.5);
         });
-        if (D.sec4_summary) _pdfBodyText(doc, D.sec4_summary);
+      }
 
-        if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-        _pdfSectionTitle(doc, '5. 7M 기전 분석');
-        _pdfBodyText(doc, `현재 기전: ${D.sec5_current || '0M'} — ${D.sec5_currentName || '정상'}`);
-        _pdfBodyText(doc, D.sec5_currentText);
+      // ── 3. 이중봉쇄 ──────────────────────────────────────
+      _secTitle(doc, '2. 이중봉쇄 진단 (CAM + DLT)');
+      const dlActive = dualLock.locked || dualLock.active || false;
+      _bold(doc, `상태: ${dlActive ? '● 이중봉쇄 발동' : '○ 이중봉쇄 해제'}`);
+      _body(doc, `경계축: ${(dualLock.criticalAxes||[]).join(', ') || '없음'}`);
+      if (dualLock.reason) _body(doc, `사유: ${dualLock.reason}`);
+
+      // ── 4~9. 서사엔진 섹션 ───────────────────────────────
+      if (D) {
+        _secTitle(doc, '3. DIAH 트리거 분석');
+        if (D.sec4_triggers && D.sec4_triggers.length > 0) {
+          D.sec4_triggers.forEach(tr => {
+            if (_needPage(doc)) doc.addPage();
+            _bold(doc, `${tr.code}  ${tr.name}`);
+            _body(doc, tr.text);
+          });
+        } else {
+          _body(doc, 'DIAH 트리거 없음 (정상 범위)');
+        }
+        if (D.sec4_summary) _body(doc, D.sec4_summary);
+
+        _secTitle(doc, '4. 7M 기전 분석');
+        _body(doc, `현재 기전: ${D.sec5_current || '0M'} — ${D.sec5_currentName || '정상'}`);
+        _body(doc, D.sec5_currentText);
 
         if (D.sec6_paths && D.sec6_paths.length > 0) {
-          if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-          _pdfSectionTitle(doc, '6. 예후 3경로');
+          _secTitle(doc, '5. 예후 3경로');
           D.sec6_paths.forEach(p => {
-            doc.fontSize(11).font(_FB).text(`${p.label} (${p.prob || ''})`);
-            _pdfBodyText(doc, p.text);
-            if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
+            if (_needPage(doc)) doc.addPage();
+            _bold(doc, `${p.label}  ${p.prob ? '(' + p.prob + ')' : ''}`);
+            _body(doc, p.text);
           });
         }
 
-        if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-        _pdfSectionTitle(doc, '8. 경제 가족력');
-        _pdfBodyText(doc, D.sec8_narrative1997);
-        _pdfBodyText(doc, D.sec8_narrative2008);
-        _pdfBodyText(doc, D.sec8_common);
+        _secTitle(doc, '6. 경제 가족력');
+        _body(doc, D.sec8_narrative1997);
+        _body(doc, D.sec8_narrative2008);
+        _body(doc, D.sec8_common);
 
         if (D.sec9_prescriptions && D.sec9_prescriptions.length > 0) {
-          if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-          _pdfSectionTitle(doc, '9. 명의 처방');
-          _pdfBodyText(doc, D.sec9_intro);
+          _secTitle(doc, '7. 명의 처방');
+          _body(doc, D.sec9_intro);
           D.sec9_prescriptions.forEach(p => {
-            doc.fontSize(11).font(_FB).text(p.title);
-            _pdfBodyText(doc, p.text);
-            if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
+            if (_needPage(doc)) doc.addPage();
+            _bold(doc, p.title);
+            _body(doc, p.text);
           });
         }
       }
 
-      // 면책
-      if (doc.y > 680) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
-      _pdfSectionTitle(doc, '10. 면책 고지');
-      _pdfBodyText(doc, D?.sec10_disclaimer ||
+      // ── 10. 면책 고지 ────────────────────────────────────
+      _secTitle(doc, '8. 면책 고지');
+      _body(doc, D?.sec10_disclaimer ||
         '본 보고서는 DIAH-7M 경제건강검진 시스템에 의해 자동 생성된 진단 결과서입니다. 투자 권유나 정책 제안이 아닙니다.');
-      _pdfBodyText(doc, '© 인체국가경제론 / DIAH-7M / 윤종원');
-
-      _pdfAddFooter(doc, pageNum);
+      doc.moveDown(0.5);
+      doc.fontSize(9).font(_F).fillColor('#94a3b8')
+         .text('© 인체국가경제론 / DIAH-7M / 윤종원', MARGIN_L, doc.y, { width: PAGE_W, align: 'center' });
 
       doc.end();
     } catch (err) {
