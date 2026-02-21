@@ -617,79 +617,10 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         }
       }
 
-      // ── 정본 파이프라인: gauge-adapter → ssot_engine → report_renderer ──
-      const { toDataJson } = require('../lib/gauge-adapter');
-      const { transform }  = require('../lib/ssot_engine');
-      const reportRenderer = require('../lib/report_renderer');
-      const template       = require('../lib/report_template.json');
+      // ── v3.0 파이프라인: core-engine → renderer.renderDOCX ──
+      const renderer = require('../lib/renderer');
 
-      // 1) gauge-adapter: 평탄 게이지 맵 → data.json 형식
-      const dataJson = toDataJson(
-        Object.keys(gaugeData).length > 0 ? gaugeData : {},
-        { period, mode, country }
-      );
-
-      // 2) ssot_engine: 등급/서사 자동산출
-      const ssotData = transform(dataJson);
-
-      // 2-1) ssot_engine 결과로 수집완료_요약 판정 분류 갱신
-      {
-        const goodList = [], cautionList = [], alertList = [];
-        const allKeys = ['sec2_gauges','sec3_gauges','axis2_gauges','axis3_gauges',
-          'axis4_gauges','axis5_gauges','axis6_gauges','axis7_gauges','axis8_gauges','axis9_gauges'];
-        for (const k of allKeys) {
-          for (const g of (ssotData[k] || [])) {
-            const id = (g.code || '').split(' ')[0];
-            if (!id) continue;
-            const gr = g.grade || '';
-            if (gr.includes('경보') || gr.includes('★')) alertList.push(id);
-            else if (gr.includes('주의') || gr.includes('●')) cautionList.push(id);
-            else goodList.push(id);
-          }
-        }
-        ssotData['수집완료_요약'] = {
-          총게이지: goodList.length + cautionList.length + alertList.length,
-          판정_양호: goodList,
-          판정_주의: cautionList,
-          판정_경보: alertList,
-        };
-      }
-
-      // 3) ssot 요약에서 Input/Output 점수 계산
-      const _inGauges  = ssotData.sec2_gauges || [];
-      const _outGauges = ssotData.sec3_gauges || [];
-      const _calcScore = (arr) => {
-        let s = 0;
-        arr.forEach(g => {
-          const gr = g.grade || '';
-          if (gr.includes('경보') || gr.includes('★')) s += 2;
-          else if (gr.includes('주의') || gr.includes('●')) s += 1;
-        });
-        return s;
-      };
-      const _inScore  = _calcScore(_inGauges);
-      const _outScore = _calcScore(_outGauges);
-
-      // 3) miniJSON (재현키 + renderer 필수 필드 전체)
-      const _stageNum = parseInt((ssotData.sec5_current || '0').replace(/\D/g, '')) || 0;
-      const miniJSON = {
-        engine: 'DIAH-7M판정엔진v5.1+SSOTv1.0',
-        mode,
-        period,
-        country,
-        profile_hash: 'KR-STD-59',
-        repro_key: `${country}-${mode}-${period}`,
-        stage: ssotData.sec5_current || '0M',
-        alert_level: _stageNum,
-        dual_lock: false,   // diagnosis 확정 후 아래에서 패치
-        diah_detail: ssotData.diahStatus || 'DIAH 트리거 미발동',
-        confidence: ssotData.freshnessAlert?.startsWith('✅') ? '높음' : '중간',
-        // report_renderer.generateNarratives() / renderSection() 필수 필드
-        in:  { score: _inScore,  threshold: _inGauges.length  * 2, down: _inScore  > _inGauges.length },
-        out: { score: _outScore, threshold: _outGauges.length * 2, down: _outScore > _outGauges.length },
-      };
-
-      // 4) diagnosis 객체 (report_renderer용 — renderer가 기대하는 전체 구조 보장)
+      // 1) diagnosis 객체 빌드 (core-engine.diagnose)
       let diagnosis = {
         overall: { stage: '0M', score: 0, label: '정상' },
         dualLock: { active: false, contributors: { input_top3: [], output_top3: [] } },
@@ -699,7 +630,6 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
       };
       if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
         try {
-          // core-engine.diagnose()는 { ID: 숫자 } 맵을 기대함
           const numericMap = {};
           for (const [k, v] of Object.entries(gaugeData)) {
             const num = typeof v === 'number' ? v : (typeof v === 'object' && v !== null ? (v.value ?? null) : null);
@@ -715,23 +645,23 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
       if (!diagnosis.diah.activatedLetters) diagnosis.diah.activatedLetters = [];
       if (!diagnosis.diah.activated) diagnosis.diah.activated = {};
       if (!diagnosis.crossSignals) diagnosis.crossSignals = { active: [], inactive: [] };
-      // 배열 형태로 넘어온 경우 { active, inactive } 구조로 변환
       if (Array.isArray(diagnosis.crossSignals)) {
         diagnosis.crossSignals = { active: diagnosis.crossSignals, inactive: [] };
       }
       if (!diagnosis.crossSignals.active) diagnosis.crossSignals.active = [];
-      // dual_lock 패치 (miniJSON은 위에서 먼저 생성됐으므로 여기서 갱신)
-      miniJSON.dual_lock = diagnosis.dualLock?.locked || diagnosis.dualLock?.active || false;
 
-      // 5) report_renderer.render() → DOCX 버퍼
-      const buf = await reportRenderer.render({
-        template,
-        miniJSON,
-        diagnosis,
-        profile: { country, mode },
-        data: ssotData,
-        outputPath: null,   // null → Buffer 반환
-      });
+      // 2) 위성 게이지 데이터 주입 (dataStore에서 직접)
+      if (dataStore && dataStore.getSatelliteData) {
+        try {
+          const sat = await dataStore.getSatelliteData();
+          if (sat && Object.keys(sat).length > 0) {
+            diagnosis.satellite = sat;
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      // 3) renderer.renderDOCX() → DOCX 버퍼
+      const buf = await renderer.renderDOCX(diagnosis, { month: period, mode, country });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
