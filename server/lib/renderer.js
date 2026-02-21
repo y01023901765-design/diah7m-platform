@@ -170,28 +170,26 @@ function diagBox(contentArray, bg = C.bgBox) {
   ])], [PG.cw]);
 }
 
-// ── sectionHeader: Paragraph + 좌측 border (테이블 아님) ─
+// ── sectionHeader: Paragraph (좌측 border 없음) ───────────
 function sectionHeader(num, title, subtitle) {
   const els = [
     p(
       [t(`${num}`, { size: S.t2, bold: true, color: C.blue }),
        t(`  ${title}`, { size: S.t2, bold: true, color: C.navy })],
-      { before: 480, after: subtitle ? 20 : 120, indent: 200,
-        border: { left: { style: BorderStyle.SINGLE, size: 12, color: C.blue, space: 8 } } }
+      { before: 480, after: subtitle ? 20 : 120, indent: 200 }
     ),
   ];
   if (subtitle) {
     els.push(
       p([t(subtitle, { size: S.body, it: true, color: C.mid })],
-        { after: 120, indent: 200,
-          border: { left: { style: BorderStyle.SINGLE, size: 12, color: C.blue, space: 8 } } })
+        { after: 120, indent: 200 })
     );
   }
   return els;
 }
 
 function subHeader(txt) {
-  return p([t(`■ ${txt}`, { size: S.t3, bold: true, color: C.blue })], { before: 300, after: 120 });
+  return p([t(txt, { size: S.t3, bold: true, color: C.blue })], { before: 300, after: 120 });
 }
 
 function gaugeTitle(code, name, value, metaphor) {
