@@ -1019,6 +1019,260 @@ function renderSection(section, ctx) {
       break;
     }
 
+    // ─── 0. 작동 원리 ───
+    case 'how_it_works': {
+      children.push(makeHeading(section.heading, section.level));
+      const NE = narrativeEngine;
+      const S0 = NE?.SECTION_0 || {};
+      // 고정 본문 텍스트 (narrative-engine SECTION_0)
+      const s0body = [
+        S0.principle || '경제는 인체와 같은 흐름 시스템이다. 막히면 죽는다.',
+        S0.body1, S0.body2, S0.rule, S0.camDlt, S0.diahDef, S0.warning,
+      ].filter(Boolean);
+      // ▶ 핵심 규칙
+      children.push(makePara('▶ 핵심 규칙: 누적 + 복합', { bold: true, size: 24 }));
+      if (s0body[0]) children.push(makePara(s0body[0], { size: 22 }));
+      children.push(spacer(80));
+      // ▶ 잠복기 개념
+      children.push(makePara('▶ 잠복기 개념: 0단계 ≠ 건강', { bold: true, size: 24 }));
+      if (s0body[1]) children.push(makePara(s0body[1], { size: 22 }));
+      children.push(spacer(80));
+      // ▶ 심층 임상 소견 (ssot_engine sec5_currentText 사용)
+      children.push(makePara('▶ 심층 임상 소견', { bold: true, size: 24 }));
+      const clinicalText = data.sec5_currentText || data.oneLiner || '';
+      if (clinicalText) children.push(makePara(cleanNarrative(clinicalText), { size: 22 }));
+      if (s0body[2]) children.push(makePara(s0body[2], { size: 22 }));
+      children.push(pageBreak());
+      break;
+    }
+
+    // ─── 7M 기전 분석 ───
+    case 'm7_table': {
+      children.push(makeHeading(section.heading, section.level));
+      const M7 = narrativeEngine?.M7_TABLE || {};
+      const m7stages = ['0M','1M','2M','3M','4M','5M','6M','7M'];
+      const currentStage = data.sec5_current || mini.stage || '0M';
+      const cols = section.columns || ['단계','명칭','인체 증상','경제 현상','현재'];
+      const cw = Math.round(contentWidth / cols.length);
+      const m7Widths = [
+        Math.round(contentWidth * 0.08),
+        Math.round(contentWidth * 0.10),
+        Math.round(contentWidth * 0.25),
+        Math.round(contentWidth * 0.25),
+        Math.round(contentWidth * 0.32),
+      ];
+      const m7Header = new TableRow({ children: cols.map((c, i) => makeHeaderCellEl(c, m7Widths[i], colors)) });
+      const m7Rows = m7stages.map(stage => {
+        const d = M7[stage] || {};
+        const isCurrent = stage === currentStage;
+        const fill = isCurrent ? (colors.fills?.warn || 'FFF9C4') : 'FFFFFF';
+        const marker = isCurrent ? '◀ 현재' : '';
+        return new TableRow({ children: [
+          makeCellEl(stage, m7Widths[0], { bold: isCurrent, fill }),
+          makeCellEl(d.name || '-', m7Widths[1], { bold: isCurrent, fill }),
+          makeCellEl(d.body || d.symptom || '-', m7Widths[2], { fill, size: 18 }),
+          makeCellEl(d.econ || d.economy || '-', m7Widths[3], { fill, size: 18 }),
+          makeCellEl(marker, m7Widths[4], { bold: isCurrent, color: isCurrent ? colors.accent : '999999', fill }),
+        ]});
+      });
+      children.push(new Table({ width: { size: contentWidth, type: WidthType.DXA }, rows: [m7Header, ...m7Rows] }));
+      children.push(spacer(120));
+      // 단계 판정 규칙
+      if (data.sec5_stageRule) children.push(makePara(data.sec5_stageRule, { size: 18, color: '666666', italics: true }));
+      break;
+    }
+
+    // ─── 예후 3경로 ───
+    case 'forecast': {
+      children.push(makeHeading(section.heading, section.level));
+      const paths = [
+        { label: '▶ A경로 (개선)', key: 'forecast_a', color: colors.green },
+        { label: '▶ B경로 (유지)', key: 'forecast_b', color: colors.primary },
+        { label: '▶ C경로 (악화)', key: 'forecast_c', color: colors.accent },
+      ];
+      // ssot_engine sec5_nextText 또는 narrative-engine 데이터
+      const nextText = cleanNarrative(data.sec5_nextText || '');
+      for (const p of paths) {
+        children.push(makePara(p.label, { bold: true, size: 24, color: p.color }));
+        const txt = data[p.key] || (p.key === 'forecast_b' ? nextText : '') || '데이터 수집 후 자동 생성됩니다.';
+        children.push(makePara(cleanNarrative(txt), { size: 22 }));
+        children.push(spacer(80));
+      }
+      break;
+    }
+
+    // ─── 시계열 추이 ───
+    case 'timeseries': {
+      children.push(makeHeading(section.heading, section.level));
+      // sec7_narrative 텍스트
+      const ts = cleanNarrative(data.sec7_narrative || '');
+      if (ts) children.push(makePara(ts, { size: 22 }));
+      children.push(spacer(100));
+      // 시계열 표 — 현재 데이터 기반 (m1/m2는 '-')
+      const tsGauges = (data.sec2_gauges || []).concat(data.sec3_gauges || []).slice(0, 10);
+      if (tsGauges.length > 0) {
+        const tsCols = section.columns || ['게이지','M-2','M-1','M(현재)','추세','판단'];
+        const tsW = [
+          Math.round(contentWidth * 0.18),
+          Math.round(contentWidth * 0.12),
+          Math.round(contentWidth * 0.12),
+          Math.round(contentWidth * 0.18),
+          Math.round(contentWidth * 0.10),
+          Math.round(contentWidth * 0.30),
+        ];
+        const tsHeader = new TableRow({ children: tsCols.map((c, i) => makeHeaderCellEl(c, tsW[i], colors)) });
+        const tsRows = tsGauges.map(g => {
+          const code = (g.code || '').split(' ')[0];
+          const name = (g.code || '').split(' ').slice(1).join(' ') || code;
+          const val  = formatVal(g.raw || g.value || '-');
+          const grade = g.grade || '-';
+          const fill = grade.includes('경보') ? 'FFCDD2' : grade.includes('주의') ? 'FFF9C4' : 'E8F5E9';
+          return new TableRow({ children: [
+            makeCellEl(`${code} ${name}`, tsW[0], { size: 18 }),
+            makeCellEl('-', tsW[1], { size: 18, color: '999999' }),
+            makeCellEl('-', tsW[2], { size: 18, color: '999999' }),
+            makeCellEl(val, tsW[3], { size: 18, fill }),
+            makeCellEl('→', tsW[4], { size: 18, align: AlignmentType.CENTER }),
+            makeCellEl(cleanNarrative(g.judge || g.narrative || '').substring(0, 40), tsW[5], { size: 16 }),
+          ]});
+        });
+        children.push(new Table({ width: { size: contentWidth, type: WidthType.DXA }, rows: [tsHeader, ...tsRows] }));
+        children.push(makePara('※ M-2/M-1 과거 데이터는 차기 수집 시 자동 반영 예정.', { size: 18, color: '888888', italics: true }));
+      }
+      break;
+    }
+
+    // ─── 경제 가족력 ───
+    case 'family_history': {
+      children.push(makeHeading(section.heading, section.level));
+      const FH = narrativeEngine?.FAMILY_HISTORY_PAST || {};
+      const fhCols = section.columns || ['지표','1997년 (D+H)','2008년 (H+A)','현재'];
+      const fhW = [
+        Math.round(contentWidth * 0.20),
+        Math.round(contentWidth * 0.25),
+        Math.round(contentWidth * 0.25),
+        Math.round(contentWidth * 0.30),
+      ];
+      const fhHeader = new TableRow({ children: fhCols.map((c, i) => makeHeaderCellEl(c, fhW[i], colors)) });
+      // 현재값 — gaugeRows에서 핵심 게이지 추출
+      const keyGauges = { I1:'경상수지', I3:'외환보유고', I4:'환율', I6:'국채금리', O2:'물가', O4:'주가', O6:'소비' };
+      const nowMap = {};
+      for (const g of (gaugeRows || [])) {
+        if (keyGauges[g.id]) nowMap[keyGauges[g.id]] = formatVal(g.val) + ' (' + (g.grade || '-') + ')';
+      }
+      const fhItems = [
+        { item: '경상수지', y97: FH['1997']?.data?.경상수지||'-', y08: FH['2008']?.data?.경상수지||'-' },
+        { item: '외환보유고', y97: FH['1997']?.data?.외환보유고||'-', y08: FH['2008']?.data?.외환보유고||'-' },
+        { item: '환율', y97: FH['1997']?.data?.환율||'-', y08: FH['2008']?.data?.환율||'-' },
+        { item: '국채금리', y97: FH['1997']?.data?.국채금리||'-', y08: FH['2008']?.data?.국채금리||'-' },
+        { item: '물가', y97: FH['1997']?.data?.물가||'-', y08: FH['2008']?.data?.물가||'-' },
+        { item: '주가', y97: FH['1997']?.data?.주가||'-', y08: FH['2008']?.data?.주가||'-' },
+        { item: '소비', y97: '-', y08: '-' },
+        { item: 'DIAH 트리거', y97: FH['1997']?.data?.['DIAH 트리거']||'D+H', y08: FH['2008']?.data?.['DIAH 트리거']||'H+A' },
+        { item: '진단명', y97: FH['1997']?.data?.진단명||'급성 심근경색', y08: FH['2008']?.data?.진단명||'패혈증 쇼크' },
+      ];
+      const fhRows = fhItems.map(row => new TableRow({ children: [
+        makeCellEl(row.item, fhW[0], { bold: true }),
+        makeCellEl(row.y97, fhW[1], { size: 18, color: colors.accent }),
+        makeCellEl(row.y08, fhW[2], { size: 18, color: colors.primary }),
+        makeCellEl(nowMap[row.item] || '-', fhW[3], { size: 18 }),
+      ]}));
+      children.push(new Table({ width: { size: contentWidth, type: WidthType.DXA }, rows: [fhHeader, ...fhRows] }));
+      children.push(spacer(120));
+      // 가족력 서사
+      if (FH.common) children.push(makePara(FH.common, { size: 20, italics: true }));
+      break;
+    }
+
+    // ─── 명의의 처방 ───
+    case 'prescription': {
+      children.push(makeHeading(section.heading, section.level));
+      // 현재 단계 기반 처방 텍스트
+      const prescText = cleanNarrative(data.sec4_verdict || data.sec5_currentText || '');
+      if (prescText) children.push(makePara(prescText, { size: 22 }));
+      children.push(spacer(100));
+      // 경보 상향 규칙 표
+      children.push(makePara('▶ 경보 상향 규칙', { bold: true, size: 24 }));
+      children.push(spacer(60));
+      const ruleW = [Math.round(contentWidth * 0.40), Math.round(contentWidth * 0.60)];
+      const ruleHeader = new TableRow({ children: [
+        makeHeaderCellEl('상황', ruleW[0], colors),
+        makeHeaderCellEl('판정 원칙', ruleW[1], colors),
+      ]});
+      const rules = [
+        ['단일 게이지 경보', '연속 확인(재확인) 후 격상 — 단월 악화는 신호'],
+        ['복수 게이지 동시 악화', '누적 + 복합 조건 충족 여부 판단'],
+        ['CAM·DLT 동시 봉쇄', '이중봉쇄 = 최고 경보 즉시 발령'],
+        ['환율 급등', '외환보유고 동반 감소 여부 재확인 후 격상'],
+        ['다음 검진', `${mini.period ? mini.period.substring(0,7).replace('-','년 ') + '월' : '차기'} 수집 후 자동 갱신`],
+      ];
+      const ruleRows = rules.map(([sit, prin]) => new TableRow({ children: [
+        makeCellEl(sit, ruleW[0], { bold: true }),
+        makeCellEl(prin, ruleW[1], { size: 20 }),
+      ]}));
+      children.push(new Table({ width: { size: contentWidth, type: WidthType.DXA }, rows: [ruleHeader, ...ruleRows] }));
+      break;
+    }
+
+    // ─── 데이터 출처 및 면책 ───
+    case 'disclaimer': {
+      children.push(makeHeading(section.heading, section.level));
+      children.push(makePara('▶ 데이터 출처', { bold: true, size: 24 }));
+      children.push(spacer(60));
+      const srcW = [Math.round(contentWidth*0.25), Math.round(contentWidth*0.30), Math.round(contentWidth*0.45)];
+      const srcHeader = new TableRow({ children: [
+        makeHeaderCellEl('데이터', srcW[0], colors),
+        makeHeaderCellEl('출처', srcW[1], colors),
+        makeHeaderCellEl('기준 시점', srcW[2], colors),
+      ]});
+      const srcs = [
+        ['경상수지/무역', '한국은행 ECOS', data['수집일'] || mini.period],
+        ['외환보유고/금리', '한국은행 ECOS', data['수집일'] || mini.period],
+        ['CPI/PPI/생산', '통계청/한국은행', data['수집일'] || mini.period],
+        ['주가(KOSPI/KOSDAQ)', 'ECOS 802Y001', data['수집일'] || mini.period],
+        ['PMI/발틱운임', 'TradingEconomics', data['수집일'] || mini.period],
+        ['야간광/UHI(위성)', 'NASA VIIRS/Landsat', data['수집일'] || mini.period],
+      ];
+      const srcRows = srcs.map(([item, src, period]) => new TableRow({ children: [
+        makeCellEl(item, srcW[0], { size: 18 }),
+        makeCellEl(src, srcW[1], { size: 18 }),
+        makeCellEl(period, srcW[2], { size: 18 }),
+      ]}));
+      children.push(new Table({ width: { size: contentWidth, type: WidthType.DXA }, rows: [srcHeader, ...srcRows] }));
+      children.push(spacer(120));
+      children.push(makePara('▶ 판정 기준', { bold: true, size: 24 }));
+      children.push(makePara(data.sec5_stageRule || '59개 게이지 경보·주의 집계 기반 단계 판정.', { size: 20 }));
+      children.push(spacer(100));
+      children.push(makePara('▶ 면책 조항', { bold: true, size: 24 }));
+      children.push(makePara('본 보고서는 DIAH-7M 인체국가경제론에 기반한 자동 진단 시스템의 출력물입니다. 투자·정책 결정의 근거로 단독 사용할 수 없으며, 참고 자료로만 활용하시기 바랍니다. © 인체국가경제론 / 윤종원', { size: 20, italics: true }));
+      break;
+    }
+
+    // ─── 부록 A. DIAH-7M 이론 ───
+    case 'appendix': {
+      children.push(pageBreak());
+      children.push(makeHeading(section.heading, section.level));
+      const APP = narrativeEngine?.APPENDIX || [];
+      if (Array.isArray(APP) && APP.length > 0) {
+        APP.forEach((item, i) => {
+          const title = item.title || item.heading || `${i+1}.`;
+          const body  = item.body  || item.text   || '';
+          children.push(makePara(`${i+1}. ${title}`, { bold: true, size: 24 }));
+          if (body) children.push(makePara(body, { size: 20 }));
+          children.push(spacer(80));
+        });
+      } else {
+        // APPENDIX가 객체인 경우
+        const appObj = narrativeEngine?.APPENDIX || {};
+        Object.entries(appObj).forEach(([k, v], i) => {
+          children.push(makePara(`${i+1}. ${k}`, { bold: true, size: 24 }));
+          if (typeof v === 'string') children.push(makePara(v, { size: 20 }));
+          children.push(spacer(80));
+        });
+      }
+      break;
+    }
+
     // ─── 종료 마크 ───
     case 'endmark': {
       children.push(spacer(300));

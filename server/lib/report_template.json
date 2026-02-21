@@ -75,6 +75,12 @@
       "meta_line": { "show": true }
     },
 
+    { "type": "how_it_works",
+      "heading": "0. 이 보고서의 작동 원리",
+      "level": 1,
+      "page_break_before": false
+    },
+
     { "type": "verdict",
       "heading": "1. 종합 판정 (Overall Vital Sign)",
       "level": 1,
@@ -201,8 +207,42 @@
       "available_key": "axis9_available"
     },
 
+    { "type": "m7_table",
+      "heading": "15. 7M 기전 분석",
+      "level": 1,
+      "columns": ["단계", "명칭", "인체 증상", "경제 현상", "현재"]
+    },
+
+    { "type": "forecast",
+      "heading": "16. 예후: 3가지 경로",
+      "level": 1,
+      "paths": ["A경로 (개선)", "B경로 (유지)", "C경로 (악화)"]
+    },
+
+    { "type": "timeseries",
+      "heading": "17. 시계열 추이 (3개월)",
+      "level": 1,
+      "columns": ["게이지", "M-2", "M-1", "M(현재)", "추세", "판단"]
+    },
+
+    { "type": "family_history",
+      "heading": "18. 경제 가족력 비교",
+      "level": 1,
+      "columns": ["지표", "1997년 (D+H)", "2008년 (H+A)", "현재"]
+    },
+
+    { "type": "prescription",
+      "heading": "19. 명의의 처방",
+      "level": 1
+    },
+
+    { "type": "disclaimer",
+      "heading": "20. 데이터 출처 및 면책",
+      "level": 1
+    },
+
     { "type": "auxiliary_table",
-      "heading": "15. 보조 정보 (위성·대외)",
+      "heading": "21. 보조 정보 (위성·대외)",
       "level": 1,
       "columns": [
         { "label": "항목",  "width_pct": 30 },
@@ -210,8 +250,13 @@
       ]
     },
 
+    { "type": "appendix",
+      "heading": "부록 A. DIAH-7M 이론적 근거",
+      "level": 1
+    },
+
     { "type": "raw_json",
-      "heading": "부록. 재현키 (Repro JSON)",
+      "heading": "부록 B. 재현키 (Repro JSON)",
       "level": 1
     },
 
