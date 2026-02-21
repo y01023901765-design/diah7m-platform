@@ -1023,11 +1023,11 @@ function _buildDataObject(diagnosis, D, meta) {
     dualBlockadeDetail: D?.dualBlockade || (dualLock.active ? '이중봉쇄 발동' : '없음'),
     diahTrigger,
 
-    // 임상 소견 — D.oneLiner / D.sec1_alertNarrative / D.sec1_detail
-    clinicalTitle:    D?.oneLiner || '',
+    // 임상 소견 — D.oneLiner / D.sec1_alertNarrative / D.sec1_detail / D.sec1_pathology
+    clinicalTitle:    D?.sec1_alertNarrative || D?.oneLiner || '',  // 병명 (예: "하한 증후군")
     clinicalOneLiner: D?.oneLiner || '',
     clinicalBody:     D?.sec1_detail || '',
-    clinicalPathology:D?.sec1_alertNarrative || '',
+    clinicalPathology:D?.sec1_pathology || D?.sec1_alertNarrative || '', // 병리 연결고리 우선
 
     // 위성 데이터 (파이프라인 주입)
     satellite: diagnosis.satellite || {},
@@ -1329,32 +1329,98 @@ async function renderDOCX(diagnosis, meta = {}) {
     try {
       // gauge-adapter로 변환된 { I1:{value,grade}, ... } 딕셔너리 생성
       const narGauges = _buildNarrativeGauges(diagnosis);
+      // ── diagnosis 데이터에서 DIAH·7M·blockade 실제 값 추출 ──
+      const _ovLevel  = diagnosis.overall?.level || 0;
+      const _ovScore  = diagnosis.overall?.score || 0;
+      const _ovName   = diagnosis.overall?.levelName || '정상';
+      const _dl       = diagnosis.dualLock || {};
+
+      // CAM/DLT 판정: axes의 input축(A1)·output축(A3) 기반 추정
+      const _camAxes  = ['A1','A2'];  // 순환계/무역 = 동맥(CAM)
+      const _dltAxes  = ['A3','A5']; // 소화계/면역 = 말단(DLT)
+      const _camLevel = Math.max(..._camAxes.map(k => diagnosis.axes?.[k]?.level?.level || 0));
+      const _dltLevel = Math.max(..._dltAxes.map(k => diagnosis.axes?.[k]?.level?.level || 0));
+      const _camLabel = _camLevel >= 4 ? '경보' : _camLevel >= 3 ? '주의' : '양호';
+      const _dltLabel = _dltLevel >= 4 ? '경보' : _dltLevel >= 3 ? '주의' : '양호';
+
+      // DIAH 트리거 — diagnosis.dualLock + axes 기반 추정
+      const _diahActive = [];
+      if (_dl.active) {
+        if (_dl.criticalAxes?.includes('A1') || _camLevel >= 4) _diahActive.push('H'); // 돈맥경화
+        if (_ovLevel >= 4) _diahActive.push('D'); // 소득절벽
+      } else {
+        if (_camLevel >= 3) _diahActive.push('H');
+        if (_dltLevel >= 4) _diahActive.push('I');
+      }
+
+      // 7M 현재 단계 — overall.level → M 단계 매핑
+      const _m7Map = { 0:'0M', 1:'0M', 2:'1M', 3:'2M', 4:'3M', 5:'4M' };
+      const _curM  = _m7Map[_ovLevel] || '0M';
+      const _curN  = parseInt(_curM) || 0;
+      const _nxtM  = `${Math.min(_curN + 1, 7)}M`;
+
       const narResult = {
-        // narrative-engine이 기대하는 최소 구조
         gauges: narGauges,
         alert: {
-          level: Math.min(2, Math.max(0, Math.round((diagnosis.overall?.score || 0) / 2))),
-          label: `Lv.${Math.min(2, Math.round((diagnosis.overall?.score || 0) / 2))} 경보`,
+          level: Math.min(2, Math.max(0, Math.round(_ovScore / 2))),
+          label: `Lv.${Math.min(2, Math.round(_ovScore / 2))} 경보`,
         },
         blockade: {
-          type: (diagnosis.dualLock && diagnosis.dualLock.active) ? '이중봉쇄' : '미발동',
-          label: (diagnosis.dualLock && diagnosis.dualLock.active) ? 'CAM+DLT 이중봉쇄' : '봉쇄 미발동',
-          cam: '양호',
-          dlt: '양호',
-          dual: !!(diagnosis.dualLock && diagnosis.dualLock.active),
+          type: _dl.active ? '이중봉쇄' : (_camLevel >= 3 ? 'CAM 신호봉쇄' : '미발동'),
+          label: _dl.active ? 'CAM+DLT 이중봉쇄' : (_camLevel >= 3 ? 'CAM 주의' : '봉쇄 미발동'),
+          cam: _camLabel,
+          dlt: _dltLabel,
+          dual: !!_dl.active,
         },
-        diah: { label: '미발동', active: [] },
-        m7: { current: '0M', next: '1M' },
+        diah: {
+          label: _diahActive.length > 0 ? _diahActive.join('+') + ' 활성' : '미발동',
+          active: _diahActive,
+        },
+        m7: { current: _curM, next: _nxtM },
         overallGrade: {
-          level: diagnosis.overall?.levelName || '미판정',
-          code: diagnosis.overall?.level || 0,
-          display: diagnosis.overall?.levelName || '미판정',
+          level: _ovName,
+          code: _ovLevel,
+          display: _ovName,
         },
+        crossSignals: diagnosis.crossSignals || [],
       };
+      // ── oneLiner 자동생성: 가장 나쁜 축 + 가장 좋은 축 조합 ──
+      const _axEntries = Object.entries(diagnosis.axes || {});
+      const _sorted = _axEntries.sort((a,b) => (b[1]?.level?.level||0)-(a[1]?.level?.level||0));
+      const _worstAx = _sorted[0];
+      const _bestAx  = _sorted[_sorted.length - 1];
+      const _axNames = { A1:'순환계',A2:'무역·수출',A3:'소화계·내수',A4:'신경계',A5:'면역·금융',A6:'내분비·물가',A7:'근골격·산업',A8:'인구·취약',A9:'재생·에너지' };
+      const _lvNames = ['정상','안정','주의','경계','심각','위기'];
+      const _autoOneLiner = _worstAx
+        ? `${_axNames[_worstAx[0]]||_worstAx[0]} ${_lvNames[_worstAx[1]?.level?.level||0]||'주의'} — ${_ovName} 단계 (${_ovScore?.toFixed ? _ovScore.toFixed(1) : _ovScore}점)`
+        : `${_ovName} 단계 종합 판정`;
+
+      // ── 가족력 현재값 주입 — diagnosis.axes 최신 게이지 기반 ──
+      const _i1 = narGauges['I1'];
+      const _i3 = narGauges['I3'];
+      const _i4 = narGauges['I4'];
+      const _i6 = narGauges['I6'];
+      const _o2 = narGauges['O2'];
+      const _o4 = narGauges['O4'];
+      const _o6 = narGauges['O6'];
+      const _familyNow = {
+        경상수지:     _i1 ? `${_i1.value > 0 ? '+' : ''}${Number(_i1.value).toFixed(1)}억$` : '—',
+        외환보유고:   _i3 ? `${Number(_i3.value).toFixed(0)}억$` : '—',
+        환율:         _i4 ? `${Number(_i4.value).toFixed(0)}원` : '—',
+        국채금리:     _i6 ? `${Number(_i6.value).toFixed(2)}%` : '—',
+        물가:         _o2 ? `+${Number(_o2.value).toFixed(1)}%` : '—',
+        주가:         _o4 ? `${Number(_o4.value).toFixed(0)}pt` : '—',
+        'DIAH 트리거': _diahActive.length > 0 ? _diahActive.join('+') + ' 활성' : '미발동',
+        진단명:       _ovName,
+      };
+
       const narMeta = {
-        month:         meta.month || diagnosis.period || new Date().toISOString().slice(0, 7),
-        writeDate:     new Date().toLocaleDateString('ko-KR'),
-        engineVersion: 'DIAH-7M v5.1 + 서사엔진 v2.8',
+        month:           meta.month || diagnosis.period || new Date().toISOString().slice(0, 7),
+        writeDate:       new Date().toLocaleDateString('ko-KR'),
+        engineVersion:   'DIAH-7M v5.1 + 서사엔진 v2.8',
+        oneLiner:        meta.oneLiner || _autoOneLiner,
+        familyHistoryNow: _familyNow,
+        baseRate:        _i6 ? `${Number(_i6.value).toFixed(2)}%` : '미확인',
       };
       console.log(`[renderer] narrative-engine 호출: ${Object.keys(narGauges).length}개 게이지 주입 (${Object.keys(narGauges).join(', ').slice(0,60)}...)`);
       D = narrativeEngine.generateNarrative(narResult, {}, narMeta);

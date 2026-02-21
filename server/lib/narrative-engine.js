@@ -1588,16 +1588,70 @@ function generateNarrative(result, rawData, meta) {
     else gradeCount.ok++;
   });
 
-  // ── 섹션1 서사 ──
+  // ── 섹션1 서사 (기준 DOCX v3 수준) ──
   const totalAvail = ALL_CODES.filter(c => g[c]?.available).length;
-  const sec1_alertNarrative = `미세석회(가계 빚이자) 침착 수준은 ${al.level === 0 ? "정상 범위 내에 있다. 국가 체력은 양호하다." : al.level === 1 ? "주의 수준에 진입했다." : "경보 수준이다. 즉각적 관찰이 필요하다."}`;
-  
-  const warnCodes = ALL_CODES.filter(c => g[c]?.available && getGrade(c).includes("주의"));
+  const warnCodes  = ALL_CODES.filter(c => g[c]?.available && getGrade(c).includes("주의"));
   const alertCodes = ALL_CODES.filter(c => g[c]?.available && getGrade(c).includes("경보"));
-  let sec1_detail = `${totalAvail}개 게이지 중 ${gradeCount.ok}개가 양호 판정을 받았다.`;
-  if (alertCodes.length > 0) sec1_detail += ` ${alertCodes.map(c => `${METAPHOR[c]?.name || c}(${c})`).join(", ")}에서 경보가 감지되었고,`;
-  if (warnCodes.length > 0) sec1_detail += ` ${warnCodes.map(c => `${METAPHOR[c]?.name || c}(${c})`).join(", ")}에서 주의 신호가 관측된다.`;
-  sec1_detail += ` CAM(수용체 차단)${bl.cam === "양호" ? "과" : "이"} DLT(통로 차단) 모두 ${bl.cam === "양호" && bl.dlt === "양호" ? "양호하며" : `CAM ${bl.cam}, DLT ${bl.dlt}이며`}, 이중봉쇄는 ${bl.dual ? "발생했다" : "발생하지 않았다"}. DIAH 트리거는 ${diah.label} 상태다.`;
+
+  // 병명 자동 생성: 경보 패턴 → 한의학적 병명
+  const _hasH    = (getGrade("I4") !== "양호 ○" || getGrade("I6") !== "양호 ○"); // 혈압/금리
+  const _hasD    = getGrade("I1") === "경보 ★"; // 경상수지 적자
+  const _hasCold = getGrade("O4") === "경보 ★" && getGrade("O6") === "경보 ★"; // 주가+소비 동반
+  const _hasHeat = getGrade("O2") === "경보 ★"; // 물가 급등
+  let _clinicalName = "";
+  if (bl.dual) _clinicalName = "이중봉쇄 — 경제 급사 위험";
+  else if (_hasCold && _hasH) _clinicalName = "하한(下寒) 증후군 — 전신 냉각 진행 중";
+  else if (_hasHeat && _hasH) _clinicalName = "열독(熱毒) 증후군 — 인플레 독소 누적";
+  else if (_hasD) _clinicalName = "소득절벽 — 외부 산소 공급 차단 위험";
+  else if (alertCodes.length >= 3) _clinicalName = "복합 경보 — 다발성 흐름 장애";
+  else if (alertCodes.length >= 1) _clinicalName = `${alertCodes.map(c => METAPHOR[c]?.bodyPart || c).join("·")} 경보 상태`;
+  else if (warnCodes.length >= 2) _clinicalName = "잠복기 — 미세석회 침착 주시 필요";
+  else _clinicalName = "전신 순환 안정 — 무증상 정상 범위";
+
+  const sec1_alertNarrative = _clinicalName;
+
+  // 병리적 연결고리 — Input 경보→Output 영향 추적
+  const _pathLines = [];
+  if (getGrade("I4") === "경보 ★") {
+    const _i4v = fmtValue("I4");
+    _pathLines.push(`환율 ${_i4v} 급등(혈압 위기)은 수입물가를 끌어올리고 외국인 자본 이탈을 자극한다.`);
+  }
+  if (getGrade("I1") !== "양호 ○") {
+    _pathLines.push(`경상수지 위축(폐 기능 저하)은 달러 공급 감소로 이어져 환율 추가 상승 압력을 만든다.`);
+  }
+  if (getGrade("O4") === "경보 ★") {
+    _pathLines.push(`주가 하락(혈류 감소)은 자산효과 소멸로 소비 심리를 직격하고 내수를 위축시킨다.`);
+  }
+  if (getGrade("O6") === "경보 ★") {
+    _pathLines.push(`소비 급감(말단 괴사)은 2년 이상 지속 시 구조적 3M(피폐·정책 무반응) 진입을 예고한다.`);
+  }
+  if (getGrade("O2") !== "양호 ○") {
+    _pathLines.push(`물가 상승(체온 상승)은 환율발 수입물가 경로로 추가 자극될 수 있어 A(물가폭등) 트리거 잠복 관찰이 필요하다.`);
+  }
+  if (_pathLines.length === 0) _pathLines.push("현재 주요 게이지 간 연쇄 악화 경로는 감지되지 않는다. 단월 변동에 유의하며 추이를 관찰한다.");
+
+  let sec1_detail = (() => {
+    const _parts = [];
+    // 전체 판정 요약
+    _parts.push(`현재 ${totalAvail}개 게이지 중 경보 ${alertCodes.length}개, 주의 ${warnCodes.length}개, 양호 ${gradeCount.ok}개다.`);
+    // 경보 게이지 인체비유 상세
+    if (alertCodes.length > 0) {
+      const _alertDescs = alertCodes.map(c => {
+        const m = METAPHOR[c];
+        const mInfo = m?.[getGrade(c)] || m?.["양호 ○"];
+        return `${m?.bodyPart || c}(${c}: ${fmtValue(c)})이 ${mInfo?.metaphor || '경보 수준'}이다`;
+      });
+      _parts.push(_alertDescs.join(". ") + ".");
+    }
+    // CAM/DLT 상태
+    _parts.push(`CAM(자본대사·동맥) ${bl.cam}, DLT(말단순환·정맥) ${bl.dlt}${bl.dual ? " — 이중봉쇄 발생. 급사 위험 단계." : bl.cam !== "양호" || bl.dlt !== "양호" ? ". 단독봉쇄 상태." : ". 이중봉쇄 미발생."}`);
+    // DIAH 상태
+    _parts.push(`DIAH 트리거: ${diah.label}.`);
+    return _parts.join(" ");
+  })();
+
+  // sec1_pathology: 병리적 연결고리 서사
+  const sec1_pathology = _pathLines.join(" ");
 
   // ── 섹션2 심폐계 (Input 6게이지) ──
   const sec2_gauges = INPUT_CODES.filter(c => g[c]?.available && METAPHOR[c]).map(code => {
@@ -2080,6 +2134,7 @@ function generateNarrative(result, rawData, meta) {
     auxGauges: auxGaugeTable,
     sec1_alertNarrative,
     sec1_detail,
+    sec1_pathology,  // 병리적 연결고리 서사 (v2.8 신규)
 
     // 섹션2
     sec2_title: `2. [심폐계] ${meta.sec2_titleSuffix || "Input 게이지 분석"}`,
@@ -2222,13 +2277,50 @@ function generateNarrative(result, rawData, meta) {
     sec5_nextText: meta.sec5_nextText || `${currentM}에서 ${nextM}으로의 진입 조건은 거시석회의 급성 파열이다.`,
 
     // 섹션6 (예후는 정성 판단 필요 → meta에서 입력)
-    sec6_intro: meta.sec6_intro || "미세석회 경로는 현재 안정적이나 세 가지 분기점이 존재한다.",
-    sec6_paths: meta.prognosis || [
-      { label: "경로 A — 개선", prob: "?%", text: "meta.prognosis에서 입력 필요" },
-      { label: "경로 B — 유지", prob: "?%", text: "meta.prognosis에서 입력 필요" },
-      { label: "경로 C — 악화", prob: "?%", text: "meta.prognosis에서 입력 필요" },
-    ],
-    sec6_watchVars: meta.watchVars || ["핵심 관찰 변수를 meta.watchVars에서 입력"],
+    sec6_intro: meta.sec6_intro || (() => {
+      if (alertCodes.length >= 3) return "복수 경보 게이지가 동시 발동 중이다. 향후 3개월은 분기점이다. 세 가지 경로 중 어디로 향하는지 관찰한다.";
+      if (alertCodes.length >= 1) return "경보 게이지가 발생했다. 현재 흐름이 지속되면 악화, 전환 조건이 충족되면 개선으로 분기한다.";
+      if (warnCodes.length >= 2) return "복수 주의 신호가 감지되었다. 잠복 단계로, 추세 방향에 따라 세 경로 중 하나로 수렴한다.";
+      return "주요 게이지가 안정적이다. 다만 구조적 취약성이 잠복하므로 3가지 경로를 사전에 점검한다.";
+    })(),
+    sec6_paths: meta.prognosis || (() => {
+      // 자동 확률 계산: 경보/주의 수 + DIAH 활성 여부 기반
+      const _alertN = alertCodes.length;
+      const _warnN  = warnCodes.length;
+      const _diahN  = diah.active.length;
+      // 기본 확률 (개선/유지/악화)
+      let pA = 30, pB = 50, pC = 20;
+      if (_alertN >= 3 || _diahN >= 2) { pA = 10; pB = 40; pC = 50; }
+      else if (_alertN >= 2 || _diahN >= 1) { pA = 20; pB = 45; pC = 35; }
+      else if (_alertN === 1) { pA = 25; pB = 50; pC = 25; }
+      else if (_warnN >= 3) { pA = 30; pB = 50; pC = 20; }
+      else { pA = 40; pB = 45; pC = 15; }
+      // 경보 코드 기반 경로 설명 자동 생성
+      const _alertDesc = alertCodes.length > 0
+        ? alertCodes.map(c => `${METAPHOR[c]?.name || c}(${c})` ).join(", ") + " 경보 해소"
+        : "현재 추이 유지";
+      const _warnDesc = warnCodes.length > 0
+        ? warnCodes.map(c => `${METAPHOR[c]?.name || c}` ).join("·") + " 주의 신호 지속"
+        : "현재 상태 유지";
+      const _worstDesc = alertCodes.length > 0
+        ? alertCodes.map(c => `${METAPHOR[c]?.name || c}(${c}) 악화` ).join(", ")
+        : warnCodes.map(c => `${METAPHOR[c]?.name || c} 경보 전환` ).join(", ") || "주요 지표 추가 악화";
+      // Input 최강 경보 코드 → 관찰변수
+      const _topAlert = alertCodes[0] || warnCodes[0];
+      const _watchMain = _topAlert ? `${_topAlert}(${METAPHOR[_topAlert]?.name || _topAlert})` : "핵심 지표 추이";
+      return [
+        { label: "경로 A — 개선", prob: `${pA}%`, text: `조건: ${_alertDesc} + 정책 효과 발현. 경과: 경보 게이지 정상 복귀 → CAM/DLT 봉쇄 해제 → 종합 등급 하향. 확률: ${pA}% (${_alertN === 0 ? "현 추이 유지 시 가장 가능성 높음" : "정책·외부 여건 동시 개선 필요"}).` },
+        { label: "경로 B — 유지", prob: `${pB}%`, text: `조건: ${_warnDesc}. 경과: 경보 게이지 횡보 → ${_warnN > 0 ? "주의 수준 장기 유지 → 만성 피로 누적" : "현 상태 유지"}. 확률: ${pB}% (현재 가장 가능성 높은 시나리오).` },
+        { label: "경로 C — 악화", prob: `${pC}%`, text: `조건: ${_worstDesc}. 경과: ${_diahN > 0 ? `DIAH ${diah.label} 심화 →` : "경보 게이지 추가 확대 →"} CAM 또는 DLT 봉쇄 → 이중봉쇄 위험. 위험 신호: ${_watchMain} 연속 악화 + DIAH 트리거 추가 활성. 확률: ${pC}%.` },
+      ];
+    })(),
+    sec6_watchVars: meta.watchVars || (() => {
+      const _vars = [];
+      alertCodes.slice(0, 3).forEach(c => _vars.push(`${c}(${METAPHOR[c]?.name || c}) — 경보 지속 여부`));
+      warnCodes.slice(0, 2).forEach(c => _vars.push(`${c}(${METAPHOR[c]?.name || c}) — 경보 전환 여부`));
+      if (_vars.length === 0) _vars.push("I4 환율", "O6 소매판매", "O4 주가");
+      return _vars;
+    })(),
 
     // 섹션7 (시계열은 이전 데이터 필요 → meta에서 입력)
     sec7_data: meta.timeseriesOverride || [],
@@ -2267,12 +2359,66 @@ function generateNarrative(result, rawData, meta) {
     sec8_narrative2008: FAMILY_HISTORY_PAST["2008"].narrative(meta.month),
     sec8_common: FAMILY_HISTORY_PAST.common,
 
-    // 섹션9
-    sec9_title: meta.sec9_title || '9. 명의의 처방: "미세혈관 개통을 위한 정책 방향"',
-    sec9_intro: "미세석회 제거를 위한 핵심 정책 목표는 미세혈관 개통이다.",
-    sec9_prescriptions: meta.prescriptions || [
-      { title: "처방 1", text: "meta.prescriptions에서 입력 필요" },
-    ],
+    // 섹션9 — 처방 자동생성 (DIAH + 경보 코드 기반)
+    sec9_title: meta.sec9_title || (() => {
+      if (diah.active.includes('H')) return '9. 명의의 처방: "유동성 함정 탈출 — 말단 혈관 개통"';
+      if (diah.active.includes('D')) return '9. 명의의 처방: "소득절벽 차단 — 외부 산소 공급 확보"';
+      if (diah.active.includes('A')) return '9. 명의의 처방: "물가 독소 배출 — 체온 안정화"';
+      if (diah.active.includes('I')) return '9. 명의의 처방: "사회 염증 완화 — 격차 해소"';
+      if (alertCodes.length > 0) return `9. 명의의 처방: "${alertCodes.map(c => METAPHOR[c]?.bodyPart || c).join('·')} 집중 치료"`;
+      return '9. 명의의 처방: "미세혈관 개통을 위한 예방적 처방"';
+    })(),
+    sec9_intro: meta.sec9_intro || (() => {
+      if (diah.active.length > 0) {
+        return `현재 이 유기체에는 ${diah.label} 트리거가 활성화되어 있다. 단일 처방으로는 부족하며, 원인-경로-말단을 동시에 겨냥하는 복합 처방이 필요하다.`;
+      }
+      if (alertCodes.length > 0) {
+        return `경보 게이지가 감지되었다. 지금은 예방 처방의 적기다. 흐름이 굳기 전에 미세혈관을 개통해야 한다.`;
+      }
+      return "현재 안정적이나, 미세석회는 무증상으로 쌓인다. 선제적 흐름 관리가 필요하다.";
+    })(),
+    sec9_prescriptions: meta.prescriptions || (() => {
+      const _rxList = [];
+      // 처방 1: 가장 나쁜 output 게이지 대응
+      const _worstOut = OUTPUT_CODES.filter(c => g[c]?.available).sort((a,b) => {
+        const gr = c => getGrade(c).includes("경보") ? 2 : getGrade(c).includes("주의") ? 1 : 0;
+        return gr(b) - gr(a);
+      })[0];
+      if (_worstOut) {
+        const _rxGrade = getGrade(_worstOut);
+        const _rxM = METAPHOR[_worstOut];
+        _rxList.push({
+          title: `처방 1: ${_rxM?.bodyPart || _worstOut} ${_rxGrade.includes("경보") ? "응급 처치" : "주의 관리"} — ${_rxM?.name || _worstOut} 정상화`,
+          text: `${_rxM?.["경보 ★"]?.prefix || _rxM?.["주의 ●"]?.prefix || ""} ${_rxGrade.includes("경보") ? `${_worstOut}(${fmtValue(_worstOut)})이 경보 수준이다. 즉각적 정책 투입이 필요하다.` : `${_worstOut}(${fmtValue(_worstOut)}) 주의 신호가 지속된다. 선제적 모니터링과 완화 조치가 필요하다.`}`,
+        });
+      }
+      // 처방 2: 가장 나쁜 input 게이지 대응
+      const _worstIn = INPUT_CODES.filter(c => g[c]?.available).sort((a,b) => {
+        const gr = c => getGrade(c).includes("경보") ? 2 : getGrade(c).includes("주의") ? 1 : 0;
+        return gr(b) - gr(a);
+      })[0];
+      if (_worstIn && _worstIn !== _worstOut) {
+        const _rxM2 = METAPHOR[_worstIn];
+        const _rxGrade2 = getGrade(_worstIn);
+        _rxList.push({
+          title: `처방 2: ${_rxM2?.bodyPart || _worstIn} 관리 — ${_rxM2?.name || _worstIn} ${_rxGrade2.includes("경보") ? "경보 대응" : "안정화"}`,
+          text: `${_rxM2?.diagnosisTemplate?.[_rxGrade2]?.(fmtValue(_worstIn), fmtChange(_worstIn)) || `${_worstIn}(${fmtValue(_worstIn)}) 관리가 필요하다.`} 이 지표가 추가 악화되면 CAM(자본대사) 봉쇄로 전이될 수 있다.`,
+        });
+      }
+      // 처방 3: 이중봉쇄 예방 또는 산소 공급 유지
+      const _bestIn = INPUT_CODES.filter(c => g[c]?.available && getGrade(c) === "양호 ○")[0];
+      if (_bestIn) {
+        const _rxM3 = METAPHOR[_bestIn];
+        _rxList.push({
+          title: `처방 3: ${_rxM3?.bodyPart || _bestIn} 강점 유지 — 산소 공급 경로 보존`,
+          text: `현재 ${_rxM3?.name || _bestIn}(${_bestIn})이 양호하다. 이 강점을 유지하는 것이 경제 생존의 마지막 보루다. ${_rxM3?.["양호 ○"]?.prefix || ""} 정책 우선순위에서 이 경로를 보호해야 한다.`,
+        });
+      }
+      if (_rxList.length === 0) {
+        _rxList.push({ title: "처방 1: 흐름 모니터링 강화", text: "현재 안정적이나, 잠복기 미세석회 침착을 예방하기 위해 핵심 게이지 주간 모니터링을 권고한다." });
+      }
+      return _rxList;
+    })(),
     sec9_rules: ALERT_RULES,
 
     // 섹션10
