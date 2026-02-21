@@ -819,16 +819,10 @@ function renderSection(section, ctx) {
       const narrKey    = section.summary_key;
       const axisGauges = (data[axisKey] || []);
 
-      children.push(makeHeading(interpolate(section.heading, ctx.vars), section.level));
+      // 데이터 없으면 섹션 전체 미노출 (헤딩 포함)
+      if (!data[availKey] || axisGauges.length === 0) break;
 
-      // 데이터 없으면 스킵
-      if (!data[availKey] || axisGauges.length === 0) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: '수집 데이터 없음 (해당 축 게이지 미수집)', color: colors.gray, size: 18 })],
-          spacing: { after: 120 },
-        }));
-        break;
-      }
+      children.push(makeHeading(interpolate(section.heading, ctx.vars), section.level));
 
       // 위성 포함 안내
       if (section.satellite_note) {
