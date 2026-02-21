@@ -1147,24 +1147,30 @@ const AXIS_META = {
   A9: { eco: '인구/노화',      body: '신체나이' },
 };
 
+// ── 한글 폰트 경로 ──────────────────────────────────────────
+const _FONT_PATH = require('path').join(__dirname, '..', 'fonts', 'NanumGothic.ttf');
+const _HAS_KR_FONT = require('fs').existsSync(_FONT_PATH);
+const _F  = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica';        // 본문
+const _FB = _HAS_KR_FONT ? _FONT_PATH : 'Helvetica-Bold';   // 굵게 (NanumGothic은 단일 파일)
+
 function _pdfSectionTitle(doc, text) {
   doc.moveDown(1.2);
-  doc.fontSize(13).font('Helvetica-Bold').fillColor('#1e293b').text(text);
+  doc.fontSize(13).font(_FB).fillColor('#1e293b').text(text);
   doc.moveDown(0.3);
   doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
   doc.moveDown(0.5);
-  doc.fontSize(10).font('Helvetica').fillColor('#334155');
+  doc.fontSize(10).font(_F).fillColor('#334155');
 }
 
 function _pdfBodyText(doc, text) {
   if (!text) return;
-  doc.fontSize(10).font('Helvetica').fillColor('#334155').text(String(text), { lineGap: 3 });
+  doc.fontSize(10).font(_F).fillColor('#334155').text(String(text), { lineGap: 3 });
   doc.moveDown(0.3);
 }
 
 function _pdfAddFooter(doc, pageNum) {
   const bottom = doc.page.height - 35;
-  doc.fontSize(8).font('Helvetica').fillColor('#94a3b8')
+  doc.fontSize(8).font(_F).fillColor('#94a3b8')
      .text('DIAH-7M | 인체국가경제론 | 참고용 진단 보고서', 50, bottom, { align: 'left', width: 400 })
      .text(`${pageNum}`, 50, bottom, { align: 'right', width: 495 });
 }
@@ -1209,20 +1215,20 @@ async function renderPDF(diagnosis, outputStream) {
       let pageNum = 1;
 
       // 표지
-      doc.fontSize(22).font('Helvetica-Bold').fillColor('#0f172a')
+      doc.fontSize(22).font(_FB).fillColor('#0f172a')
          .text('DIAH-7M 경제 건강검진 보고서', { align: 'center' });
       doc.moveDown(0.3);
-      doc.fontSize(13).font('Helvetica').fillColor('#475569')
+      doc.fontSize(13).font(_F).fillColor('#475569')
          .text(`대한민국 | ${period}`, { align: 'center' });
       doc.moveDown(1.5);
       const bx = 150, bw = 295, bh = 80;
       doc.roundedRect(bx, doc.y, bw, bh, 8).fillColor(lvColor + '18').fill();
       const boxTop = doc.y + 12;
-      doc.fontSize(26).font('Helvetica-Bold').fillColor(lvColor)
+      doc.fontSize(26).font(_FB).fillColor(lvColor)
          .text(`L${overall.level || '?'} ${LEVEL_NAMES[overall.level] || '미판정'}`,
                 bx, boxTop, { width: bw, align: 'center' });
       doc.moveDown(2);
-      doc.fontSize(9).font('Helvetica').fillColor('#94a3b8')
+      doc.fontSize(9).font(_F).fillColor('#94a3b8')
          .text(`생성일: ${new Date().toLocaleDateString('ko-KR')} | DIAH-7M v5.1 + 서사엔진 v2.8`, { align: 'center' });
       _pdfAddFooter(doc, pageNum++);
       doc.addPage();
@@ -1234,11 +1240,11 @@ async function renderPDF(diagnosis, outputStream) {
         const lvC  = LEVEL_COLORS_HEX[ax.level?.level] || '#64748b';
         const sc   = typeof ax.score === 'number' ? ax.score.toFixed(2) : 'N/A';
         const rowY = doc.y;
-        doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e293b')
+        doc.fontSize(10).font(_FB).fillColor('#1e293b')
            .text(`${axId} ${meta.eco}`, 50, rowY, { width: 220 });
-        doc.fontSize(9).font('Helvetica').fillColor('#64748b')
+        doc.fontSize(9).font(_F).fillColor('#64748b')
            .text(`(${meta.body})`, 50, rowY + 14, { width: 220 });
-        doc.fontSize(10).font('Helvetica-Bold').fillColor(lvC)
+        doc.fontSize(10).font(_FB).fillColor(lvC)
            .text(sc, 290, rowY + 5, { width: 120 });
         doc.moveDown(1.4);
         if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
@@ -1255,7 +1261,7 @@ async function renderPDF(diagnosis, outputStream) {
         if (doc.y > 600) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
         _pdfSectionTitle(doc, '4. DIAH 트리거 분석');
         if (D.sec4_triggers) D.sec4_triggers.forEach(tr => {
-          doc.fontSize(11).font('Helvetica-Bold').fillColor('#475569').text(`${tr.code} — ${tr.name}`);
+          doc.fontSize(11).font(_FB).fillColor('#475569').text(`${tr.code} — ${tr.name}`);
           _pdfBodyText(doc, tr.text);
           if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
         });
@@ -1270,7 +1276,7 @@ async function renderPDF(diagnosis, outputStream) {
           if (doc.y > 650) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
           _pdfSectionTitle(doc, '6. 예후 3경로');
           D.sec6_paths.forEach(p => {
-            doc.fontSize(11).font('Helvetica-Bold').text(`${p.label} (${p.prob || ''})`);
+            doc.fontSize(11).font(_FB).text(`${p.label} (${p.prob || ''})`);
             _pdfBodyText(doc, p.text);
             if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
           });
@@ -1287,7 +1293,7 @@ async function renderPDF(diagnosis, outputStream) {
           _pdfSectionTitle(doc, '9. 명의 처방');
           _pdfBodyText(doc, D.sec9_intro);
           D.sec9_prescriptions.forEach(p => {
-            doc.fontSize(11).font('Helvetica-Bold').text(p.title);
+            doc.fontSize(11).font(_FB).text(p.title);
             _pdfBodyText(doc, p.text);
             if (doc.y > 720) { _pdfAddFooter(doc, pageNum++); doc.addPage(); }
           });
