@@ -451,16 +451,21 @@ async function start() {
       await db.initSchema();
 
       if (auth) {
+        const adminPw = process.env.ADMIN_PASSWORD || 'M12345678@';
+        const hash = auth.hashPassword(adminPw);
         const admin = await db.get("SELECT id FROM users WHERE email = 'admin@diah7m.com'");
         if (!admin) {
-          const adminPw = process.env.ADMIN_PASSWORD;
-          if (!adminPw) { console.log('  ⚠️  ADMIN_PASSWORD not set — skip admin seed'); return; }
-          const hash = auth.hashPassword(adminPw);
           await db.run(
             "INSERT INTO users (email, password_hash, name, plan, role, mileage) VALUES ('admin@diah7m.com', ?, 'Admin', 'ENTERPRISE', 'admin', 99999)",
             [hash]
           );
-          console.log('  ✅ Admin account created');
+          console.log('  ✅ Admin account created (admin@diah7m.com)');
+        } else {
+          await db.run(
+            "UPDATE users SET password_hash=?, plan='ENTERPRISE', role='admin' WHERE email='admin@diah7m.com'",
+            [hash]
+          );
+          console.log('  ✅ Admin account synced (admin@diah7m.com)');
         }
       }
     }
