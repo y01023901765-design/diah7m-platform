@@ -303,9 +303,8 @@ function mergeGaugeData(demoD, liveResults) {
     if (!merged[key]) key = SERVER_TO_FRONT[r.id];
     if (!key || !merged[key] || applied.has(key)) continue;
     applied.add(key);
-    // 실데이터 기반 상태 재계산: 변화율 기반 판정
-    const absV = Math.abs(r.value);
-    const newG = absV > 10 ? '경보' : absV > 5 ? '주의' : '양호';
+    // 서버 grade 우선 → 없으면 기존 데모 grade 유지 (프론트 임의 재판정 금지)
+    const newG = r.grade === 'good' ? '양호' : r.grade === 'caution' ? '주의' : r.grade === 'alert' ? '경보' : merged[key].g;
     merged[key] = {
       ...merged[key],
       v: r.value,
@@ -488,10 +487,14 @@ function DashboardPage({user,onNav,lang,country,city}){
   const fallbackCnt=allG.filter(g=>g._fallback).length;
   const totalG=allG.length||1;
 
-  // ★ V2: 서버 countryScore 우선 (수축 적용됨) → 폴백 = 프론트 단순 평균
+  // ★ V2: 서버 판정 우선 → 프론트는 표시만 (임의 환산 금지)
+  // 한국: core-engine severity(0~5) → 표시용 100점 역산 (5=위기=0pt, 0=안정=100pt)
+  // 글로벌: score-engine 0~100 그대로 사용
   let compositeScore;
   if (isGlobalMode && countryInfo?.countryScore != null) {
     compositeScore = Number(countryInfo.countryScore).toFixed(1);
+  } else if (isKorea && krDiagnosis?.overall?.score != null) {
+    compositeScore = Math.max(0, Math.round((5 - krDiagnosis.overall.score) / 5 * 100)).toFixed(1);
   } else {
     const rawScore=((good*100+caution*50+alertCnt*0)/totalG);
     compositeScore = rawScore.toFixed(1);
@@ -502,15 +505,32 @@ function DashboardPage({user,onNav,lang,country,city}){
   const isPreliminary = isGlobalMode && coveragePct < 70;
   const scoreColor=compositeScore>=70?LT.good:compositeScore>=40?LT.warn:LT.danger;
 
-  // ★ Level 판정 (배포패키지 정본 기준 — 사용자 출력용)
-  // 서버 level 우선 → 없으면 프론트 변환
-  const levelInfo = countryInfo?.level || (() => {
+  // ★ Level 판정 — 서버 판정 직결 (프론트 재판정 금지)
+  // 1순위: 글로벌 → 서버 countryInfo.level (score-engine 0~100 기반)
+  // 2순위: 한국  → 서버 krDiagnosis.overall (core-engine severity 0~5 기반)
+  // 3순위: 폴백  → API 응답 전 초기 상태용 (compositeScore 임시 환산)
+  const KR_LEVEL_MAP = [
+    { level:1, name:'안정', nameEn:'Stable',  color:'#22c55e', threshold:1.5 },
+    { level:2, name:'주의', nameEn:'Watch',   color:'#eab308', threshold:2.0 },
+    { level:3, name:'경계', nameEn:'Caution', color:'#f97316', threshold:2.5 },
+    { level:4, name:'심각', nameEn:'Severe',  color:'#ef4444', threshold:3.5 },
+    { level:5, name:'위기', nameEn:'Crisis',  color:'#991b1b', threshold:5.0 },
+  ];
+  const levelInfo = (() => {
+    if (isGlobalMode && countryInfo?.level) return countryInfo.level;
+    if (isKorea && krDiagnosis?.overall) {
+      const lv = krDiagnosis.overall.level;
+      const sev = krDiagnosis.overall.score ?? 0;
+      return KR_LEVEL_MAP.find(m => m.level === lv)
+          || KR_LEVEL_MAP.find(m => sev < m.threshold)
+          || KR_LEVEL_MAP[KR_LEVEL_MAP.length - 1];
+    }
     const s = Number(compositeScore);
-    if (s >= 80) return { level:1, name:'안정', nameEn:'Stable',  color:'#22c55e' };
-    if (s >= 60) return { level:2, name:'주의', nameEn:'Watch',   color:'#eab308' };
-    if (s >= 40) return { level:3, name:'경계', nameEn:'Caution', color:'#f97316' };
-    if (s >= 20) return { level:4, name:'심각', nameEn:'Severe',  color:'#ef4444' };
-    return              { level:5, name:'위기', nameEn:'Crisis',  color:'#991b1b' };
+    if (s >= 80) return KR_LEVEL_MAP[0];
+    if (s >= 60) return KR_LEVEL_MAP[1];
+    if (s >= 40) return KR_LEVEL_MAP[2];
+    if (s >= 20) return KR_LEVEL_MAP[3];
+    return KR_LEVEL_MAP[4];
   })();
 
   // ★ 9축 인체명칭 + 경제용어 매핑 (배포패키지 정본 기준)
