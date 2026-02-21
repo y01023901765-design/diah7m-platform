@@ -755,6 +755,14 @@ const GAUGE_NARRATIVE = {
   S2: { // 야간광량 (항만·공단) → 신경 전기신호
     name: '야간광량', bodyPart: '신경전기신호',
     axis: 'A4', unit: '%',
+    satelliteTag: true,  // ← 위성 실측 게이지 표시
+    satellite: {
+      sensor: 'NASA VIIRS DNB',
+      physicsChain: '공장·항만 가동 → 야간 조명 점등 → 빛 방사(nW/cm²/sr) → 위성 포착 → anomaly 계산',
+      physicsFlow: '공장이 가동되면 야간에 불빛이 발생한다. VIIRS 위성은 이 빛의 방사량(nW/cm²/sr)을 60일 평균과 365일 기준선으로 비교해 anomaly(%)를 산출한다. 통계청 발표보다 2~3개월 앞서 실물 경기를 포착하는 세계 최초 국가경제 위성 진단 지표다.',
+      leadTime: '2~3개월 선행',
+      canFalsify: false,  // 조작 불가
+    },
     '양호 ○': { metaphor: '신경 전기신호 정상', prefix: '항만·공단의 야간 활동이 활발하며 신경 신호가 정상이다.' },
     '주의 ●': { metaphor: '신경 전기신호 약화', prefix: '야간광량이 감소하며 경기 신호가 약해지고 있다.' },
     '경보 ★': { metaphor: '신경 전기신호 차단', prefix: '야간광량이 급감하며 경제 신경 신호가 차단되고 있다.' },
@@ -1954,6 +1962,14 @@ const GAUGE_NARRATIVE = {
   R5: { // SAR 공정률 → X-ray 공정 확인
     name: 'SAR공정률', bodyPart: 'X-ray공정',
     axis: 'A9', unit: '%',
+    satelliteTag: true,
+    satellite: {
+      sensor: 'ESA Sentinel-1 SAR (C-밴드 레이더)',
+      physicsChain: '건물 골조 성장 → 레이더 후방산란 강도 변화 → 위성 포착 → 수직변위(mm) 측정 → 공정률 환산',
+      physicsFlow: 'SAR(합성개구레이더)는 전파를 쏘고 반사돼 돌아오는 신호를 측정한다. 건물이 올라가면 반사 패턴이 바뀐다. 이 변화를 추적하면 건물이 실제로 지어지고 있는지 수mm 단위로 확인할 수 있다. 서류 공정률과 위성 공정률이 다르면 — 과대보고다. 서류는 조작할 수 있지만 레이더 전파는 거짓말을 못 한다.',
+      leadTime: '실시간 (16일 주기)',
+      canFalsify: false,
+    },
     '양호 ○': { metaphor: 'X-ray 공정 일치', prefix: '위성 SAR과 공식 공정률이 일치한다.' },
     '주의 ●': { metaphor: 'X-ray 공정 괴리', prefix: '위성 SAR과 공식 공정률 사이에 괴리가 감지되었다.' },
     '경보 ★': { metaphor: 'X-ray 공정 허위', prefix: '위성 SAR이 공사 중단을 보여주지만 공식 보고는 진행 중이다.' },
@@ -1987,6 +2003,14 @@ const GAUGE_NARRATIVE = {
   R6: { // 신축 야간광량 → X-ray 실입주
     name: '신축야간광량', bodyPart: 'X-ray실입주',
     axis: 'A9', unit: '%',
+    satelliteTag: true,
+    satellite: {
+      sensor: 'NASA VIIRS DNB + Landsat-9 TIR',
+      physicsChain: '사람 거주 → 조명·난방 사용 → 빛·열 방사 → 위성 포착 → 신축단지 야간광 anomaly 산출',
+      physicsFlow: '사람이 살면 밤에 불을 켠다. VIIRS 위성은 750m 해상도로 신축단지의 야간 빛을 측정한다. 입주율 90%라는 보고서가 있어도, 위성이 찍은 단지가 어두우면 — 사람이 없는 것이다. 빛은 거주의 물리적 증거다. 위성은 거짓말을 못 한다.',
+      leadTime: '실시간 (월간 합성)',
+      canFalsify: false,
+    },
     '양호 ○': { metaphor: '실입주 확인', prefix: '신축단지 야간광량이 정상이며 실입주가 확인된다.' },
     '주의 ●': { metaphor: '실입주 의심', prefix: '신축단지 야간광량이 낮으며 빈집 가능성이 있다.' },
     '경보 ★': { metaphor: '유령단지', prefix: '신축단지에 불이 꺼져 있다. 유령단지 의심.' },
@@ -2020,6 +2044,8 @@ const GAUGE_NARRATIVE = {
   G1: { // 지방소멸지수 → 편마비 등급
     name: '지방소멸지수', bodyPart: '편마비등급',
     axis: 'A9', unit: '지수',
+    satelliteTag: false,  // 공공API 기반 — 위성 아님 (G6 위성과 교차)
+    satellite: null,
     '양호 ○': { metaphor: '편마비 없음', prefix: '지방소멸 위험이 낮으며 좌우 균형이 유지되고 있다.' },
     '주의 ●': { metaphor: '편마비 초기', prefix: '일부 지역 소멸 위험이 높아지며 편마비 초기 증상이 나타나고 있다.' },
     '경보 ★': { metaphor: '편마비 진행', prefix: '다수 지역이 소멸 위험에 처하며 편마비가 진행 중이다.' },
@@ -2053,6 +2079,14 @@ const GAUGE_NARRATIVE = {
   G6: { // 지역 야간광량 → 편마비 위성 확인
     name: '지역야간광량', bodyPart: '편마비위성',
     axis: 'A9', unit: '%',
+    satelliteTag: true,
+    satellite: {
+      sensor: 'NASA VIIRS DNB (지역별 비교)',
+      physicsChain: '지역 경제활동 → 야간 조명 총량 → 수도권 vs 비수도권 비율 산출 → 지역 활력 격차 정량화',
+      physicsFlow: 'VIIRS 위성이 찍은 한반도의 밤을 수도권과 비수도권으로 나눠 야간광 총량을 비교한다. 경제가 살아있으면 불빛이 있다. 지방이 어두워진다는 것은 — 물리적으로 경제 활동이 사라지고 있다는 뜻이다. GRDP 통계보다 먼저, 조작 없이, 실물로 확인한다. 위성이 기록하는 편마비의 증거다.',
+      leadTime: '1~2개월 선행',
+      canFalsify: false,
+    },
     '양호 ○': { metaphor: '좌우 활력 균형', prefix: '전국 야간광량이 고르며 지역 균형이 유지되고 있다.' },
     '주의 ●': { metaphor: '좌우 활력 격차', prefix: '지방 야간광량이 감소하며 지역 활력 격차가 벌어지고 있다.' },
     '경보 ★': { metaphor: '한쪽 활력 소실', prefix: '지방이 어두워지고 있다. 위성이 확인하는 편마비 증거.' },

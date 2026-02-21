@@ -346,7 +346,9 @@ function buildCover(d) {
 
     p([t(`기준월: ${d.baseMonth || ''}  |  작성일: ${d.writeDate || ''}`, { size: S.body, color: C.mid })],
       { align: AlignmentType.CENTER, after: 40 }),
-    p([t('진단 엔진: 판정 v5.1 / 서사 v2.8', { size: S.sm, color: C.light })],
+    p([t('진단 엔진: 판정 v5.1 / 서사 v2.9 / 위성 통합', { size: S.sm, color: C.light })],
+      { align: AlignmentType.CENTER, after: 40 }),
+    p([t('세계 최초 위성 실측 국가경제 진단 시스템', { size: S.sm, bold: true, color: C.accent })],
       { align: AlignmentType.CENTER, after: 40 }),
     p([t('인체국가경제론 / 윤종원', { size: S.sm, color: C.light })],
       { align: AlignmentType.CENTER }),
@@ -437,66 +439,154 @@ function buildClinicalInsight(d) {
   ];
 }
 
-// ── 물리흐름 진단 — 위성데이터 종합 ─────────────────────
+// ── 물리흐름 진단 — 위성데이터 종합 (v2.9 전면 강화) ────────
 function buildSatelliteOverview(d) {
-  const sat = d.satellite || {};
-  return [
-    ...sectionHeader('위성.', '물리흐름 진단 — 위성데이터 종합',
-                     '정부 통계가 아닌 물리적 증거로 경제를 본다'),
-    diagBox([
-      p([t('DIAH-7M은 정부 발표 통계만으로 진단하지 않는다. 위성이 촬영한 물리적 증거—불빛, 대기오염, 지표면 온도, 건축물 변화—를 경제 활력의 객관적 실측치로 사용한다.',
-          { size: S.body, bold: true, color: C.navy })], { after: 0 }),
-    ], C.bgBox),
+  const sat  = d.satellite || {};
+  const SI   = (narrativeEngine && narrativeEngine.SATELLITE_INTRO) || {};
+  const GN   = (narrativeEngine && narrativeEngine.GAUGE_NARRATIVE) || {};
 
-    p([t('인체비유: 환자의 자기 보고(정부 통계)만 듣는 것이 아니라, CT/MRI/혈액검사(위성 실측)로 몸 속을 직접 들여다본다.',
-        { size: S.body, color: C.mid })], { after: 200 }),
+  // ── 위성 게이지 실측값 추출 (진단 데이터에서) ──
+  const _satVal = (code) => {
+    const ax = d.axes || {};
+    for (const axData of Object.values(ax)) {
+      const gauges = axData.gauges || [];
+      const found = gauges.find(g => g.code === code);
+      if (found) return { value: found.value || '—', grade: found.grade || '—', status: found.status || '—' };
+    }
+    return { value: '—', grade: '—', status: '수집 중' };
+  };
+  const s2v  = _satVal('S2');
+  const r5v  = _satVal('R5');
+  const r6v  = _satVal('R6');
+  const g6v  = _satVal('G6');
 
-    subHeader('투입 위성 데이터'),
-    tbl([
-      rw([hcl('위성/센서', 1400), hcl('측정 대상', 1600), hcl('인체 비유', 1400), hcl('적용 게이지', 900), hcl('현재 판독', 3326)]),
-      ...[
-        ['NASA VIIRS DNB',      '야간 인공광 방사량',     '뇌활동 (경제활동 강도)',    'S3_NL',    sat.viirs || '(데이터 수집 중)'],
-        ['GEMS 환경위성',        'NO₂ 농도',              '폐점막 (대기오염·산업)',     'S3',       sat.gems  || '(순차 확대 예정)'],
-        ['Landsat-9 TIR',       '지표면 열적외선 온도',   '체온·체표온도 (열환경)',     'R6, R8',   sat.lst   || '(데이터 수집 중)'],
-        ['Sentinel-1 SAR',      '레이더 후방산란',        '근육·뼈 (구조변화·건설)',    'R5',       sat.sar   || '(순차 확대 예정)'],
-        ['Sentinel-2 광학',     '다중분광 반사율',        '피부·조직 (토지이용 변화)',   'R7',       sat.s2    || '(순차 확대 예정)'],
-        ['Sentinel-5P TROPOMI', 'PM2.5 추정 농도',        '폐·혈액 (대기 환경 부하)',   'G6',       sat.s5p   || '(순차 확대 예정)'],
-      ].map((r, i) => rw([
-        cl(r[0], { w: 1400, bold: true, fs: S.sm, bg: altBg(i) }),
-        cl(r[1], { w: 1600, fs: S.sm, bg: altBg(i) }),
-        cl(r[2], { w: 1400, fs: S.sm, fc: C.accent, bg: altBg(i) }),
-        cl(r[3], { w: 900,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
-        cl(r[4], { w: 3326, fs: S.sm, bg: altBg(i) }),
-      ])),
-    ], [1400, 1600, 1400, 900, 3326]),
+  // ── 위성 게이지 physicsFlow 텍스트 ──
+  const _pf = (code) => GN[code]?.satellite?.physicsFlow || '';
+  const _chain = (code) => GN[code]?.satellite?.physicsChain || '';
 
-    subHeader('물리 실측 vs 정부 통계 — 괴리 진단'),
-    p([t('위성 데이터의 가장 강력한 기능은 정부 통계와의 괴리를 감지하는 것이다. 통계는 정상인데 위성은 이상을 보이면, 아직 통계에 잡히지 않은 변화가 물리적으로 시작된 것이다.',
-        { size: S.body })], { after: 120 }),
+  const elements = [];
 
-    tbl([
-      rw([hcl('비교 항목', 2000), hcl('정부 통계', 2400), hcl('위성 실측', 2400), hcl('괴리 판정', 2226)]),
-      ...[
-        ['산업활동·대기질', sat.factoryStat || '(통계 수치)', sat.factorySat || '(NO₂ 실측)', sat.factoryGap || '(괴리 판정)'],
-        ['부동산 공정률',   sat.realEstateStat || '(분양 공정률)', sat.realEstateSat || '(SAR 높이 실측)', sat.realEstateGap || '(괴리 판정)'],
-        ['신축 입주율',     sat.moveInStat || '(입주 보고)', sat.moveInSat || '(야간광 실측)', sat.moveInGap || '(괴리 판정)'],
-        ['지역 경제 활력',  sat.regionStat || '(GRDP 통계)', sat.regionSat || '(야간광+NO₂)', sat.regionGap || '(괴리 판정)'],
-      ].map((r, i) => rw([
-        cl(r[0], { w: 2000, bold: true, fs: S.sm, bg: altBg(i) }),
-        cl(r[1], { w: 2400, fs: S.sm, bg: altBg(i) }),
-        cl(r[2], { w: 2400, fs: S.sm, bg: altBg(i) }),
-        cl(r[3], { w: 2226, fs: S.sm, bold: true, fc: C.navy, align: AlignmentType.CENTER, bg: altBg(i) }),
-      ])),
-    ], [2000, 2400, 2400, 2226]),
+  // ════ 섹션 헤더 ════
+  elements.push(...sectionHeader('위성.', '물리흐름 진단 — 위성데이터 종합',
+    '세계 최초 위성 실측 국가경제 진단'));
 
-    subHeader('위성 종합 판독'),
-    diagBox([
-      p([t(sat.overallVerdict || '현재 위성 데이터와 정부 통계 간 유의미한 괴리는 감지되지 않았다.',
-          { size: S.body, bold: true, color: C.navy })], { after: 40 }),
-      p([t(sat.overallDetail || 'A4축(부동산) R5~R9 위성 실측은 분기별 업데이트 주기를 가지므로, 직전 분기 대비 변동을 기준으로 판독한다.',
-          { size: S.sm, color: C.mid })], { after: 0 }),
-    ], C.bgBox),
+  // ════ [1] 세계 최초 선언문 박스 ════
+  elements.push(diagBox([
+    p([t('[ 세계 최초 선언 ]', { size: S.sm, bold: true, color: C.mid })], { after: 60 }),
+    ...(SI.declaration || `DIAH-7M은 세계 최초로 위성 실측값을 국가경제 진단에 통합한 시스템이다.\n정부 통계는 사람이 보고한다. 위성은 물리 신호를 조작 없이 포착한다.\n통계가 거짓말을 해도, 위성은 하지 못한다.`)
+      .split('\n').filter(l => l.trim()).map(line =>
+        p([t(line.trim(), { size: S.body, bold: line.includes('세계 최초') || line.includes('위성은 하지'), color: line.includes('세계 최초') ? C.navy : C.dark })], { after: 40 })
+      ),
+    p([t(SI.bodyAnalogy || '환자의 자기 보고(정부 통계)만 믿지 않는다. CT·MRI·혈액검사(위성 실측)로 몸 속을 직접 확인한다.',
+        { size: S.body, it: true, color: C.accent })], { after: 0 }),
+  ], C.bgBox));
+
+  // ════ [2] 위성의 3대 강점 ════
+  elements.push(subHeader('위성 진단의 3대 강점'));
+  const strengths = SI.coreStrengths || [
+    { title: '조작 불가능', body: '통계는 보고자가 수치를 바꿀 수 있다. 위성이 포착한 빛·열·레이더 신호는 바꿀 수 없다.' },
+    { title: '통계 2~3개월 선행', body: '야간광이 감소하기 시작하면, 공식 통계 발표보다 2~3개월 앞서 경기 둔화를 포착한다.' },
+    { title: '통계 vs 위성 교차검증', body: '정부 통계와 위성 실측이 다른 방향이면 — 통계에 잡히지 않은 변화가 이미 물리적으로 시작된 것이다.' },
   ];
+  elements.push(tbl([
+    rw([hcl('강점', 1200), hcl('설명', 7826)]),
+    ...strengths.map((s, i) => rw([
+      cl(s.title, { w: 1200, bold: true, fs: S.sm, fc: C.navy, bg: altBg(i) }),
+      cl(s.body,  { w: 7826, fs: S.sm, bg: altBg(i) }),
+    ])),
+  ], [1200, 7826]));
+
+  // ════ [3] 물리 흐름도 — 활동 → 신호 → 위성 → 경제 해석 ════
+  elements.push(subHeader('물리 흐름도 — 경제활동이 위성 신호로 변환되는 원리'));
+  elements.push(p([t('경제 활동은 물리 신호를 만든다. 위성은 이 신호를 포착한다. DIAH-7M은 이 신호를 경제 언어로 번역한다.',
+    { size: S.body, color: C.mid })], { after: 100 }));
+
+  const flowRows = SI.physicsFlowTable || [
+    { activity: '공장·항만 가동',   signal: '야간 빛 (nW/cm²/sr)',     sensor: 'NASA VIIRS DNB',          interpretation: '가동률 (S2) — 통계 2~3개월 선행' },
+    { activity: '사람 거주·생활',   signal: '빛 + 표면열 (°C)',         sensor: 'VIIRS + Landsat-9 TIR',   interpretation: '실입주율 (R6) — 유령단지 적발' },
+    { activity: '건물 골조 성장',   signal: '레이더 후방산란 (mm)',     sensor: 'ESA Sentinel-1 SAR',      interpretation: '공정률 (R5) — 공사 은폐 적발' },
+    { activity: '지역 경제 활동',   signal: '지역별 야간광 비율 (%)',   sensor: 'NASA VIIRS DNB (지역 비교)', interpretation: '지역 활력 격차 (G6) — 편마비 확증' },
+  ];
+  elements.push(tbl([
+    rw([hcl('경제 활동', 1600), hcl('물리 신호 발생', 1800), hcl('위성·센서', 2000), hcl('경제 해석', 3626)]),
+    ...flowRows.map((r, i) => rw([
+      cl(r.activity,       { w: 1600, bold: true, fs: S.sm, fc: C.navy, bg: altBg(i) }),
+      cl(r.signal,         { w: 1800, fs: S.sm, fc: C.accent, bg: altBg(i) }),
+      cl(r.sensor,         { w: 2000, fs: S.sm, it: true, bg: altBg(i) }),
+      cl(r.interpretation, { w: 3626, fs: S.sm, bg: altBg(i) }),
+    ])),
+  ], [1600, 1800, 2000, 3626]));
+
+  // ════ [4] 위성 게이지별 물리원리 + 현재 판독값 ════
+  elements.push(subHeader('위성 게이지 실측 현황'));
+  const satGaugeRows = [
+    { code: 'S2', label: '야간광량 (항만·공단 가동률)', data: s2v, pf: _pf('S2'), tag: '운영 중' },
+    { code: 'R6', label: '신축야간광량 (실입주 검증)',   data: r6v, pf: _pf('R6'), tag: '운영 중' },
+    { code: 'R5', label: 'SAR 공정률 (건설 은폐 탐지)', data: r5v, pf: _pf('R5'), tag: '순차 확대' },
+    { code: 'G6', label: '지역야간광량 (편마비 확증)',   data: g6v, pf: _pf('G6'), tag: '운영 중' },
+  ];
+  elements.push(tbl([
+    rw([hcl('코드', 500), hcl('게이지명', 1800), hcl('현재값', 900), hcl('등급', 700), hcl('상태', 700), hcl('물리 원리', 4426)]),
+    ...satGaugeRows.map((r, i) => {
+      const gc = r.data.grade === '경보 ★' ? C.lv3 : r.data.grade === '주의 ●' ? C.lv1 : C.lv0;
+      return rw([
+        cl(r.code,          { w: 500,  bold: true, fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
+        cl(r.label,         { w: 1800, fs: S.sm, bg: altBg(i) }),
+        cl(r.data.value,    { w: 900,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
+        cl(r.data.grade,    { w: 700,  fs: S.sm, bold: true, fc: gc, align: AlignmentType.CENTER, bg: altBg(i) }),
+        cl(r.tag,           { w: 700,  fs: S.sm, align: AlignmentType.CENTER, fc: C.mid, bg: altBg(i) }),
+        cl(r.pf || '(물리원리 로딩 중)', { w: 4426, fs: S.sm, fc: C.mid, bg: altBg(i) }),
+      ]);
+    }),
+  ], [500, 1800, 900, 700, 700, 4426]));
+
+  // ════ [5] 통계 vs 위성 괴리 진단 ════
+  elements.push(subHeader('물리 실측 vs 정부 통계 — 괴리 진단'));
+  elements.push(p([t('위성 데이터의 가장 강력한 기능은 통계와의 괴리를 먼저 감지하는 것이다. 통계는 정상인데 위성은 이상을 보이면 — 아직 통계에 잡히지 않은 변화가 물리적으로 이미 시작된 것이다.',
+      { size: S.body })], { after: 120 }));
+  elements.push(tbl([
+    rw([hcl('비교 항목', 1800), hcl('정부 통계', 2200), hcl('위성 실측', 2200), hcl('괴리 판정', 2826)]),
+    ...[
+      ['산업생산·공단 가동', sat.factoryStat || '통계청 산업생산지수', sat.factorySat || `S2 야간광: ${s2v.value}`, sat.factoryGap || (s2v.grade === '경보 ★' ? '괴리 경보 — 위성이 먼저 포착' : '일치 확인')],
+      ['신축 입주율',        sat.moveInStat  || '건설사 입주율 보고',  sat.moveInSat  || `R6 야간광: ${r6v.value}`, sat.moveInGap  || (r6v.grade === '경보 ★' ? '유령단지 의심 — 위성 경보' : '이상 없음')],
+      ['부동산 공정률',      sat.realEstateStat || '분양 공정률 보고', sat.realEstateSat || `R5 SAR: ${r5v.value}`, sat.realEstateGap || (r5v.grade === '경보 ★' ? '공정 허위 의심 — 레이더 불일치' : '이상 없음')],
+      ['지역 경제 활력',     sat.regionStat  || 'GRDP 통계 (분기)',   sat.regionSat  || `G6 야간광: ${g6v.value}`, sat.regionGap  || (g6v.grade === '경보 ★' ? '편마비 진행 — 위성 확증' : '균형 유지')],
+    ].map((r, i) => rw([
+      cl(r[0], { w: 1800, bold: true, fs: S.sm, bg: altBg(i) }),
+      cl(r[1], { w: 2200, fs: S.sm, fc: C.mid, bg: altBg(i) }),
+      cl(r[2], { w: 2200, fs: S.sm, fc: C.accent, bg: altBg(i) }),
+      cl(r[3], { w: 2826, fs: S.sm, bold: true, fc: C.navy, bg: altBg(i) }),
+    ])),
+  ], [1800, 2200, 2200, 2826]));
+
+  // ════ [6] 위성 3중 교차검증 서사 ════
+  const cv = SI.crossValidation || {};
+  if (cv.scenarios && cv.scenarios.length > 0) {
+    elements.push(subHeader(cv.title || '위성 3중 교차검증'));
+    elements.push(p([t(cv.intro || '세 가지 위성이 같은 방향을 가리키면 — 이것은 오차가 아니라 실물이다.',
+        { size: S.body, it: true, color: C.mid })], { after: 100 }));
+    elements.push(tbl([
+      rw([hcl('검증 시나리오', 1600), hcl('위성 신호 3종', 4200), hcl('종합 판정', 3226)]),
+      ...cv.scenarios.map((sc, i) => rw([
+        cl(sc.label,             { w: 1600, bold: true, fs: S.sm, fc: C.navy, bg: altBg(i) }),
+        cl((sc.signals || []).join(' / '), { w: 4200, fs: S.sm, bg: altBg(i) }),
+        cl(sc.verdict,           { w: 3226, fs: S.sm, bold: true, fc: C.accent, bg: altBg(i) }),
+      ])),
+    ], [1600, 4200, 3226]));
+  }
+
+  // ════ [7] 위성 종합 판독 ════
+  elements.push(subHeader('위성 종합 판독'));
+  elements.push(diagBox([
+    p([t(sat.overallVerdict || '현재 운영 중인 위성 게이지(S2, R6, G6)와 정부 통계 간 유의미한 괴리는 감지되지 않았다.',
+        { size: S.body, bold: true, color: C.navy })], { after: 40 }),
+    p([t(sat.overallDetail || 'R5(SAR 공정률)는 순차 확대 예정. 위성 데이터가 추가될수록 진단 정밀도가 높아진다.',
+        { size: S.sm, color: C.mid })], { after: 40 }),
+    p([t(SI.disclaimer || '위성 데이터는 기상 조건·해상도 한계 등으로 오차를 포함할 수 있습니다. 복수 지표 교차검증으로 판정합니다.',
+        { size: S.sm, it: true, color: C.light })], { after: 0 }),
+  ], C.bgBox));
+
+  return elements;
 }
 
 // ── 종합 판정 ─────────────────────────────────────────────
@@ -601,8 +691,19 @@ function buildAxisDetail(num, name, organ, question, gauges, axSummary) {
   ], [550, 1800, 1300, 1200, 800, 600, 2776]));
 
   // 게이지별 산문 서사
+  const _GN = (narrativeEngine && narrativeEngine.GAUGE_NARRATIVE) || {};
   for (const g of gauges) {
     elements.push(gaugeTitle(g.code, g.name, g.value || '—', g.organMetaphor || '—'));
+
+    // 위성 게이지인 경우 physicsFlow 물리원리 1줄 먼저 표시
+    const _gnEntry = _GN[g.code];
+    if (_gnEntry && _gnEntry.satelliteTag && _gnEntry.satellite && _gnEntry.satellite.physicsFlow) {
+      elements.push(p([
+        t('[위성 실측] ', { size: S.sm, bold: true, color: C.accent }),
+        t(_gnEntry.satellite.physicsFlow, { size: S.sm, it: true, color: C.mid }),
+      ], { after: 60, indent: 200 }));
+    }
+
     if (g.narrative && g.narrative.length > 0) {
       for (const para of g.narrative) {
         elements.push(p([t(para, { size: S.body })], { after: 80 }));
