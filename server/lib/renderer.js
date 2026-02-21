@@ -1302,9 +1302,17 @@ async function renderPDF(diagnosis, outputStream) {
       _pdfBodyText(doc, '© 인체국가경제론 / DIAH-7M / 윤종원');
 
       _pdfAddFooter(doc, pageNum);
+
+      // outputStream이 HTTP res(스트림)인 경우와 파일 WriteStream 양쪽 지원
+      if (typeof outputStream.on === 'function') {
+        outputStream.on('finish', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
+        outputStream.on('error', reject);
+      } else {
+        doc.on('end', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
+        doc.on('error', reject);
+      }
+
       doc.end();
-      doc.on('end', () => { console.log('[renderer/pdf] PDF 생성 완료'); resolve(); });
-      doc.on('error', reject);
     } catch (err) {
       reject(err);
     }

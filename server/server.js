@@ -243,11 +243,13 @@ app.post('/api/admin/cb/reset', (req, res) => {
 });
 
 // ── 관리자 계정 재생성 (패스워드 분실 복구용) ──
-// POST /api/admin/reset-admin?key=ADMIN_PASSWORD&newpw=새비밀번호
+// POST /api/admin/reset-admin?key=ADMIN_PASSWORD(또는 ADMIN_RESET_TOKEN)&newpw=새비밀번호
 app.post('/api/admin/reset-admin', async (req, res) => {
   const key   = req.query.key   || req.headers['x-admin-key'];
   const newpw = req.query.newpw || req.body?.newpw;
-  if (!key || key !== process.env.ADMIN_PASSWORD) {
+  // ADMIN_PASSWORD 또는 ADMIN_RESET_TOKEN 둘 중 하나가 맞으면 허용
+  const validKeys = [process.env.ADMIN_PASSWORD, process.env.ADMIN_RESET_TOKEN].filter(Boolean);
+  if (!key || !validKeys.includes(key)) {
     return res.status(403).json({ error: 'Admin key required' });
   }
   if (!newpw || newpw.length < 8) {
