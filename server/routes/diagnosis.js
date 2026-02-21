@@ -702,21 +702,35 @@ module.exports = function createDiagnosisRouter({ db, auth, engine, dataStore, s
         gaugeData = dataStore.toGaugeData ? dataStore.toGaugeData() : {};
       }
 
-      // 2) demo 폴백
+      // 2) core-engine 진단 (DOCX 엔드포인트와 동일한 방식)
       let diagnosis;
-      if (Object.keys(gaugeData).length === 0) {
-        const { DEMO_DIAGNOSIS } = require('../lib/demo-data');
-        diagnosis = DEMO_DIAGNOSIS;
-      } else {
-        const gaugeArr = Object.entries(gaugeData).map(([id, v]) => ({
-          id,
-          value: typeof v === 'object' ? (v.value ?? 0) : (v ?? 0),
-        }));
-        diagnosis = engine.diagnose
-          ? engine.diagnose(
-              gaugeArr.reduce((acc, g) => { acc[g.id] = g.value; return acc; }, {}),
-            )
-          : { overall: {}, axes: {}, crossSignals: [], dualLock: {} };
+      if (Object.keys(gaugeData).length > 0 && engine && engine.diagnose) {
+        try {
+          const numericMap = {};
+          for (const [k, v] of Object.entries(gaugeData)) {
+            const num = typeof v === 'number' ? v : (typeof v === 'object' && v !== null ? (v.value ?? null) : null);
+            if (num !== null) numericMap[k] = num;
+          }
+          diagnosis = engine.diagnose(numericMap);
+        } catch (_) { /* ignore — 폴백으로 진행 */ }
+      }
+      // 폴백: axes 구조를 갖춘 최소 진단 객체 (DEMO_DIAGNOSIS는 axes 없어서 사용 불가)
+      if (!diagnosis || !diagnosis.axes) {
+        diagnosis = {
+          overall: { score: 0, level: 1, levelName: '정상', color: '#22c55e' },
+          axes: {},
+          crossSignals: [],
+          dualLock: { active: false, criticalAxes: [] },
+          period: new Date().toISOString().slice(0, 7),
+        };
+      }
+      // 누락 필드 안전 보강
+      if (!diagnosis.dualLock) diagnosis.dualLock = { active: false, criticalAxes: [] };
+      if (!diagnosis.dualLock.criticalAxes) diagnosis.dualLock.criticalAxes = [];
+      if (!diagnosis.crossSignals) diagnosis.crossSignals = [];
+      if (Array.isArray(diagnosis.crossSignals)) {
+        // crossSignals가 { active, inactive } 객체일 수도 있음 — cross 섹션은 배열로 쓰므로 active만 추출
+        // renderer.js cross는 직접 배열로 씀 — 그대로 유지
       }
 
       // 3) PDF 스트림 전송
