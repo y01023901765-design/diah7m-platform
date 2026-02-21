@@ -85,7 +85,8 @@ function _buildNarrativeGauges(diagnosis) {
     result[code] = {
       available: numVal !== null,
       value: numVal,
-      change: null,  // 변화량 미보유
+      // change는 0으로 설정 (fmtChange가 ""(empty)를 반환하여 value에 (0억$) 접미사 방지
+      change: null,
       grade: sevToGrade(gData.severity),
       name: mapping.name || pid,
     };
@@ -1078,7 +1079,27 @@ function _buildAxisGauges(axisKey, diagnosis, D) {
     A7: 'axis7_gauges', A8: 'axis8_gauges', A9: 'axis9_gauges',
   };
   const gaugeArr = (D && D[axKeyMap[axisKey]]) || [];
-  if (gaugeArr.length > 0) return gaugeArr;
+  if (gaugeArr.length > 0) return gaugeArr.map(function(g) {
+    // narrative-engine gauge: code="I1 무역수지(경상)", value=formatted string
+    // buildAxisDetail expects: code, name, value, change, grade, status, organMetaphor, narrative, diagnosis
+    var codeParts = (g.code || "").split(" ");
+    var shortCode = codeParts[0] || "—";
+    var nameStr = codeParts.slice(1).join(" ") || g.name || "—";
+    var gradeStr = g.grade || "—";
+    var status = gradeStr.includes("경보") ? "alert" : gradeStr.includes("주의") ? "caution" : "normal";
+    var narr = Array.isArray(g.narrative) ? g.narrative : (g.narrative ? [g.narrative] : []);
+    return {
+      code: shortCode,
+      name: nameStr,
+      value: g.value || "—",
+      change: g.change || "—",
+      grade: gradeStr,
+      status: status,
+      organMetaphor: g.metaphor || g.organMetaphor || "—",
+      narrative: narr,
+      diagnosis: g.diagnosis || "—",
+    };
+  });
 
   // fallback: diagnosis.axes 원본 — 실제 구조: { gaugeId, name, raw, severity, unit }
   const axData = (diagnosis.axes || {})[axisKey] || {};
