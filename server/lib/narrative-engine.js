@@ -1,18 +1,30 @@
 // ══════════════════════════════════════════════════════════════
 // DIAH-7M 서사엔진 v2.8
 // 판정엔진 v5.1 출력 → 보고서생성기 v3.1 D 객체 변환
-// 
+//
 // 역할: 숫자 판정을 인체 비유 서사로 변환
 // 패턴: "값 — '인체비유' [등급]" + "→ 진단:" + "▶ 종합:"
 // 원본: 2026년 1월 확정본 양식에서 추출한 서사 규칙
-// 
+//
 // v2.7 → v2.8 변경:
 //   P1: overallGrade 구조 변경 (순환/구조 이원 등급) 호환
 //   P2: 축9 구조축 전용 서사 (순환등급과 독립)
 //   P3: 교차신호 축4↔축7(부동산↔금융) 서사 추가
 //   P4: 종합 진단 서사 이원 구조 (순환+구조)
 //   P5: 보고서 표지 등급 이원 표시
+// v2.8 → v2.9 (report-grammar 연결):
+//   GAUGE_NARRATIVE: v2 코드 59개 서사 (report-grammar.js에서 import)
+//   3-Layer 확장: blindSpot(사각지대) + actionSignals(행동시그널) 추가
 // ══════════════════════════════════════════════════════════════
+
+// ── report-grammar.js에서 v2 코드 기반 서사 데이터 로드 ──
+let GAUGE_NARRATIVE = {};
+try {
+  const grammar = require('./report-grammar');
+  GAUGE_NARRATIVE = grammar.GAUGE_NARRATIVE || {};
+} catch (e) {
+  console.warn('[narrative-engine] report-grammar 로드 실패 (GAUGE_NARRATIVE 빈 객체 사용):', e.message);
+}
 
 // ━━━ 1. 게이지별 인체 비유 매핑 (등급별 3단계) ━━━
 
@@ -2548,5 +2560,17 @@ function generateNarrative(result, rawData, meta) {
 
 // ━━━ 모듈 내보내기 ━━━
 if (typeof module !== "undefined") {
-  module.exports = { generateNarrative, METAPHOR, SECTION_0, M7_TABLE, APPENDIX, ALERT_MAP, DIAH_NARRATIVE, FAMILY_HISTORY_PAST, CROSS_SIGNAL_NARRATIVES, STRUCTURAL_TEMPLATES };
+  module.exports = {
+    generateNarrative,
+    METAPHOR,
+    GAUGE_NARRATIVE,  // v2 코드 59개 — report-grammar.js에서 로드
+    SECTION_0,
+    M7_TABLE,
+    APPENDIX,
+    ALERT_MAP,
+    DIAH_NARRATIVE,
+    FAMILY_HISTORY_PAST,
+    CROSS_SIGNAL_NARRATIVES,
+    STRUCTURAL_TEMPLATES,
+  };
 }
