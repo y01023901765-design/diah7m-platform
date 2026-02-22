@@ -37,19 +37,19 @@ const ID_MAP = {
   'E5_BALTIC':         { code: 'S1', cat: 'Axis2',  name: '발틱운임지수(BDI)',   unit: 'pt' },
   'E1_CHINA_PMI':      { code: 'T3', cat: 'Axis2',  name: '중국PMI(대외)',       unit: 'pt' },
 
-  // ══ A4 신경계 → Axis3 (골목시장/소비내수) ══
-  'O3_IP':             { code: 'M3', cat: 'Axis3',  name: '전산업생산지수',      unit: '%' },
-  'O4_CAPACITY':       { code: 'M4', cat: 'Axis3',  name: '설비가동률',          unit: '%' },
-  'O5_INVENTORY':      { code: 'M1', cat: 'Axis3',  name: '재고지수',            unit: 'pt' },
-  'O6_SHIPMENT':       { code: 'M2', cat: 'Axis3',  name: '출하지수',            unit: 'pt' },
-  'O7_ORDER':          { code: 'M3', cat: 'Axis3',  name: '생산지수',            unit: 'pt' },
+  // ══ A4 신경계 → Axis3 (소비/내수 대리지표) ══
+  'O3_IP':             { code: 'M3', cat: 'Axis3',  name: '산업생산지수(전년비)', unit: '%' },
+  'O4_CAPACITY':       { code: 'M4', cat: 'Axis3',  name: '설비가동률(전년비)',   unit: '%' },
+  'O5_INVENTORY':      { code: 'M1', cat: 'Axis3',  name: '재고지수(전년비)',     unit: '%' },
+  'O6_SHIPMENT':       { code: 'M2', cat: 'Axis3',  name: '출하지수(전년비)',     unit: '%' },
+  'O7_ORDER':          { code: 'M3', cat: 'Axis3',  name: '내수주문지수(전년비)', unit: '%' },
 
-  // ══ A5 면역계 → Axis4 (부동산/자산) ══
-  // 실측 부동산 데이터 없음 → 위성·건설 대리 사용
-  'I2_CEMENT':         { code: 'R2', cat: 'Axis4',  name: '비금속광물생산(착공)',  unit: '%' },
-  'I3_STEEL':          { code: 'R3', cat: 'Axis4',  name: '1차금속생산(미분양)',   unit: '%' },
-  'I4_VEHICLE':        { code: 'R4', cat: 'Axis4',  name: '자동차생산(경매)',      unit: '%' },
-  'R6_UHI':            { code: 'R6', cat: 'Axis4',  name: '도시열섬(UHI)',         unit: '°C' },
+  // ══ A5 면역계 → Axis4 (건설/자산 대리지표) ══
+  // 실측 부동산 데이터 없음 → 건설 소재 생산 대리 사용
+  'I2_CEMENT':         { code: 'R2', cat: 'Axis4',  name: '시멘트생산(전년비)',   unit: '%' },
+  'I3_STEEL':          { code: 'R3', cat: 'Axis4',  name: '철강재생산(전년비)',   unit: '%' },
+  'I4_VEHICLE':        { code: 'R4', cat: 'Axis4',  name: '자동차생산(전년비)',   unit: '%' },
+  'R6_UHI':            { code: 'R6', cat: 'Axis4',  name: '도시열섬이상(UHI)',    unit: '°C' },
 
   // ══ A6 내분비계 → Axis5 (고용/가계) ══
   'L2_PARTICIPATION':  { code: 'L2', cat: 'Axis5',  name: '경제활동참가율변동',   unit: '%' },
