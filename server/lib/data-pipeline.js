@@ -364,17 +364,22 @@ const GAUGE_MAP = {
     source: 'FRED',
     params: { series: 'DCOILWTICO' },
     transform: (data) => {
+      // FRED 일별 데이터는 "." 결측값 포함 가능 → 유효값만 필터
       if (!data || data.length < 2) return null;
-      const latest = parseFloat(data[0].value);
-      const prev = parseFloat(data[1].value);
+      const valid = data.filter(d => d.value && d.value !== '.');
+      if (valid.length < 2) return null;
+      const latest = parseFloat(valid[0].value);
+      const prev = parseFloat(valid[1].value);
+      if (isNaN(latest) || isNaN(prev) || prev === 0) return null;
       return ((latest - prev) / prev) * 100;
     }
   },
 
   P4_COMMODITY: {
-    id: 'P4_COMMODITY', source: 'ECOS', stat: '301Y016', item: '100', cycle: 'M', name: '수출물가지수(전년비%)', unit: '%',
+    // 수출물가지수 전년비(%) — ECOS 403Y001/*AA (수출물가지수 전체품목)
+    // 301Y016/100은 다중계층 구조로 rawLen=0 → 403Y001/*AA로 교체 (P6와 동일 소스이나 별도 게이지로 운용)
+    id: 'P4_COMMODITY', source: 'ECOS', stat: '403Y001', item: '*AA', cycle: 'M', name: '수출물가지수(전년비%)', unit: '%',
     transform: (data) => {
-      // 수출물가지수 전년비(%) — ECOS 301Y016/100, data[0]=최신, data[12]=1년 전
       if (!data || data.length < 13) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
       const yearAgo = parseFloat(data[12].DATA_VALUE);
@@ -599,9 +604,10 @@ const GAUGE_MAP = {
   },
 
   T5_SHIPPING: {
-    // 해상운송수지(해객+화물 합계) — ECOS 301Y014/SCA000
-    // I5_CARGO(SC0000 화물운송)와 소스 중복 해소: SCA000(해상운송 전체)으로 교체
-    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SCA000', cycle: 'M', name: '해상운송수지', unit: '백만$',
+    // 운송수지(화물) — ECOS 301Y014/SC0000
+    // SCA000(해상운송 전체) 시도했으나 값 범위 불안정 → SC0000(화물전체) 복원
+    // I5_CARGO와 소스 동일하나 A9축(대외) vs A7축(산업) 맥락 차이로 유지
+    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '화물운송수지', unit: '백만$',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);

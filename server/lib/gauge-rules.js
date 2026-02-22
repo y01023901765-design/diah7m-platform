@@ -347,10 +347,10 @@ const GAUGE_RULES = {
     threshold: { min: -5, max: 5, invert: false },
   },
   T5_SHIPPING: {
-    // 해상운송수지(전월비%) — ECOS 301Y014/SCA000
-    // (I5_CARGO SC0000 중복 해소: SCA000 해상운송 전체로 교체)
-    source: 'ECOS', statCode: '301Y014', itemCode: 'SCA000', cycle: 'M',
-    transformType: 'MoM_pct', unit: '%', name: '해상운송수지(전월비%)',
+    // 화물운송수지(전월비%) — ECOS 301Y014/SC0000
+    // SCA000(해상운송 전체) 시도했으나 값 불안정 → SC0000(화물전체) 복원
+    source: 'ECOS', statCode: '301Y014', itemCode: 'SC0000', cycle: 'M',
+    transformType: 'MoM_pct', unit: '%', name: '화물운송수지(전월비%)',
     hardRange: [-80, 500],
     threshold: { min: -20, max: 300, invert: false },
   },
