@@ -180,7 +180,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y064', itemCode: 'P65A', cycle: 'M',
     transformType: 'YoY_pct', unit: '%', name: '주택매매가격(전년비%)',
     hardRange: [-30, 30],
-    threshold: { min: -10, max: 5, invert: false },
+    threshold: { min: -20, max: 5, invert: false },  // -10→-20: 부동산 전년비 실제 범위
   },
 
   // ══════════════════════════════════════════════════════
@@ -262,13 +262,13 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y038', itemCode: 'I51AAB', itemCode2: '1', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '폐기물처리업생산(전월비%)',
     hardRange: [-50, 50],
-    threshold: { min: -20, max: 5, invert: false },
+    threshold: { min: -35, max: 5, invert: false },  // -20→-35: 폐기물 경기 민감도 반영
   },
   R8_FOREST: {
     source: 'ECOS', statCode: '901Y027', itemCode: 'I61BAAA', itemCode2: 'I28A', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '농림어업취업(전월비%)',
     hardRange: [-30, 30],
-    threshold: { min: -10, max: 5, invert: false },
+    threshold: { min: -20, max: 5, invert: false },  // -10→-20: 농림어업 계절성 반영
   },
 
   // ══════════════════════════════════════════════════════
@@ -298,17 +298,13 @@ const GAUGE_RULES = {
     hardRange: [-50, 50],
     threshold: { min: -15, max: 15, invert: false },
   },
-  I5_CARGO: {
-    source: 'ECOS', statCode: '301Y014', itemCode: 'SC0000', cycle: 'M',
-    transformType: 'MoM_pct', unit: '%', name: '화물운송수지(전월비%)',
-    hardRange: [-80, 500],
-    threshold: { min: -20, max: 300, invert: false },
-  },
+  // I5_CARGO 제거 — T5_SHIPPING(A9)과 동일 소스(301Y014/SC0000) 중복
+  // 소스가 동일한 두 게이지가 A7/A9에서 동시에 왜곡을 유발하여 삭제
   I6_AIRPORT: {
     source: 'ECOS', statCode: '301Y014', itemCode: 'SCB000', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '항공운송수지(전월비%)',
     hardRange: [-80, 200],
-    threshold: { min: -30, max: 30, invert: false },
+    threshold: { min: -45, max: 30, invert: false },  // -30→-45: 항공 서비스수지 변동성
   },
   I7_RAILROAD: {
     source: 'ECOS', statCode: '901Y027', itemCode: 'I61BAAEB', itemCode2: 'I28A', cycle: 'M',
@@ -347,12 +343,12 @@ const GAUGE_RULES = {
     threshold: { min: -5, max: 5, invert: false },
   },
   T5_SHIPPING: {
-    // 화물운송수지(전월비%) — ECOS 301Y014/SC0000
-    // SCA000(해상운송 전체) 시도했으나 값 불안정 → SC0000(화물전체) 복원
+    // 화물운송수지 절대값(억$) — ECOS 301Y014/SC0000
+    // 부호 전환 시 MoM%가 무의미한 아티팩트 → absolute로 교체
     source: 'ECOS', statCode: '301Y014', itemCode: 'SC0000', cycle: 'M',
-    transformType: 'MoM_pct', unit: '%', name: '화물운송수지(전월비%)',
-    hardRange: [-80, 500],
-    threshold: { min: -20, max: 300, invert: false },
+    transformType: 'absolute', unit: '억$', name: '화물운송수지(억$)',
+    hardRange: [-30, 20],
+    threshold: { min: -15, max: 5, invert: false },  // 음수=적자(나쁨), 양수=흑자(좋음)
   },
   T6_CONTAINER: {
     // 선박수출액(전월비%) — ECOS 301Y017/SA200
@@ -360,7 +356,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '301Y017', itemCode: 'SA200', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '선박수출액(전월비%)',
     hardRange: [-80, 300],
-    threshold: { min: -10, max: 15, invert: false },
+    threshold: { min: -40, max: 15, invert: false },  // -10→-40: 선박 단건계약 변동성 반영
   },
 
   // ══════════════════════════════════════════════════════
@@ -429,7 +425,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y027', itemCode: 'I61BB', itemCode2: 'I28A', cycle: 'M',
     transformType: 'absolute', unit: '천명', name: '청년실업자수(천명)',
     hardRange: [0, 2000],
-    threshold: { min: 200, max: 800, invert: true },
+    threshold: { min: 200, max: 1000, invert: true },  // 800→1000: 한국 청년실업자 실제 최악 수준
   },
 };
 

@@ -20,7 +20,7 @@ const AXES = {
   A4: { name: '신경계',   metaphor: '심리/정책',    gaugeIds: ['S1_BSI','S3_NIGHTLIGHT','S4_CREDIT','S5_EMPLOY','E3_VIX','E4_DOLLAR_INDEX'] },
   A5: { name: '면역계',   metaphor: '금융안정',     gaugeIds: ['F1_KOSPI','F2_KOSDAQ','F3_KOSPI_VOL','F7_KOSDAQ_VOL','F8_FOREIGN','S4_CREDIT'] },
   A6: { name: '내분비계', metaphor: '물가/재정',    gaugeIds: ['P1_CPI','P2_PPI','P3_OIL','P4_COMMODITY','P5_IMPORT','P6_EXPORT_PRICE'] },
-  A7: { name: '근골격계', metaphor: '산업/생산',    gaugeIds: ['O2_PMI','O3_IP','O4_CAPACITY','I1_CONSTRUCTION','I2_CEMENT','I3_STEEL','I4_VEHICLE','I5_CARGO','I6_AIRPORT','I7_RAILROAD'] },
+  A7: { name: '근골격계', metaphor: '산업/생산',    gaugeIds: ['O2_PMI','O3_IP','O4_CAPACITY','I1_CONSTRUCTION','I2_CEMENT','I3_STEEL','I4_VEHICLE','I6_AIRPORT','I7_RAILROAD'] },
   A8: { name: '인구/취약', metaphor: '고용/가계',   gaugeIds: ['L1_UNEMPLOYMENT','L2_PARTICIPATION','L3_WAGE','L4_HOURS','L5_YOUTH_UNEMP'] },
   A9: { name: '재생/대외', metaphor: '에너지/대외', gaugeIds: ['R1_ELECTRICITY','R2_WATER','R3_GAS','R4_COAL','R6_UHI','T3_FDI','T5_SHIPPING','R7_WASTE','R8_FOREST'] },
 };

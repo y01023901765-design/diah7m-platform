@@ -604,15 +604,15 @@ const GAUGE_MAP = {
   },
 
   T5_SHIPPING: {
-    // 운송수지(화물) — ECOS 301Y014/SC0000
-    // SCA000(해상운송 전체) 시도했으나 값 범위 불안정 → SC0000(화물전체) 복원
-    // I5_CARGO와 소스 동일하나 A9축(대외) vs A7축(산업) 맥락 차이로 유지
-    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '화물운송수지', unit: '백만$',
+    // 화물운송수지 절대값(억$) — ECOS 301Y014/SC0000
+    // MoM% 시 부호 전환으로 235% 아티팩트 발생 → absolute 교체
+    // 한국 화물운송수지는 통상 -10~+5 억$/월 (소폭 적자 기조)
+    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '화물운송수지(억$)', unit: '억$',
     transform: (data) => {
-      if (!data || data.length < 2) return null;
-      const latest = parseFloat(data[0].DATA_VALUE);
-      const prev = parseFloat(data[1].DATA_VALUE);
-      return ((latest - prev) / prev) * 100;
+      if (!data || data.length < 1) return null;
+      const val = parseFloat(data[0].DATA_VALUE);
+      if (isNaN(val)) return null;
+      return val;  // 억$ 절대값 그대로 반환
     }
   },
 
