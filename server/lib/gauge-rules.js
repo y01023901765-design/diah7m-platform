@@ -250,7 +250,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y032', itemCode: 'I11ABA', itemCode2: '1', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '석탄원유천연가스광업생산(전월비%)',
     hardRange: [-50, 50],
-    threshold: { min: -20, max: 10, invert: false },
+    threshold: { min: -30, max: 10, invert: false },  // -20→-30: 광업 계절성·LNG대체 변동성 반영
   },
   R6_UHI: {
     source: 'SATELLITE', api: 'fetchLandsat',
@@ -284,7 +284,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y032', itemCode: 'I11ACN', itemCode2: '1', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '비금속광물제품생산(전월비%)',
     hardRange: [-50, 50],
-    threshold: { min: -20, max: 10, invert: false },
+    threshold: { min: -25, max: 10, invert: false },  // -20→-25: 건자재 월간 변동성 반영
   },
   I3_STEEL: {
     source: 'ECOS', statCode: '901Y032', itemCode: 'I11ACO', itemCode2: '1', cycle: 'M',
@@ -296,7 +296,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '901Y032', itemCode: 'I11ACU', itemCode2: '1', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '자동차및트레일러생산(전월비%)',
     hardRange: [-50, 50],
-    threshold: { min: -15, max: 15, invert: false },
+    threshold: { min: -20, max: 15, invert: false },  // -15→-20: 자동차 생산 월간 변동성 반영
   },
   // I5_CARGO 제거 — T5_SHIPPING(A9)과 동일 소스(301Y014/SC0000) 중복
   // 소스가 동일한 두 게이지가 A7/A9에서 동시에 왜곡을 유발하여 삭제
@@ -336,7 +336,7 @@ const GAUGE_RULES = {
     source: 'ECOS', statCode: '301Y014', itemCode: 'S00000', cycle: 'M',
     transformType: 'MoM_pct', unit: '%', name: '서비스수지(전월비%)',
     hardRange: [-100, 200],
-    threshold: { min: -30, max: 30, invert: false },
+    threshold: { min: -40, max: 40, invert: false },  // ±30→±40: 서비스수지 단월 변동성 큼(FDI 대형계약 등)
   },
   T4_RESERVES: {
     source: 'ECOS', statCode: '732Y001', itemCode: '99', cycle: 'M',
@@ -425,11 +425,14 @@ const GAUGE_RULES = {
     threshold: { min: -5, max: 3, invert: false },
   },
   L5_YOUTH_UNEMP: {
-    // 청년실업자수 절대값(천명) — ECOS 901Y027/I61BB
+    // 실업자수 절대값(천명) — ECOS 901Y027/I61BB (원계열)
+    // I61BB = 전체실업자수(천명): 원시값 확인 Oct=678, Nov=656, Dec=1115(계절성)
+    // 청년실업자 전용 코드 탐색 필요(현재는 전체실업자 사용)
+    // 한국 전체실업자 정상범위: 600~900千名, 계절피크: 1100千名
     source: 'ECOS', statCode: '901Y027', itemCode: 'I61BB', itemCode2: 'I28A', cycle: 'M',
-    transformType: 'absolute', unit: '천명', name: '청년실업자수(천명)',
+    transformType: 'absolute', unit: '천명', name: '실업자수(천명)',
     hardRange: [0, 2000],
-    threshold: { min: 200, max: 1000, invert: true },  // 800→1000: 한국 청년실업자 실제 최악 수준
+    threshold: { min: 600, max: 1300, invert: true },  // 전체실업자 기준: 600(양호)~1300(위기)
   },
 };
 
