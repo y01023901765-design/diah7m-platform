@@ -2168,6 +2168,45 @@ function generateNarrative(result, rawData, meta) {
   const axis9_gradeCount = { ok: 0, warn: 0, alert: 0 };
   axis9_available.forEach(code => { const gr = getGrade(code); if (gr.includes("경보")) axis9_gradeCount.alert++; else if (gr.includes("주의")) axis9_gradeCount.warn++; else axis9_gradeCount.ok++; });
 
+  // ══════════════════════════════════════
+  // 민심 경보 — 거시 양호 + 미세혈관(가계·골목) 심각
+  // ══════════════════════════════════════
+  // 정부는 민심의 잣대를 이중봉쇄로 봐야 한다.
+  // 거시(수출·금융) 양호 + 미세혈관(골목·가계) 압박 = 민심 경보
+  // axis3 = 골목시장(미세혈관), axis5 = 가계·고용(세포 레벨)
+  const _minshimLevel = (() => {
+    const microAlert = (axis3_gradeCount.alert || 0) + (axis5_gradeCount.alert || 0);
+    const microWarn  = (axis3_gradeCount.warn  || 0) + (axis5_gradeCount.warn  || 0);
+    // 거시 양호 조건: Layer A 급성 경보 없음 + 수출 동맥(axis2) 경보 없음
+    const macroOk = al.level === 0 && (axis2_gradeCount.alert || 0) === 0;
+    if (!macroOk) return null; // 거시 자체 문제 있으면 민심 경보 별도 발령 불필요
+    if (microAlert >= 2) return 'critical';   // 골목+가계 동시 경보 ≥ 2개
+    if (microAlert >= 1) return 'warning';    // 골목 또는 가계 경보 ≥ 1개
+    if (microWarn  >= 3) return 'caution';    // 주의 신호 3개 이상 누적
+    return null;
+  })();
+  const minshim_alert = _minshimLevel ? {
+    level: _minshimLevel,
+    title: _minshimLevel === 'critical'
+      ? '⚠️ 민심 이중 경보 — 거시 양호, 가계·골목 동시 위기'
+      : _minshimLevel === 'warning'
+        ? '⚠️ 민심 경보 — 거시 양호, 미세혈관 압박 심각'
+        : '⚠️ 민심 주의 — 거시 안정, 가계·골목 압박 누적',
+    axis3Summary: `골목시장(미세혈관): ${axis3_gradeCount.alert}개 경보, ${axis3_gradeCount.warn}개 주의`,
+    axis5Summary: `가계·고용(세포): ${axis5_gradeCount.alert}개 경보, ${axis5_gradeCount.warn}개 주의`,
+    narrative: _minshimLevel === 'critical'
+      ? `거시 지표(수출·금융)는 안정적이나, 경제의 미세혈관과 세포층이 동시에 막히고 있습니다. ` +
+        `대동맥(대기업·수출)에 피가 흐른다고 골목과 가계까지 닿지 않습니다. ` +
+        `가계부채 이자(미세석회)가 소비와 창업 의지를 이중으로 봉쇄하는 구조입니다. ` +
+        `거시 지표만 보는 정책은 민심을 놓칩니다.`
+      : _minshimLevel === 'warning'
+        ? `거시 지표는 안정권이나 미세혈관(골목상권·가계)에 경보 신호가 포착되었습니다. ` +
+          `부채 이자(미세석회)가 쌓이면 소비력이 먼저 무너집니다. ` +
+          `선행 지표로 관찰이 필요합니다.`
+        : `거시 지표는 안정적이나 가계·골목 영역에 주의 신호가 누적되고 있습니다. ` +
+          `미세석회(이자 누적)의 잠복 심화를 점검해야 합니다.`,
+  } : null;
+
   // ── 섹션4 DIAH (원래 위치) ──
   const diahContext = {
     baseRate: meta.baseRate || "미확인",
@@ -2287,7 +2326,9 @@ function generateNarrative(result, rawData, meta) {
     alertEmoji: alertInfo.emoji,
     alertLevel: alertInfo.label,
     alertColor: alertInfo.color,
-    oneLiner: meta.oneLiner || `${alertInfo.label.split(":")[0]} 판정`,
+    oneLiner: meta.oneLiner || (minshim_alert
+      ? `${alertInfo.label.split(":")[0]} 판정 — ${minshim_alert.title}`
+      : `${alertInfo.label.split(":")[0]} 판정`),
     camStatus: `${bl.cam === "양호" ? "🟢" : "🔴"} ${bl.cam}`,
     dltStatus: `${bl.dlt === "양호" ? "🟢" : "🔴"} ${bl.dlt}`,
     dualBlockade: bl.dual ? "발생" : "미발생",
@@ -2651,6 +2692,10 @@ function generateNarrative(result, rawData, meta) {
     _v28_crossSignalSummary: _crossSignals.length > 0
       ? `교차신호 ${_crossSignals.length}건 감지: ${_crossSignals.map(c => `${c.pair}(${c.severityDesc})`).join(', ')}`
       : '교차신호 미감지',
+
+    // ── 민심 경보 (거시 양호 + 미세혈관 심각 감지) ──
+    // null이면 경보 없음, 있으면 { level, title, narrative, axis3Summary, axis5Summary }
+    minshim_alert,
   };
 
   // ── v2.8+2D: 교차신호 고도화 통합 (선택적 로딩) ──
