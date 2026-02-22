@@ -401,10 +401,16 @@ const GAUGE_MAP = {
   P6_EXPORT_PRICE: {
     id: 'P6_EXPORT_PRICE', source: 'ECOS', stat: '403Y001', item: '*AA', cycle: 'M', name: '수출물가지수', unit: '2020=100',
     transform: (data) => {
+      // 수출물가지수 YoY — 발표 lag로 data[0]이 미발표일 수 있으므로 첫 유효 쌍 사용
       if (!data || data.length < 13) return null;
-      const latest = parseFloat(data[0].DATA_VALUE);
-      const yearAgo = parseFloat(data[12].DATA_VALUE);
-      return ((latest - yearAgo) / yearAgo) * 100;
+      for (let i = 0; i + 12 < data.length; i++) {
+        const latest = parseFloat(data[i].DATA_VALUE);
+        const yearAgo = parseFloat(data[i + 12].DATA_VALUE);
+        if (!isNaN(latest) && !isNaN(yearAgo) && yearAgo !== 0) {
+          return ((latest - yearAgo) / yearAgo) * 100;
+        }
+      }
+      return null;
     }
   },
 
@@ -575,10 +581,13 @@ const GAUGE_MAP = {
     params: { statisticCode: '301Y013', itemCode1: '000000', cycle: 'M' },
     transform: (data) => {
       // 경상수지 합계(백만$) — ECOS 301Y013/000000
-      // 301Y014/000 → rawLen=0 확인, 301Y013이 올바른 BOP 합계 테이블
+      // BOP 데이터는 발표 lag 6-8주 → data[0]이 미발표일 수 있으므로 첫 유효값 사용
       if (!data || data.length === 0) return null;
-      const latest = parseFloat(data[0].DATA_VALUE);
-      return isNaN(latest) ? null : latest;
+      for (const row of data) {
+        const v = parseFloat(row.DATA_VALUE);
+        if (!isNaN(v) && isFinite(v)) return v;
+      }
+      return null;
     }
   },
 
