@@ -1153,10 +1153,94 @@ async function diagnoseAll() {
   return { total: ids.length, summary, gauges: results };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 준실시간 수집 — Yahoo Finance 시장 데이터 (15분 주기)
+// 대상: F1_KOSPI(^KS11), F2_KOSDAQ(^KQ11), F4_EXCHANGE(KRW=X)
+// ═══════════════════════════════════════════════════════════════
+
+// Yahoo quote API — regularMarketPrice + chartPreviousClose → MoM%
+async function _fetchYahooQuote(symbol) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+  const resp = await axios.get(url, {
+    params: { interval: '1d', range: '5d' },
+    timeout: 8000,
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DIAH7M/1.0)' },
+  });
+  const result = resp.data?.chart?.result?.[0];
+  if (!result) throw new Error(`No chart result for ${symbol}`);
+
+  const meta = result.meta || {};
+  const current = meta.regularMarketPrice;
+  const prev    = meta.chartPreviousClose || meta.previousClose;
+  if (current == null || prev == null || prev === 0) throw new Error(`Missing price data for ${symbol}`);
+
+  return { current, prev, pctChange: +((current - prev) / prev * 100).toFixed(3) };
+}
+
+// REALTIME_GAUGES: Yahoo 심볼 → 게이지 ID 매핑
+const REALTIME_GAUGES = [
+  { id: 'F1_KOSPI',    symbol: '^KS11',  desc: 'KOSPI 종합지수' },
+  { id: 'F2_KOSDAQ',   symbol: '^KQ11',  desc: 'KOSDAQ 종합지수' },
+  { id: 'F4_EXCHANGE', symbol: 'KRW=X',  desc: '원/달러 환율' },
+];
+
+/**
+ * fetchRealtimeGauges() — Yahoo Finance 준실시간 수집
+ * @returns {{ id, value, unit, source, timestamp, current, prev }[]}
+ */
+async function fetchRealtimeGauges() {
+  const results = [];
+  const now = new Date().toISOString();
+
+  await Promise.allSettled(
+    REALTIME_GAUGES.map(async ({ id, symbol, desc }) => {
+      try {
+        const { current, prev, pctChange } = await _cbYahoo.run(() => _fetchYahooQuote(symbol));
+        const spec = GAUGE_MAP[id] || {};
+        results.push({
+          id,
+          value:     pctChange,   // MoM% — core-engine 기대값 형식
+          unit:      spec.unit || '%',
+          source:    `YAHOO_RT:${symbol}`,
+          timestamp: now,
+          current,
+          prev,
+          name:      spec.name || desc,
+          status:    'OK',
+        });
+        console.log(`[RT] ${id}(${symbol}): ${current} (${pctChange > 0 ? '+' : ''}${pctChange}%)`);
+      } catch (e) {
+        console.warn(`[RT] ${id}(${symbol}) 실패:`, e.message);
+        results.push({ id, value: null, status: 'ERROR', error: e.message, timestamp: now });
+      }
+    })
+  );
+
+  // S4_CREDIT DERIVED 재계산: F5_INTEREST - F1_KOSPI
+  const f1 = results.find(r => r.id === 'F1_KOSPI' && r.status === 'OK');
+  if (f1 && _fallbackStore) {
+    const f5Val = _fallbackStore.get('F5_INTEREST');
+    if (f5Val != null) {
+      results.push({
+        id: 'S4_CREDIT',
+        value: +(f5Val - f1.value).toFixed(2),
+        unit: '%p',
+        source: 'DERIVED_RT',
+        timestamp: now,
+        status: 'OK',
+      });
+    }
+  }
+
+  return results;
+}
+
 module.exports = {
   GAUGE_MAP,
   fetchGauge,
   fetchAll,
+  fetchRealtimeGauges,
+  REALTIME_GAUGES,
   fetchECOS,
   fetchYahoo,
   fetchTradingEconomics,

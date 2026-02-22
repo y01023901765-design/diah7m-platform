@@ -583,6 +583,33 @@ async function start() {
         }
       }, 60000);
 
+      // ── 준실시간 수집 — Yahoo Finance 15분 주기 (F1_KOSPI, F2_KOSDAQ, F4_EXCHANGE) ──
+      if (pipeline && pipeline.fetchRealtimeGauges && dataStore) {
+        const RT_INTERVAL_MS = 15 * 60 * 1000; // 15분
+        let _rtRunning = false;
+        setInterval(async () => {
+          if (_rtRunning) return; // 이전 수집 진행 중이면 스킵
+          _rtRunning = true;
+          try {
+            const rtResults = await pipeline.fetchRealtimeGauges();
+            const okResults = rtResults.filter(r => r.status === 'OK');
+            if (okResults.length > 0) {
+              // dataStore에 결과 반영 (memCache만 업데이트 — DB 쓰기 없음)
+              const gaugeMap = {};
+              for (const r of okResults) {
+                gaugeMap[r.id] = r;
+              }
+              await dataStore.store(gaugeMap);
+              console.log(`[RT] ${new Date().toISOString()} — ${okResults.length}/${rtResults.length} 갱신: ${okResults.map(r => r.id).join(', ')}`);
+            }
+          } catch (e) {
+            console.warn('[RT] 준실시간 수집 실패:', e.message);
+          }
+          _rtRunning = false;
+        }, RT_INTERVAL_MS);
+        console.log('  ⚡ RT: 준실시간 15분 주기 수집 시작 (F1_KOSPI, F2_KOSDAQ, F4_EXCHANGE)');
+      }
+
       console.log('══════════════════════════════════════\n');
     });
 
