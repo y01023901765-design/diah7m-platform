@@ -283,6 +283,26 @@ class DataStore {
   }
 
   /**
+   * 위성 스냅샷 참조 주입 (server.js 초기화 시 1회 호출)
+   * satSnapshot: routes/satellite.js의 _snapshot 객체
+   */
+  setSatelliteSnapshot(satSnapshot) {
+    this._satelliteSnapshot = satSnapshot;
+  }
+
+  /**
+   * 위성 스냅샷 반환 (diagnosis.js → DOCX 주입용)
+   * { S2: {...}, R6: {...}, S3: {...}, meta: {...} }
+   */
+  getSatelliteData() {
+    const snap = this._satelliteSnapshot;
+    if (!snap) return {};
+    const { meta, ...gauges } = snap;
+    const hasData = Object.values(gauges).some(v => v !== null);
+    return hasData ? snap : {};
+  }
+
+  /**
    * 저장된 스냅샷 기간 목록 반환
    */
   async listSnapshots(country = 'KR', mode = 'M') {

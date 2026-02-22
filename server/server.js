@@ -479,6 +479,17 @@ async function start() {
       console.log('  🔄 Fallback store connected');
     }
 
+    // 위성 스냅샷 → dataStore 연결 (DOCX 보고서 주입용)
+    try {
+      const satRouter = require('./routes/satellite');
+      if (dataStore && satRouter._snapshot && dataStore.setSatelliteSnapshot) {
+        dataStore.setSatelliteSnapshot(satRouter._snapshot);
+        console.log('  🛰️ Satellite snapshot connected to dataStore');
+      }
+    } catch (e) {
+      console.warn('  ⚠️ Satellite snapshot connection failed:', e.message);
+    }
+
     // 첫 시작 시 데이터 수집 (Demo 방지)
     if (pipeline && dataStore) {
       try {

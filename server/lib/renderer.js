@@ -652,10 +652,17 @@ function buildOverallVital(d) {
     tbl([
       rw([hcl('데이터소스', 1800), hcl('인체비유', 1400), hcl('측정 대상', 2200), hcl('현재 판독', 3626)]),
       ...[
-        ['VIIRS 야간광',  '세포 활력/괴사',   '상가·공장 불빛 변동',      (d.satellite || {}).viirs || '(수집 중)'],
-        ['GEMS NO₂',     '대사 활동량',      '산업·교통 활동 실측',       (d.satellite || {}).gems  || '(예정)'],
-        ['Landsat LST',  '체표 온도',        '산업단지·도심 열 변동',     (d.satellite || {}).lst   || '(수집 중)'],
-        ['Sentinel SAR', '건축 활동',        '신축·철거 물리적 변동',     (d.satellite || {}).sar   || '(예정)'],
+        // S2 = VIIRS 야간광 (S3_NIGHTLIGHT): anomaly% 표시
+        ['VIIRS 야간광',  '세포 활력/괴사',   '상가·공장 불빛 변동',
+          (() => { const s = (d.satellite || {}).S2; return s?.status === 'OK' ? `anomaly ${s.anomaly != null ? (s.anomaly * 100).toFixed(1) : '—'}% (60d vs 365d)` : '(수집 중)'; })()],
+        // S3 = Sentinel-5P NO₂ (S3_NO2): anomPct 표시
+        ['S5P NO₂',      '대사 활동량',      '공단·교통 배출 실측',
+          (() => { const s = (d.satellite || {}).S3; return s?.status === 'OK' ? `anomaly ${s.anomPct != null ? s.anomPct.toFixed(1) : '—'}% (30d vs 90d)` : '(수집 중)'; })()],
+        // R6 = Landsat-9 열섬 (R6_UHI): anomaly_degC 표시
+        ['Landsat 열섬',  '체표 온도',        '산업단지·도심 열변동',
+          (() => { const s = (d.satellite || {}).R6; if (!s || s.status !== 'OK') return s?.quality?.status === 'HOLD' ? '(판정 보류)' : '(수집 중)'; return `전년비 ${s.anomaly_degC != null ? (s.anomaly_degC > 0 ? '+' : '') + s.anomaly_degC : '—'}°C`; })()],
+        // Sentinel-1 SAR: 미구현
+        ['Sentinel SAR', '건축 활동',        '신축·철거 물리적 변동',     '(예정)'],
       ].map((r, i) => rw([
         cl(r[0], { w: 1800, bold: true, fs: S.sm, bg: altBg(i) }),
         cl(r[1], { w: 1400, fs: S.sm, fc: C.accent, bg: altBg(i) }),

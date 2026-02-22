@@ -18,9 +18,9 @@ const router = express.Router();
 
 // 위성 스냅샷 인메모리 캐시
 let satSnapshot = {
-  S2:  null, // VIIRS 야간광
-  R5:  null, // Sentinel-1 SAR
-  R6:  null, // Landsat-9 열적외선
+  S2:  null, // VIIRS 야간광     (S3_NIGHTLIGHT)
+  R6:  null, // Landsat-9 열섬  (R6_UHI)
+  S3:  null, // Sentinel-5P NO₂ (S3_NO2) — Phase 4 추가
   meta: {
     last_collect_asof: null,
     last_success_asof: null,
@@ -67,6 +67,7 @@ router.post('/collect', async (req, res) => {
     const lastSuccessMap = {};
     if (satSnapshot.S2?.date) lastSuccessMap.S2 = satSnapshot.S2.date;
     if (satSnapshot.R6?.date) lastSuccessMap.R6 = satSnapshot.R6.date;
+    if (satSnapshot.S3?.date) lastSuccessMap.S3 = satSnapshot.S3.date;
 
     const { results, meta } = await fetchAllSatellite(region, lastSuccessMap);
     

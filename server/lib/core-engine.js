@@ -97,7 +97,7 @@ const GAUGE_THRESHOLDS = {
   R2_WATER:           { min: -10, max: 5,   invert: false, unit: '%',    name: '수도생산(전년비%)' },
   R3_GAS:             { min: -5,  max: 5,   invert: false, unit: '%',    name: '가스생산(전년비%)' },
   R4_COAL:            { min: -20, max: 10,  invert: false, unit: '%',    name: '석탄생산(전년비%)' },
-  R6_UHI:             { min: 0,   max: 20,  invert: true,  unit: '°C',   name: '열섬강도(°C)' },
+  R6_UHI:             { min: -2,  max: 0.15, invert: true,  unit: '°C',   name: '열섬(전년동기비 °C)' },
   T3_FDI:             { min: -30, max: 30,  invert: false, unit: '%',    name: 'FDI(전년비%)' },
   T5_SHIPPING:        { min: -20, max: 300, invert: false, unit: '%',    name: '해운수지(전년비%)' },
   R7_WASTE:           { min: -20, max: 5,   invert: false, unit: '%',    name: '폐기물처리(전년비%)' },
