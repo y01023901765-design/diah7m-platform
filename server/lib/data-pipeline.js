@@ -456,9 +456,12 @@ const GAUGE_MAP = {
     params: { region: 'KOR', product: 'LANDSAT9_TIR' },
     name: '도시열섬', unit: '°C',
     transform: (data) => {
-      // fetchLandsat → { value (°C), status }
+      // fetchLandsat → { anomaly_degC, value, quality, status }
+      // 판정값 = anomaly_degC (전년 동기 대비 °C 차이)
+      // quality.status === 'HOLD' → null 반환 (판정 보류)
       if (!data || data.status !== 'OK') return null;
-      return data.value;
+      if (data.quality && data.quality.status === 'HOLD') return null;
+      return data.anomaly_degC != null ? data.anomaly_degC : data.value;
     }
   },
 
