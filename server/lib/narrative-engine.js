@@ -610,7 +610,7 @@ const METAPHOR = {
   // ════════════════════════════════════════════════════
 
   L1: { // 고용동향 → 근력
-    name: "고용동향", bodyPart: "근력", axis: 5,
+    name: "고용동향", bodyPart: "근력", axis: 8,
     "양호 ○": { metaphor: "근력 정상", prefix: "고용이 안정적이며 경제의 근력이 유지되고 있다." },
     "주의 ●": { metaphor: "근력 저하", prefix: "고용이 둔화되며 경제의 근력이 약해지고 있다." },
     "경보 ★": { metaphor: "근력 상실", prefix: "고용이 급격히 악화되며 경제의 근력이 빠지고 있다." },
@@ -644,7 +644,7 @@ const METAPHOR = {
   },
 
   L3: { // 임금(전년비) → 근육 탄력 [L3_WAGE: ECOS 901Y027, MoM%]
-    name: "임금(전년비)", bodyPart: "근육탄력", axis: 5,
+    name: "임금(전년비)", bodyPart: "근육탄력", axis: 8,
     "양호 ○": { metaphor: "근육 탄력 정상", prefix: "임금이 상승하며 근육의 탄력이 유지되고 있다." },
     "주의 ●": { metaphor: "근육 탄력 저하", prefix: "임금 상승이 둔화되며 근육의 탄력이 저하되고 있다." },
     "경보 ★": { metaphor: "근육 경직", prefix: "임금이 하락하며 근육이 경직되고 있다. 소비 여력이 직접 축소된다." },
@@ -661,7 +661,7 @@ const METAPHOR = {
   },
 
   L4: { // 연체율 → 신경 손상
-    name: "연체율", bodyPart: "신경손상", axis: 5,
+    name: "연체율", bodyPart: "신경손상", axis: 8,
     "양호 ○": { metaphor: "신경 정상", prefix: "연체율이 낮으며 신경 전달이 정상이다." },
     "주의 ●": { metaphor: "신경 이상", prefix: "연체율이 상승하며 신경에 이상 신호가 감지된다." },
     "경보 ★": { metaphor: "신경 마비", prefix: "연체율이 급등하며 신경이 마비되고 있다." },
@@ -695,7 +695,7 @@ const METAPHOR = {
   },
 
   // ════════════════════════════════════════════════════
-  // 축 6. 지역균형 — 좌우대칭 (G1~G7)
+  // 축 9. 대외수지 — 외화혈관 (G1~G7) [gauge-adapter Axis9 배정]
   // ════════════════════════════════════════════════════
 
   G1: { // 서비스수지(FDI대리, T3_FDI) → 외화 유입맥
@@ -800,8 +800,8 @@ const METAPHOR = {
     },
   },
 
-  G7: { // 특구별 투자유치 → 재활치료
-    name: "특구투자", bodyPart: "재활치료", axis: 6,
+  G7: { // 특구별 투자유치 → 재활치료 [orphan: gauge-adapter 미배정]
+    name: "특구투자", bodyPart: "재활치료", axis: 9,
     "양호 ○": { metaphor: "재활 치료 진행", prefix: "특구 투자유치가 활발하며 편마비 재활이 진행되고 있다." },
     "주의 ●": { metaphor: "재활 치료 부진", prefix: "특구 투자유치가 부진하며 재활이 정체되고 있다." },
     "경보 ★": { metaphor: "재활 치료 실패", prefix: "특구 투자유치가 거의 없으며 재활이 실패하고 있다." },
@@ -907,40 +907,40 @@ const METAPHOR = {
   },
 
   // ════════════════════════════════════════════════════
-  // 축 8. 에너지/자원 — 산소 공급원 (E1~E5)
+  // 축 6. 물가/재정 — 체온 (E1~E5) [P1_CPI/P2_PPI/P5_IMPORT/P6_EXPORT/P4_COMMODITY]
   // ════════════════════════════════════════════════════
 
-  E1: { // 유가 → 산소 가격
-    name: "유가", bodyPart: "산소가격", axis: 8,
-    "양호 ○": { metaphor: "산소 가격 안정", prefix: "유가가 안정적이며 에너지 비용이 관리 가능하다." },
-    "주의 ●": { metaphor: "산소 가격 상승", prefix: "유가가 올라가며 경제의 호흡 비용이 증가하고 있다." },
-    "경보 ★": { metaphor: "산소 가격 폭등", prefix: "유가가 급등하며 산소를 사기 어려운 상태다." },
+  E1: { // CPI(소비자물가전년비 %) → 체온
+    name: "CPI(소비자물가)", bodyPart: "체온", axis: 6,
+    "양호 ○": { metaphor: "체온 정상", prefix: "소비자물가가 안정적이며 경제 체온이 정상이다." },
+    "주의 ●": { metaphor: "체온 상승", prefix: "소비자물가가 올라가며 경제 체온이 상승하고 있다." },
+    "경보 ★": { metaphor: "고열", prefix: "소비자물가가 급등하며 경제가 고열 상태다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `산소 가격 안정. 유가(${v}) 안정. 에너지 비용 관리 가능.`,
-      "주의 ●": (v,c) => `산소 가격 상승. 유가(${v}) 상승. 물가 압력 확대.`,
-      "경보 ★": (v,c) => `산소 가격 폭등. 유가(${v}) 급등. 에너지 위기 진입.`,
+      "양호 ○": (v,c) => `체온 정상. CPI(${v}) 안정. 물가 안정 범위.`,
+      "주의 ●": (v,c) => `체온 상승. CPI(${v}) 상승. 물가 압력 확대.`,
+      "경보 ★": (v,c) => `고열. CPI(${v}) 급등. 구매력 급격히 잠식.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      if (grade === "경보 ★") return `유가(E1)가 ${v} 급등했다. 산소 가격이 폭등하고 있다. 에너지는 경제가 숨 쉬는 데 필요한 산소다 — 산소가 비싸지면 모든 세포의 활동 비용이 치솟는다.`;
-      if (grade === "주의 ●") return `유가(E1)가 ${v} 상승했다. 산소 가격이 올라가고 있다. 에너지 비용 상승이 물가 전반으로 전이될 수 있다.`;
-      return `유가(E1)가 ${v}로 안정적이다. 산소 가격이 적정 수준이다. 에너지 비용이 경제에 부담이 되지 않는다.`;
+      if (grade === "경보 ★") return `소비자물가(E1)가 ${v} 급등했다. 경제가 고열 상태다. 물가는 경제의 체온이다 — 체온이 너무 높으면 세포(가계)가 타들어간다. 실질 구매력이 급격히 잠식되며 소비 기반이 무너진다.`;
+      if (grade === "주의 ●") return `소비자물가(E1)가 ${v} 상승했다. 경제 체온이 오르고 있다. 물가 상승이 가계의 실질 소득을 잠식하는 초기 신호다.`;
+      return `소비자물가(E1)가 ${v}로 안정적이다. 경제 체온이 정상이다. 물가가 안정 범위에서 유지되고 있다.`;
     },
   },
 
-  E2: { // 전력 수급 예비율 → 산소통 잔량
-    name: "전력예비율", bodyPart: "산소통잔량", axis: 8,
-    "양호 ○": { metaphor: "산소통 충분", prefix: "전력 예비율이 충분하며 에너지 공급이 안정적이다." },
-    "주의 ●": { metaphor: "산소통 부족", prefix: "전력 예비율이 낮아지며 에너지 공급 여유가 줄고 있다." },
-    "경보 ★": { metaphor: "산소통 고갈", prefix: "전력 예비율이 위험 수준이며 블랙아웃 위험이다." },
+  E2: { // PPI(생산자물가전년비 %) → 생산 체온
+    name: "PPI(생산자물가)", bodyPart: "생산체온", axis: 6,
+    "양호 ○": { metaphor: "생산 체온 정상", prefix: "생산자물가가 안정적이며 기업 생산 비용이 관리 가능하다." },
+    "주의 ●": { metaphor: "생산 체온 상승", prefix: "생산자물가가 올라가며 기업 비용 압력이 커지고 있다." },
+    "경보 ★": { metaphor: "생산 고열", prefix: "생산자물가가 급등하며 기업 생산 비용이 위험 수준이다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `산소통 충분. 예비율(${v}) 안정. 전력 공급 안정.`,
-      "주의 ●": (v,c) => `산소통 부족. 예비율(${v}) 하락. 전력 수급 불안.`,
-      "경보 ★": (v,c) => `산소통 고갈. 예비율(${v}) 위험. 블랙아웃 위험.`,
+      "양호 ○": (v,c) => `생산 체온 정상. PPI(${v}) 안정. 기업 비용 관리 가능.`,
+      "주의 ●": (v,c) => `생산 체온 상승. PPI(${v}) 상승. 비용 압력 확대.`,
+      "경보 ★": (v,c) => `생산 고열. PPI(${v}) 급등. 기업 마진 소멸 위험.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      if (grade === "경보 ★") return `전력 예비율(E2)이 ${v}로 위험 수준이다. 산소통이 거의 비었다. 블랙아웃은 경제의 질식이다 — 전기가 끊기면 모든 것이 멈춘다.`;
-      if (grade === "주의 ●") return `전력 예비율(E2)이 ${v}로 낮아지고 있다. 산소통의 잔량이 줄고 있다. 하절기·동절기 피크에 대비가 필요하다.`;
-      return `전력 예비율(E2)이 ${v}로 충분하다. 산소통에 여유가 있다. 전력 공급이 안정적이다.`;
+      if (grade === "경보 ★") return `생산자물가(E2)가 ${v} 급등했다. 공장이 고열에 시달리고 있다. 생산자물가 급등은 기업의 마진을 태우는 내부 발열이다 — 소비자에게 전가되면 CPI도 뒤따라 오른다.`;
+      if (grade === "주의 ●") return `생산자물가(E2)가 ${v} 상승했다. 기업 생산 비용이 오르고 있다. 원가 상승이 소비자 가격으로 전이되기 전 단계다.`;
+      return `생산자물가(E2)가 ${v}로 안정적이다. 생산 체온이 정상이다. 기업 비용 압력이 없다.`;
     },
   },
 
@@ -978,20 +978,20 @@ const METAPHOR = {
     },
   },
 
-  E5: { // 원자재 가격지수 → 영양소 가격
-    name: "원자재지수", bodyPart: "영양소가격", axis: 8,
-    "양호 ○": { metaphor: "영양소 가격 안정", prefix: "원자재 가격이 안정적이며 생산 비용이 관리 가능하다." },
-    "주의 ●": { metaphor: "영양소 가격 상승", prefix: "원자재 가격이 올라가며 생산 비용이 증가하고 있다." },
-    "경보 ★": { metaphor: "영양소 가격 폭등", prefix: "원자재 가격이 급등하며 비용 인플레이션이 확산되고 있다." },
+  E5: { // 상품수지(원자재대리) 백만$ → 영양 공급
+    name: "상품수지", bodyPart: "영양공급", axis: 6,
+    "양호 ○": { metaphor: "영양 공급 원활", prefix: "상품수지가 흑자를 유지하며 원자재 조달이 원활하다." },
+    "주의 ●": { metaphor: "영양 공급 감소", prefix: "상품수지 흑자가 줄어들며 원자재 조달 여력이 약해지고 있다." },
+    "경보 ★": { metaphor: "영양 공급 부족", prefix: "상품수지가 적자로 전환되며 원자재 조달이 위협받고 있다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `영양소 가격 안정. 원자재(${v}) 안정. 생산비용 관리 가능.`,
-      "주의 ●": (v,c) => `영양소 가격 상승. 원자재(${v}) 상승. 비용 압력 확대.`,
-      "경보 ★": (v,c) => `영양소 가격 폭등. 원자재(${v}) 급등. 비용 인플레 확산.`,
+      "양호 ○": (v,c) => `영양 공급 원활. 상품수지(${v}) 흑자. 원자재 조달 양호.`,
+      "주의 ●": (v,c) => `영양 공급 감소. 상품수지(${v}) 축소. 원자재 조달 여력 약화.`,
+      "경보 ★": (v,c) => `영양 공급 부족. 상품수지(${v}) 적자. 원자재 조달 위협.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      if (grade === "경보 ★") return `원자재 가격지수(E5)가 ${v} 급등했다. 영양소 가격이 폭등하고 있다. 원자재는 경제 세포가 성장하는 데 필요한 영양소다 — 가격이 치솟으면 세포 분열(생산)이 멈춘다.`;
-      if (grade === "주의 ●") return `원자재 가격지수(E5)가 ${v} 상승했다. 영양소 가격이 올라가고 있다. 생산 비용 상승이 기업 마진을 압박하고 있다.`;
-      return `원자재 가격지수(E5)가 ${v}로 안정적이다. 영양소 가격이 적정하다. 생산 비용이 관리 가능한 수준이다.`;
+      if (grade === "경보 ★") return `상품수지(E5)가 ${v}로 적자 상태다. 영양 공급이 부족해지고 있다. 원자재·에너지 상품 교역에서 적자가 나면 외화가 빠져나가며 생산 기반이 흔들린다.`;
+      if (grade === "주의 ●") return `상품수지(E5)가 ${v}로 축소되고 있다. 영양 공급 여력이 줄어드는 신호다. 원자재 수입 비용 증가 또는 수출 단가 하락이 진행 중이다.`;
+      return `상품수지(E5)가 ${v}로 흑자를 유지하고 있다. 영양 공급이 원활하다. 원자재·상품 교역이 건강하다.`;
     },
   },
 
@@ -2038,7 +2038,7 @@ function generateNarrative(result, rawData, meta) {
   });
 
   // ══════════════════════════════════════
-  // 축6. 지역균형 — 좌우대칭
+  // 축6. 물가/재정 — 체온 (E1~E5)
   // ══════════════════════════════════════
   const axis6_available = AXIS6_CODES.filter(c => g[c]?.available);
   const axis6_gauges = axis6_available.filter(c => METAPHOR[c]).map(code => {
@@ -2056,7 +2056,7 @@ function generateNarrative(result, rawData, meta) {
   });
 
   const axis6_gaugeTable = axis6_available.map(code => ({
-    cat: "지역",
+    cat: "물가",
     code: `${code} ${METAPHOR[code]?.name || g[code]?.name || code}`,
     raw: fmtValue(code),
     change: fmtChange(code),
@@ -2120,7 +2120,7 @@ function generateNarrative(result, rawData, meta) {
   });
 
   // ══════════════════════════════════════
-  // 축8. 에너지/자원 — 산소 공급원
+  // 축8. 고용/가계 — 근력/취약 (L1~L4)
   // ══════════════════════════════════════
   const axis8_available = AXIS8_CODES.filter(c => g[c]?.available);
   const axis8_gauges = axis8_available.filter(c => METAPHOR[c]).map(code => {
@@ -2137,7 +2137,7 @@ function generateNarrative(result, rawData, meta) {
     };
   });
   const axis8_gaugeTable = axis8_available.map(code => ({
-    cat: "에너지",
+    cat: "고용",
     code: `${code} ${METAPHOR[code]?.name || code}`,
     raw: fmtValue(code), change: fmtChange(code),
     grade: getGrade(code), judge: gradeToJudge(getGrade(code)),
@@ -2150,7 +2150,7 @@ function generateNarrative(result, rawData, meta) {
   axis8_available.forEach(code => { const gr = getGrade(code); if (gr.includes("경보")) axis8_gradeCount.alert++; else if (gr.includes("주의")) axis8_gradeCount.warn++; else axis8_gradeCount.ok++; });
 
   // ══════════════════════════════════════
-  // 축9. 인구/노화 — 신체 나이
+  // 축9. 대외/에너지 — 외화혈관·재생 (G1~G6, A1~A5)
   // ══════════════════════════════════════
   const axis9_available = AXIS9_CODES.filter(c => g[c]?.available);
   const axis9_gauges = axis9_available.filter(c => METAPHOR[c]).map(code => {
@@ -2167,7 +2167,7 @@ function generateNarrative(result, rawData, meta) {
     };
   });
   const axis9_gaugeTable = axis9_available.map(code => ({
-    cat: "인구",
+    cat: "대외",
     code: `${code} ${METAPHOR[code]?.name || code}`,
     raw: fmtValue(code), change: fmtChange(code),
     grade: getGrade(code), judge: gradeToJudge(getGrade(code)),
@@ -2464,7 +2464,7 @@ function generateNarrative(result, rawData, meta) {
 
     // ── 축9 에너지/대외/환경 (재생) — ⚠️ 구조축 [v2.8] ——
     axis9_title: meta.axis9_titleSuffix
-      ? `[신체 나이] ${meta.axis9_titleSuffix}`
+      ? `[재생/대외] ${meta.axis9_titleSuffix}`
       : `[재생/대외] 에너지·환경·대외 — 재생 가능성 점검 ⚠️구조축`,
     axis9_type: 'structural',  // v2.8 신규: 구조축 타입 플래그
     axis9_gauges,
