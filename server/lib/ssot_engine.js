@@ -264,7 +264,7 @@ const METAPHOR_MAP = {
   'I6': { organ: '심장', good: '심박수가 안정적이다. 기준금리가 정상 범위다.', warn: '심박수가 빨라지고 있다. 금리 부담이 커지고 있다.', alert: '심박수 이상. 금리가 위험 수준이다.' },
 
   'O1': { organ: '근육', good: '근육 활력이 양호하다. 생산이 성장세다.', warn: '근육이 경직되고 있다. 생산이 둔화되고 있다.', alert: '근육 마비. 생산이 역성장이다.' },
-  'O2': { organ: '체온', good: '체온이 정상이다. 물가가 안정 범위다.', warn: '체온이 올라가고 있다. 물가 상승 압력이 있다.', alert: '고열. 물가가 위험 수준이다.' },
+  'O2': { organ: '산업맥박', good: '산업 맥박이 확장 국면이다. 제조업PMI 50 이상이다.', warn: '산업 맥박이 정체되고 있다. PMI 50 경계 구간이다.', alert: '산업 맥박 위축. PMI 50 미만, 제조업 경기 수축이다.' },
   'O3': { organ: '세포', good: '세포 활력이 양호하다. 고용이 안정적이다.', warn: '세포 활력이 떨어지고 있다. 고용이 약화되고 있다.', alert: '세포 위축. 실업이 심각하다.' },
   'O4': { organ: '안면', good: '안면 혈색이 양호하다. 주식시장이 안정적이다.', warn: '안면에 홍조가 감지된다. 주가가 하락 압력을 받고 있다.', alert: '안면 창백. 주가가 급락하고 있다.' },
   'O5': { organ: '부종', good: '부종이 없다. 주택가격이 안정적이다.', warn: '부종이 시작되고 있다. 주택가격 변동에 주의가 필요하다.', alert: '부종 심각. 주택가격이 급변하고 있다.' },
@@ -792,7 +792,7 @@ function transform(data) {
   if (result.sec8_data && Array.isArray(result.sec8_data)) {
     const sec8Map = {
       '경상수지': 'I1', '외환보유고': 'I3', '환율': 'I4',
-      '국채금리': 'I6', '물가': 'O2', '주가': 'O4'
+      '국채금리': 'I6', '물가': 'E1', '주가': 'O4'
     };
     for (const row of result.sec8_data) {
       const code = sec8Map[row.item];
@@ -819,7 +819,7 @@ function transform(data) {
     result.sec8_narrative1997 = `1997년(D+H / 급성 심근경색): 외환위기 당시 소득절벽(D)과 돈맥경화(H)가 동시 발동. 현재와의 차이: 외환보유고 ${allGaugeMap.get('I3')?.value || '?'}(당시 ~300억$), 경상수지 ${allGaugeMap.get('I1')?.value || '?'} 흑자(당시 적자). 거시 완충력은 질적으로 다르다.`;
   }
   if (result.sec8_narrative2008) {
-    result.sec8_narrative2008 = `2008년(H+A / 패혈증 쇼크): 글로벌 금융위기 시 돈맥경화(H)와 물가폭등(A)이 결합. 현재와의 차이: 국채금리 ${allGaugeMap.get('I6')?.value || '?'}(당시 5~6%), 물가 ${allGaugeMap.get('O2')?.value || '?'}(당시 5%). 금리·물가 수준이 크게 다르다.`;
+    result.sec8_narrative2008 = `2008년(H+A / 패혈증 쇼크): 글로벌 금융위기 시 돈맥경화(H)와 물가폭등(A)이 결합. 현재와의 차이: 국채금리 ${allGaugeMap.get('I6')?.value || '?'}(당시 5~6%), CPI ${allGaugeMap.get('E1')?.value || '?'}(당시 5%). 금리·물가 수준이 크게 다르다.`;
   }
 
   // ── L. sec9 처방전: SSOT 값 기반 자동 생성 ──

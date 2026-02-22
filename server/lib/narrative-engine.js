@@ -168,18 +168,20 @@ const METAPHOR = {
     },
   },
 
-  O2: { // 물가 → 체온
-    name: "물가", bodyPart: "체온",
-    "양호 ○": { metaphor: "체온 안정", prefix: "체온이 안정적이다." },
-    "주의 ●": { metaphor: "체온 미열", prefix: "체온이 다소 올라가 미열 수준이다." },
-    "경보 ★": { metaphor: "체온 고열", prefix: "체온이 고열 수준이다." },
+  O2: { // 제조업PMI → 산업 맥박
+    name: "제조업PMI", bodyPart: "산업맥박",
+    "양호 ○": { metaphor: "산업 맥박 확장", prefix: "제조업PMI가 50을 웃돌며 산업 맥박이 확장 국면이다." },
+    "주의 ●": { metaphor: "산업 맥박 정체", prefix: "제조업PMI가 50 부근에서 정체되며 산업 맥박이 약해지고 있다." },
+    "경보 ★": { metaphor: "산업 맥박 위축", prefix: "제조업PMI가 50 아래로 내려가며 산업 맥박이 위축 국면이다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `체온 안정. 물가 목표 범위 내 정상 작동.`,
-      "주의 ●": (v,c) => `체온 미열. 물가(${v}) 상승 추세에 서민 체감 물가는 헤드라인보다 높다.`,
-      "경보 ★": (v,c) => `체온 고열. 물가(${v}) 급등은 A(물가폭등) 트리거 발동 위험. 배출 압력 축적 중.`,
+      "양호 ○": (v,c) => `산업 맥박 확장. PMI(${v}) 50 이상. 제조업 경기 팽창 중.`,
+      "주의 ●": (v,c) => `산업 맥박 정체. PMI(${v}) 50 경계. 제조업 경기 방향 불명.`,
+      "경보 ★": (v,c) => `산업 맥박 위축. PMI(${v}) 50 미만. 제조업 경기 수축 중.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      return `물가(O2)는 소비자물가 상승률 ${v}로, ${grade === "양호 ○" ? '한국은행 목표치 부합으로 체온이 안정되었다.' : grade === "주의 ●" ? '미열 수준이다.' : '고열 상태다.'}`;
+      if (grade === "경보 ★") return `제조업PMI(O2)가 ${v}로 위축 국면이다. 산업 맥박이 약해지고 있다. 50 미만은 생산·신규수주·고용이 동시에 줄어드는 신호다.`;
+      if (grade === "주의 ●") return `제조업PMI(O2)가 ${v}로 50 경계에 있다. 산업 맥박이 정체되고 있다. 확장/위축 전환점이다.`;
+      return `제조업PMI(O2)가 ${v}로 확장 국면이다. 산업 맥박이 건강하게 뛰고 있다. 수주·생산·고용이 증가하는 국면이다.`;
     },
   },
 
@@ -1767,7 +1769,7 @@ function generateNarrative(result, rawData, meta) {
   const _hasH    = (getGrade("I4") !== "양호 ○" || getGrade("I6") !== "양호 ○"); // 혈압/금리
   const _hasD    = getGrade("I1") === "경보 ★"; // 경상수지 적자
   const _hasCold = getGrade("O4") === "경보 ★" && getGrade("O6") === "경보 ★"; // 주가+소비 동반
-  const _hasHeat = getGrade("O2") === "경보 ★"; // 물가 급등
+  const _hasHeat = getGrade("E1") === "경보 ★"; // CPI 물가 급등
   let _clinicalName = "";
   if (bl.dual) _clinicalName = "이중봉쇄 — 경제 급사 위험";
   else if (_hasCold && _hasH) _clinicalName = "하한(下寒) 증후군 — 전신 냉각 진행 중";
@@ -1795,8 +1797,8 @@ function generateNarrative(result, rawData, meta) {
   if (getGrade("O6") === "경보 ★") {
     _pathLines.push(`소비 급감(말단 괴사)은 2년 이상 지속 시 구조적 3M(피폐·정책 무반응) 진입을 예고한다.`);
   }
-  if (getGrade("O2") !== "양호 ○") {
-    _pathLines.push(`물가 상승(체온 상승)은 환율발 수입물가 경로로 추가 자극될 수 있어 A(물가폭등) 트리거 잠복 관찰이 필요하다.`);
+  if (getGrade("E1") !== "양호 ○") {
+    _pathLines.push(`소비자물가(CPI) 상승(체온 상승)은 환율발 수입물가 경로로 추가 자극될 수 있어 A(물가폭등) 트리거 잠복 관찰이 필요하다.`);
   }
   if (_pathLines.length === 0) _pathLines.push("현재 주요 게이지 간 연쇄 악화 경로는 감지되지 않는다. 단월 변동에 유의하며 추이를 관찰한다.");
 
@@ -2262,7 +2264,7 @@ function generateNarrative(result, rawData, meta) {
     { code: "I3",  data: "외환보유고",   source: "ECOS", org: "한국은행",   period: "월간 (1개월 지연)" },
     { code: "I4",  data: "환율",         source: "ECOS", org: "한국은행",   period: "일간/준실시간" },
     { code: "I6",  data: "국채금리",     source: "ECOS", org: "한국은행",   period: "일간" },
-    { code: "O2",  data: "소비자물가",   source: "KOSIS", org: "통계청",    period: "월간 (익월 초)" },
+    { code: "O2",  data: "제조업PMI",    source: "S&P/KCCI", org: "한국경제연구원", period: "월간 (익월 초)" },
     { code: "O4",  data: "주가(KOSPI)",  source: "KRX",  org: "한국거래소", period: "일간/준실시간 15분" },
     { code: "O6",  data: "소매판매",     source: "KOSIS", org: "통계청",    period: "월간 (2개월 지연)" },
     // 축2 무역/제조업 출처
