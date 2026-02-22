@@ -771,7 +771,11 @@ async function _doFetchECOS(params) {
   if (!rows && errMsg) {
     console.warn(`[ECOS] ${statisticCode}/${itemCode1}: ${errMsg}`);
   }
-  return rows || [];
+  if (!rows) return [];
+  // ECOS API는 TIME 오름차순(과거→최신) 반환. 모든 transform이 data[0]=최신을 기준으로 작성되어 있으므로
+  // 내림차순(최신→과거)으로 정렬하여 반환. FRED와 동일한 data[0]=latest 규칙 통일.
+  rows.sort((a, b) => (b.TIME || '').localeCompare(a.TIME || ''));
+  return rows;
 }
 
 async function _doFetchFRED(params) {
