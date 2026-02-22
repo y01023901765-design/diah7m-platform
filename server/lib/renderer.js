@@ -778,13 +778,14 @@ function buildDIAHTrigger(d) {
         { size: S.body })], { after: 200 }),
 
     ...(d.diahTriggers || [
-      { code: 'H', title: 'H(저산소/유동성함정)의 그림자 — 가장 위험한 잠복 요인', body: '(서사엔진 생성)', scenario: '(점등 시나리오)' },
-      { code: 'A', title: 'A(산증/인플레압력)의 잠재적 축적', body: '(서사엔진 생성)', scenario: '' },
-      { code: 'D', title: 'D(결핍/유동성부족)', body: '(서사엔진 생성)', scenario: '' },
-      { code: 'I', title: 'I(염증/사회마찰)', body: '(서사엔진 생성)', scenario: '' },
+      { code: 'H', name: 'H(저산소/유동성함정)의 그림자 — 가장 위험한 잠복 요인', text: '(서사엔진 생성)', scenario: '(점등 시나리오)' },
+      { code: 'A', name: 'A(산증/인플레압력)의 잠재적 축적', text: '(서사엔진 생성)', scenario: '' },
+      { code: 'D', name: 'D(결핍/유동성부족)', text: '(서사엔진 생성)', scenario: '' },
+      { code: 'I', name: 'I(염증/사회마찰)', text: '(서사엔진 생성)', scenario: '' },
     ]).flatMap(tr => [
-      p([t(tr.title, { size: S.body, bold: true, color: C.navy })], { before: 200, after: 80 }),
-      p([t(tr.body, { size: S.body })], { after: 80 }),
+      // narrative-engine은 {code, name, text}, 기본값은 {code, name, text, scenario}
+      p([t(tr.title || `${tr.code} ${tr.name}`, { size: S.body, bold: true, color: C.navy })], { before: 200, after: 80 }),
+      p([t(tr.body  || tr.text || '', { size: S.body })], { after: 80 }),
       ...(tr.scenario ? [p([t(tr.scenario, { size: S.body, bold: true, color: C.mid })], { after: 120 })] : []),
     ]),
 
@@ -998,8 +999,8 @@ function buildSourcesDisclaimer(d) {
         // s가 객체(narrative-engine 반환)이면 필드명으로, 배열이면 인덱스로 접근
         const v = (obj, key, idx) => Array.isArray(obj) ? (obj[idx] ?? '—') : (obj[key] ?? obj[idx] ?? '—');
         return rw([
-          cl(v(s,'code',0),   { w: 600,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
-          cl(v(s,'name',1),   { w: 1600, fs: S.sm, bg: altBg(i) }),
+          cl(v(s,'code',0),              { w: 600,  fs: S.sm, align: AlignmentType.CENTER, bg: altBg(i) }),
+          cl(v(s,'data',1) || v(s,'name',1), { w: 1600, fs: S.sm, bg: altBg(i) }),
           cl(v(s,'source',2), { w: 1800, fs: S.sm, bg: altBg(i) }),
           cl(v(s,'org',3),    { w: 1600, fs: S.sm, bg: altBg(i) }),
           cl(v(s,'period',4), { w: 3426, fs: S.sm, bg: altBg(i) }),
@@ -1202,10 +1203,10 @@ function _buildDataObject(diagnosis, D, meta) {
   d._crossSignals = crossSignalsRaw.map(cs => ({
     pair:       cs.pair       || cs.axes || '—',
     organLink:  cs.organLink  || cs.organ || '—',
-    direction:  cs.direction  || '—',
+    direction:  cs.direction  || (cs.severity >= 4 ? '↓↓ 위험' : cs.severity >= 2.5 ? '↓ 주의' : cs.severity >= 1 ? '→ 관찰' : '—'),
     severity:   cs.severity   || 'low',
-    leadMonths: cs.leadMonths || null,
-    diagnosis:  cs.diagnosis  || cs.description || cs.text || '—',
+    leadMonths: cs.leadMonths || cs.leadTotalMonths || null,
+    diagnosis:  cs.diagnosis  || cs.description || cs.text || cs.narrative || cs.risk || '—',
   }));
 
   return d;
