@@ -42,7 +42,7 @@ const ID_MAP = {
   'O4_CAPACITY':       { code: 'M4', cat: 'Axis3',  name: '설비가동률(전년비)',   unit: '%' },
   'O5_INVENTORY':      { code: 'M1', cat: 'Axis3',  name: '재고지수(전년비)',     unit: '%' },
   'O6_SHIPMENT':       { code: 'M2', cat: 'Axis3',  name: '출하지수(전년비)',     unit: '%' },
-  'O7_ORDER':          { code: 'M3', cat: 'Axis3',  name: '내수주문지수(전년비)', unit: '%' },
+  // O7_ORDER: M3 충돌 제거 (O3_IP가 M3 단독 점유)
 
   // ══ A5 면역계 → Axis4 (건설/자산 대리지표) ══
   // 실측 부동산 데이터 없음 → 건설 소재 생산 대리 사용
@@ -55,7 +55,7 @@ const ID_MAP = {
   'L2_PARTICIPATION':  { code: 'L2', cat: 'Axis5',  name: '경제활동참가율변동',   unit: '%' },
   'L3_WAGE':           { code: 'L3', cat: 'Axis5',  name: '임금(전년비)',          unit: '%' },
   'L4_HOURS':          { code: 'L4', cat: 'Axis5',  name: '근로시간변동',          unit: '%' },
-  'L5_YOUTH_UNEMP':    { code: 'L1', cat: 'Axis5',  name: '청년실업률',            unit: '%' },
+  // L5_YOUTH_UNEMP: L1 충돌 제거 (S5_EMPLOY가 L1 단독 점유)
   'S5_EMPLOY':         { code: 'L1', cat: 'Axis5',  name: '취업자수증감',          unit: '천명' },
 
   // ══ A7 근골격계 → Axis6 (지역균형/대외) ══
@@ -66,12 +66,12 @@ const ID_MAP = {
   'S3_NIGHTLIGHT':     { code: 'G6', cat: 'Axis6',  name: '야간광량(위성)',        unit: 'nW/cm²/sr' },
 
   // ══ A8 인구/취약 → Axis7 (금융스트레스) + Axis8 (에너지/물가) ══
-  'F2_KOSDAQ':         { code: 'F1', cat: 'Axis7',  name: 'KOSDAQ(코스닥)',        unit: '%' },
-  'F3_KOSPI_VOL':      { code: 'F4', cat: 'Axis7',  name: 'KOSPI거래량(변동성)',   unit: '천주' },
-  'F6_M2':             { code: 'F2', cat: 'Axis7',  name: 'M2통화(전년비)',        unit: '%' },
+  'F2_KOSDAQ':         { code: 'F1', cat: 'Axis7',  name: 'KOSDAQ(전일비%)',       unit: '%' },
+  // F3_KOSPI_VOL: F4 충돌 제거 (F7_KOSDAQ_VOL이 F4 단독 점유)
+  // F6_M2: F2 충돌 제거 (E4_DOLLAR_INDEX가 F2 단독 점유)
   'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량',          unit: '천주' },
   'F8_FOREIGN':        { code: 'F8', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
-  'P3_OIL':            { code: 'E1', cat: 'Axis8',  name: 'WTI유가($/bbl)',        unit: '$/bbl' },
+  // P3_OIL: E1 충돌 제거 (P1_CPI가 E1 단독 점유)
   'P1_CPI':            { code: 'E1', cat: 'Axis8',  name: 'CPI(소비자물가전년비)', unit: '%' },
   'P2_PPI':            { code: 'E2', cat: 'Axis8',  name: 'PPI(생산자물가전년비)', unit: '%' },
   'P4_COMMODITY':      { code: 'E5', cat: 'Axis8',  name: '상품수지(원자재대리)', unit: '백만$' },
@@ -81,7 +81,7 @@ const ID_MAP = {
   // ══ A9 재생/대외 → Axis9 (인구/노화/환경) ══
   'R1_ELECTRICITY':    { code: 'A3', cat: 'Axis9',  name: '전기가스수도업생산',    unit: '%' },
   'R2_WATER':          { code: 'A4', cat: 'Axis9',  name: '수도업생산',            unit: '%' },
-  'R3_GAS':            { code: 'A3', cat: 'Axis9',  name: '전기가스공급업생산',    unit: '%' },
+  // R3_GAS: A3 충돌 제거 (R1_ELECTRICITY가 A3 단독 점유)
   'R4_COAL':           { code: 'A5', cat: 'Axis9',  name: '석탄광업생산',          unit: '%' },
   'R7_WASTE':          { code: 'A2', cat: 'Axis9',  name: '폐기물처리업생산',      unit: '%' },
   'R8_FOREST':         { code: 'A1', cat: 'Axis9',  name: '농림어업취업자',        unit: '천명' },

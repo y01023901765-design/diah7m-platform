@@ -1561,74 +1561,77 @@ function generateNarrative(result, rawData, meta) {
     const v = gauge.value;
     const def = METAPHOR[code];
     if (!def) return String(v);
-    // 코드별 포맷
-    if (code === "I1") return `${v}억$`;
+    // ── Input (순환계 핵심) ──
+    if (code === "I1") return `${v}억$`;          // 무역수지(절대값)
     if (code === "I2") return `${v}%`;
-    if (code === "I3") return `${v}%p`;      // 외환보유고 전월비% (T4_RESERVES MoM%)
-    if (code === "I4") return `${v}%p`;      // 환율 전월비% (F4_EXCHANGE MoM%)
-    if (code === "I5") return `${v}bp`;
-    if (code === "I6") return `${v}%`;
-    if (code === "O1") return `${v}%`;
-    if (code === "O2") return `${v}%`;
-    if (code === "O3") return `${v}%`;
-    if (code === "O4") return `${v}pt`;
-    if (code === "O5") return `${v}%`;
-    if (code === "O6") return `${v}%`;
-    // 축2 무역/제조업
-    if (code === "S1") return `${v}백만$`;  // 화물운송수지(T5_SHIPPING, 절대값 백만$)
-    if (code === "S2") return `${v}pt`;     // 발틱운임지수(E5_BALTIC, BDI pt)
+    if (code === "I3") return `${v}%p`;            // 외환보유고변동(전월비%)
+    if (code === "I4") return `${v}%p`;            // 환율(전월비%)
+    if (code === "I5") return `${v}bp`;            // 신용스프레드
+    if (code === "I6") return `${v}%`;             // 기준금리
+    // ── Output (호흡계 핵심) ──
+    if (code === "O1") return `${v}%`;             // 수출(전년비)
+    if (code === "O2") return `${v}pt`;            // 제조업PMI
+    if (code === "O3") return `${v}%`;             // 실업률변동
+    if (code === "O4") return `${v}pt`;            // KOSPI
+    if (code === "O5") return `${v}pt`;            // 주택가격지수
+    if (code === "O6") return `${v}%`;             // 소매판매(전년비)
+    if (code === "O7") return `${v}%`;             // 건설생산(전년비)
+    // ── Axis2 무역/해운 ──
+    if (code === "S1") return `${v}백만$`;         // 해운수지(T5_SHIPPING)
+    if (code === "S2") return `${v}pt`;            // 발틱운임지수(BDI)
     if (code === "S3") return `${v}%`;
-    if (code === "T1") return `${v}만TEU`;
-    if (code === "T2") return `${v}pt`;
-    if (code === "T3") return `${v}%`;
-    // 축3 소화계/내수 대리지표
-    if (code === "M1") return `${v}%`;   // 재고지수(전년비)
-    if (code === "M2") return `${v}%`;   // 출하지수(전년비)
-    if (code === "M3") return `${v}%`;   // 산업생산지수(전년비)
-    if (code === "M4") return `${v}%`;   // 설비가동률(전년비)
-    if (code === "M5") return `${v}%`;   // 내수주문지수
-    // 축4 건설/자산 대리지표
-    if (code === "R1") return `${v}%`;        // (미사용)
-    if (code === "R2") return `${v}%`;        // 시멘트생산(전년비)
-    if (code === "R3") return `${v}%`;        // 철강재생산(전년비)
-    if (code === "R4") return `${v}%`;        // 자동차생산(전년비)
-    if (code === "R5") return `${v}m`;        // SAR 높이변화
-    if (code === "R6") return `${v}%`;        // 야간광량(신축)
-    if (code === "R7") return `${v}%`;        // 주차점유율
-    if (code === "R8") return `${v}℃`;       // 표면온도
-    if (code === "R9") return `${v}개월`;     // 괴리지속기간
-    // 축5 고용/가계
-    if (code === "L1") return `${v}만명`;     // 고용동향(취업자수 변동)
-    if (code === "L2") return `${v}만건`;     // 실업급여 신청
-    if (code === "L3") return `${v}%`;        // 임금(전년비, L3_WAGE MoM%)
-    if (code === "L4") return `${v}%`;        // 연체율
-    if (code === "L5") return `${v}pt`;       // CSI
-    // 축6 지역균형
-    if (code === "G1") return `${v}개지역`;   // 소멸위험 지역 수
-    if (code === "G2") return `${v}배`;       // 수도권/비수도권 GRDP 비율
-    if (code === "G3") return `${v}만명`;     // 수도권 순유입
-    if (code === "G4") return `${v}배`;       // 수도권/지방 창폐업 비율
-    if (code === "G5") return `${v}%`;        // 재정자립도
-    if (code === "G6") return `${v}%`;        // 야간광 지방/수도권 비율
-    if (code === "G7") return `${v}건`;       // 특구 투자유치 건수
-    // 축7 금융 스트레스
-    if (code === "F1") return `${v}bp`;       // 회사채 스프레드
-    if (code === "F2") return `${v}%`;        // CP 금리
-    if (code === "F3") return `${v}%`;        // BIS 비율
-    if (code === "F4") return `${v}%`;        // 코스피 변동성(VIX)
-    if (code === "F5") return `${v}bp`;       // 은행채 스프레드
-    // 축8 에너지/자원
-    if (code === "E1") return `${v}$/bbl`;    // 유가
-    if (code === "E2") return `${v}%`;        // 전력 예비율
-    if (code === "E3") return `${v}만톤`;     // LNG 재고
-    if (code === "E4") return `${v}GWh`;      // 산업용 전력
-    if (code === "E5") return `${v}pt`;       // 원자재 가격지수
-    // 축9 인구/노화
-    if (code === "A1") return `${v}천명`;     // 농림어업취업자(R8_FOREST, 천명)
-    if (code === "A2") return `${v}%`;        // 고령화율
-    if (code === "A3") return `${v}만명`;     // 생산가능인구
-    if (code === "A4") return `${v}만명`;     // 학령인구
-    if (code === "A5") return `${v}만명`;     // 이민 순유입
+    if (code === "T1") return `${v}백만$`;         // 경상수지(T2_CURRENT_ACCOUNT)
+    if (code === "T2") return `${v}pt`;            // 제조업BSI
+    if (code === "T3") return `${v}pt`;            // 중국PMI
+    // ── Axis3 내수/산업 대리지표 ──
+    if (code === "M1") return `${v}%`;             // 재고지수(전년비)
+    if (code === "M2") return `${v}%`;             // 출하지수(전년비)
+    if (code === "M3") return `${v}%`;             // 산업생산지수(전년비)
+    if (code === "M4") return `${v}%`;             // 설비가동률(전년비)
+    if (code === "M5") return `${v}%`;
+    // ── Axis4 건설/자산 대리지표 ──
+    if (code === "R1") return `${v}%`;
+    if (code === "R2") return `${v}%`;             // 시멘트생산(전년비)
+    if (code === "R3") return `${v}%`;             // 철강재생산(전년비)
+    if (code === "R4") return `${v}%`;             // 자동차생산(전년비)
+    if (code === "R5") return `${v}m`;
+    if (code === "R6") return `${v}°C`;            // 도시열섬이상(°C, R6_UHI)
+    if (code === "R7") return `${v}%`;
+    if (code === "R8") return `${v}℃`;
+    if (code === "R9") return `${v}개월`;
+    // ── Axis5 고용/가계 ──
+    if (code === "L1") return `${v}천명`;          // 취업자수증감(S5_EMPLOY)
+    if (code === "L2") return `${v}%`;             // 경제활동참가율변동
+    if (code === "L3") return `${v}%`;             // 임금(전년비)
+    if (code === "L4") return `${v}%`;             // 근로시간변동
+    if (code === "L5") return `${v}pt`;            // 소비자심리(CSI)
+    // ── Axis6 물류/대외 ──
+    if (code === "G1") return `${v}백만$`;         // 서비스수지(T3_FDI)
+    if (code === "G2") return `${v}백만$`;         // 운송수지(I5_CARGO)
+    if (code === "G3") return `${v}백만$`;         // 항공운송수지(I6_AIRPORT)
+    if (code === "G4") return `${v}천명`;          // 운수창고취업자(I7_RAILROAD)
+    if (code === "G5") return `${v}pt`;            // 미국경기(OECD CLI)
+    if (code === "G6") return `${v}%`;             // 야간광 위성
+    if (code === "G7") return `${v}건`;
+    // ── Axis7 금융스트레스 ──
+    if (code === "F1") return `${v}%`;             // KOSDAQ(전일비%)
+    if (code === "F2") return `${v}%`;             // 달러인덱스(전일비%)
+    if (code === "F3") return `${v}pt`;            // VIX(공포지수)
+    if (code === "F4") return `${v}천주`;          // KOSDAQ거래량
+    if (code === "F5") return `${v}bp`;
+    if (code === "F8") return `${v}백만원`;        // 외국인순매수
+    // ── Axis8 에너지/물가 ──
+    if (code === "E1") return `${v}%`;             // CPI(소비자물가전년비)
+    if (code === "E2") return `${v}%`;             // PPI(생산자물가전년비)
+    if (code === "E3") return `${v}pt`;            // 수입물가지수
+    if (code === "E4") return `${v}pt`;            // 수출물가지수
+    if (code === "E5") return `${v}백만$`;         // 상품수지(원자재대리)
+    // ── Axis9 재생/환경 ──
+    if (code === "A1") return `${v}천명`;          // 농림어업취업자(R8_FOREST)
+    if (code === "A2") return `${v}%`;             // 폐기물처리업생산(전년비)
+    if (code === "A3") return `${v}%`;             // 전기가스수도업생산(전년비)
+    if (code === "A4") return `${v}%`;             // 수도업생산(전년비)
+    if (code === "A5") return `${v}%`;             // 석탄광업생산(전년비)
     return String(v);
   }
   function fmtChange(code) {
@@ -1636,73 +1639,77 @@ function generateNarrative(result, rawData, meta) {
     if (!gauge || gauge.change === null || gauge.change === undefined) return "";
     const c = gauge.change;
     const sign = c > 0 ? "+" : "";
+    // ── Input ──
     if (code === "I1") return `${sign}${c}억$`;
     if (code === "I2") return `${sign}${c}%p`;
-    if (code === "I3") return `${sign}${c}%`;
-    if (code === "I4") return `${sign}${c}%`;
+    if (code === "I3") return `${sign}${c}%p`;
+    if (code === "I4") return `${sign}${c}%p`;
     if (code === "I5") return `${sign}${c}bp`;
     if (code === "I6") return `${sign}${c}%p`;
+    // ── Output ──
     if (code === "O1") return `${sign}${c}%p`;
-    if (code === "O2") return `${sign}${c}%p`;
+    if (code === "O2") return `${sign}${c}pt`;     // PMI
     if (code === "O3") return `${sign}${c}%p`;
-    if (code === "O4") return `${sign}${c}%`;
-    if (code === "O5") return `${sign}${c}%p`;
+    if (code === "O4") return `${sign}${c}%`;      // KOSPI
+    if (code === "O5") return `${sign}${c}pt`;     // 주택가격지수
     if (code === "O6") return `${sign}${c}%p`;
-    // 축2 무역/제조업
+    if (code === "O7") return `${sign}${c}%p`;
+    // ── Axis2 ──
     if (code === "S1") return `${sign}${c}백만$`;
-    if (code === "S2") return `${sign}${c}%p`;
+    if (code === "S2") return `${sign}${c}pt`;     // BDI
     if (code === "S3") return `${sign}${c}%p`;
-    if (code === "T1") return `${sign}${c}%`;
-    if (code === "T2") return `${sign}${c}pt`;
-    if (code === "T3") return `${sign}${c}%p`;
-    // 축3 골목시장/미세혈관
-    if (code === "M1") return `${sign}${c}배`;
-    if (code === "M2") return `${sign}${c}%`;
-    if (code === "M3") return `${sign}${c}%`;
-    if (code === "M4") return `${sign}${c}%`;
-    if (code === "M5") return `${sign}${c}단계`;
-    // 축4 부동산/뼈
-    if (code === "R1") return `${sign}${c}%`;
-    if (code === "R2") return `${sign}${c}%`;
+    if (code === "T1") return `${sign}${c}백만$`;  // 경상수지
+    if (code === "T2") return `${sign}${c}pt`;     // BSI
+    if (code === "T3") return `${sign}${c}pt`;     // 중국PMI
+    // ── Axis3 ──
+    if (code === "M1") return `${sign}${c}%p`;
+    if (code === "M2") return `${sign}${c}%p`;
+    if (code === "M3") return `${sign}${c}%p`;
+    if (code === "M4") return `${sign}${c}%p`;
+    if (code === "M5") return `${sign}${c}%p`;
+    // ── Axis4 ──
+    if (code === "R1") return `${sign}${c}%p`;
+    if (code === "R2") return `${sign}${c}%p`;
     if (code === "R3") return `${sign}${c}%p`;
-    if (code === "R4") return `${sign}${c}%`;
+    if (code === "R4") return `${sign}${c}%p`;
     if (code === "R5") return `${sign}${c}m`;
-    if (code === "R6") return `${sign}${c}%p`;
+    if (code === "R6") return `${sign}${c}°C`;     // 도시열섬
     if (code === "R7") return `${sign}${c}%p`;
     if (code === "R8") return `${sign}${c}℃`;
     if (code === "R9") return `${sign}${c}개월`;
-    // 축5 고용/가계
-    if (code === "L1") return `${sign}${c}만명`;
-    if (code === "L2") return `${sign}${c}%`;
-    if (code === "L3") return `${sign}${c}%`;
+    // ── Axis5 ──
+    if (code === "L1") return `${sign}${c}천명`;   // 취업자수증감
+    if (code === "L2") return `${sign}${c}%p`;     // 경활율변동
+    if (code === "L3") return `${sign}${c}%p`;
     if (code === "L4") return `${sign}${c}%p`;
     if (code === "L5") return `${sign}${c}pt`;
-    // 축6 지역균형
-    if (code === "G1") return `${sign}${c}개지역`;
-    if (code === "G2") return `${sign}${c}배`;
-    if (code === "G3") return `${sign}${c}만명`;
-    if (code === "G4") return `${sign}${c}배`;
-    if (code === "G5") return `${sign}${c}%p`;
+    // ── Axis6 ──
+    if (code === "G1") return `${sign}${c}백만$`;
+    if (code === "G2") return `${sign}${c}백만$`;
+    if (code === "G3") return `${sign}${c}백만$`;
+    if (code === "G4") return `${sign}${c}천명`;
+    if (code === "G5") return `${sign}${c}pt`;
     if (code === "G6") return `${sign}${c}%p`;
     if (code === "G7") return `${sign}${c}건`;
-    // 축7 금융 스트레스
-    if (code === "F1") return `${sign}${c}bp`;
-    if (code === "F2") return `${sign}${c}%p`;
-    if (code === "F3") return `${sign}${c}%p`;
-    if (code === "F4") return `${sign}${c}%p`;
+    // ── Axis7 ──
+    if (code === "F1") return `${sign}${c}%p`;    // KOSDAQ
+    if (code === "F2") return `${sign}${c}%p`;    // 달러인덱스
+    if (code === "F3") return `${sign}${c}pt`;    // VIX
+    if (code === "F4") return `${sign}${c}천주`;  // KOSDAQ거래량
     if (code === "F5") return `${sign}${c}bp`;
-    // 축8 에너지/자원
-    if (code === "E1") return `${sign}${c}$/bbl`;
-    if (code === "E2") return `${sign}${c}%p`;
-    if (code === "E3") return `${sign}${c}만톤`;
-    if (code === "E4") return `${sign}${c}%`;
-    if (code === "E5") return `${sign}${c}pt`;
-    // 축9 인구/노화
-    if (code === "A1") return `${sign}${c}명`;
+    if (code === "F8") return `${sign}${c}백만원`;
+    // ── Axis8 ──
+    if (code === "E1") return `${sign}${c}%p`;    // CPI
+    if (code === "E2") return `${sign}${c}%p`;    // PPI
+    if (code === "E3") return `${sign}${c}pt`;    // 수입물가지수
+    if (code === "E4") return `${sign}${c}pt`;    // 수출물가지수
+    if (code === "E5") return `${sign}${c}백만$`; // 상품수지
+    // ── Axis9 ──
+    if (code === "A1") return `${sign}${c}천명`;
     if (code === "A2") return `${sign}${c}%p`;
-    if (code === "A3") return `${sign}${c}만명`;
-    if (code === "A4") return `${sign}${c}만명`;
-    if (code === "A5") return `${sign}${c}만명`;
+    if (code === "A3") return `${sign}${c}%p`;    // 전기가스수도업생산
+    if (code === "A4") return `${sign}${c}%p`;    // 수도업생산
+    if (code === "A5") return `${sign}${c}%p`;    // 석탄광업생산
     return `${sign}${c}`;
   }
   function getGrade(code) {
