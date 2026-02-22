@@ -2277,7 +2277,7 @@ function generateNarrative(result, rawData, meta) {
     // ── 축3 골목시장 (미세혈관) ──
     axis3_title: meta.axis3_titleSuffix
       ? `[미세혈관] ${meta.axis3_titleSuffix}`
-      : `[미세혈관] 골목시장 — 경제의 모세혈관 점검`,
+      : `[미세혈관] 골목시장 — 경제의 미세혈관 점검`,
     axis3_gauges,
     axis3_gaugeTable,
     axis3_summary: meta.axis3_summary || (axis3_available.length > 0
