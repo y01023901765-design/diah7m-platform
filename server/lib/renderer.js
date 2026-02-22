@@ -1203,7 +1203,10 @@ function _buildDataObject(diagnosis, D, meta) {
   d._crossSignals = crossSignalsRaw.map(cs => ({
     pair:       cs.pair       || cs.axes || '—',
     organLink:  cs.organLink  || cs.organ || '—',
-    direction:  cs.direction  || (cs.severity >= 4 ? '↓↓ 위험' : cs.severity >= 2.5 ? '↓ 주의' : cs.severity >= 1 ? '→ 관찰' : '—'),
+    direction:  cs.direction  || (
+      cs.severity === 'high' || cs.severity >= 4   ? '↓↓ 위험' :
+      cs.severity === 'medium' || cs.severity >= 2.5 ? '↓ 주의' :
+      cs.severity === 'low' || cs.severity >= 1   ? '→ 관찰' : '—'),
     severity:   cs.severity   || 'low',
     leadMonths: cs.leadMonths || cs.leadTotalMonths || null,
     diagnosis:  cs.diagnosis  || cs.description || cs.text || cs.narrative || cs.risk || '—',
