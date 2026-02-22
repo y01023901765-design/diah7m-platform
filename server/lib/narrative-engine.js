@@ -1525,17 +1525,17 @@ function generateNarrative(result, rawData, meta) {
     if (code === "T1") return `${v}만TEU`;
     if (code === "T2") return `${v}pt`;
     if (code === "T3") return `${v}%`;
-    // 축3 골목시장/미세혈관
-    if (code === "M1") return `${v}배`;   // 개업/폐업 비율
-    if (code === "M2") return `${v}만명`;  // 유동인구
-    if (code === "M3") return `${v}조원`;  // 카드매출
-    if (code === "M4") return `${v}만원/㎡`; // 상가임대료
-    if (code === "M5") return `${v}등급`;  // 상권등급
-    // 축4 부동산/뼈
-    if (code === "R1") return `${v}만원/㎡`;  // 실거래가
-    if (code === "R2") return `${v}호`;       // 미분양
-    if (code === "R3") return `${v}%`;        // 전세가율
-    if (code === "R4") return `${v}건`;       // 경매건수
+    // 축3 소화계/내수 대리지표
+    if (code === "M1") return `${v}%`;   // 재고지수(전년비)
+    if (code === "M2") return `${v}%`;   // 출하지수(전년비)
+    if (code === "M3") return `${v}%`;   // 산업생산지수(전년비)
+    if (code === "M4") return `${v}%`;   // 설비가동률(전년비)
+    if (code === "M5") return `${v}%`;   // 내수주문지수
+    // 축4 건설/자산 대리지표
+    if (code === "R1") return `${v}%`;        // (미사용)
+    if (code === "R2") return `${v}%`;        // 시멘트생산(전년비)
+    if (code === "R3") return `${v}%`;        // 철강재생산(전년비)
+    if (code === "R4") return `${v}%`;        // 자동차생산(전년비)
     if (code === "R5") return `${v}m`;        // SAR 높이변화
     if (code === "R6") return `${v}%`;        // 야간광량(신축)
     if (code === "R7") return `${v}%`;        // 주차점유율
