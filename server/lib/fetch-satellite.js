@@ -336,10 +336,101 @@ async function fetchLandsat(regionCode, lookbackDays) {
   });
 }
 
+// ═══ 3-2. Sentinel-5P NO₂ (S3 — 공단 생산 가동) ═══
+// 컬렉션: COPERNICUS/S5P/NRTI/L3_NO2 (근실시간, 3~5일 지연)
+// 밴드: tropospheric_NO2_column_number_density (mol/m²)
+// 판정: anomaly = (mean_30d - mean_90d) / mean_90d
+//   ≥ -10% = 양호, -10~-25% = 주의, < -25% = 경보
+async function fetchSentinel5P(regionCode, lookbackDays) {
+  regionCode = regionCode || 'KR';
+  lookbackDays = lookbackDays || 90;
+  var t0 = Date.now();
+  await authenticateGEE();
+
+  var region = REGIONS[regionCode];
+  if (!region) throw new Error('Unknown region: ' + regionCode);
+  var geometry = ee.Geometry.Rectangle(region.bbox);
+
+  var endDate = new Date();
+  var startDate = new Date();
+  startDate.setDate(startDate.getDate() - lookbackDays);
+
+  // Sentinel-5P NRTI (근실시간) 컬렉션
+  var collection = ee.ImageCollection('COPERNICUS/S5P/NRTI/L3_NO2')
+    .filterBounds(geometry)
+    .filterDate(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+    .select('tropospheric_NO2_column_number_density');
+
+  // 30일 평균 (현재) vs 90일 평균 (기준선) → anomaly
+  var d30Start = new Date();
+  d30Start.setDate(d30Start.getDate() - 30);
+
+  var mean30 = collection
+    .filterDate(d30Start.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+    .mean();
+  var mean90 = collection.mean();
+
+  return new Promise(function(resolve) {
+    // mean30과 mean90을 동시 평가
+    var band = 'tropospheric_NO2_column_number_density';
+    Promise.all([
+      new Promise(function(res) {
+        mean30.reduceRegion({
+          reducer: ee.Reducer.mean(), geometry: geometry, scale: 3500, maxPixels: 1e9
+        }).evaluate(function(stats, err) { res(err ? null : (stats && stats[band])); });
+      }),
+      new Promise(function(res) {
+        mean90.reduceRegion({
+          reducer: ee.Reducer.mean(), geometry: geometry, scale: 3500, maxPixels: 1e9
+        }).evaluate(function(stats, err) { res(err ? null : (stats && stats[band])); });
+      }),
+    ]).then(function(vals) {
+      var v30 = vals[0], v90 = vals[1];
+      if (v30 == null || v90 == null || v90 === 0) {
+        return resolve({
+          gaugeId: 'S3', source: 'SATELLITE', name: 'NO₂ 공단가동',
+          status: 'NO_DATA', error: 'Insufficient Sentinel-5P data',
+          duration_ms: Date.now() - t0
+        });
+      }
+      // mol/m² → ×10⁻⁵ 단위 변환
+      var v30e5  = +(v30 * 1e5).toFixed(4);
+      var v90e5  = +(v90 * 1e5).toFixed(4);
+      var anomaly    = (v30 - v90) / v90;
+      var anomPct    = +(anomaly * 100).toFixed(2);
+
+      resolve({
+        gaugeId: 'S3', source: 'SATELLITE', name: 'NO₂ 공단가동',
+        unit: '×10⁻⁵ mol/m²',
+        value:     v30e5,
+        baseline:  v90e5,
+        anomaly:   +anomaly.toFixed(4),
+        anomPct:   anomPct,
+        status:    'OK',
+        date:      endDate.toISOString().slice(0, 10),
+        region:    regionCode,
+        duration_ms: Date.now() - t0,
+        source_meta: {
+          dataset:  'COPERNICUS/S5P/NRTI/L3_NO2',
+          scale:    3500,
+          lookback: lookbackDays,
+          band:     band,
+        }
+      });
+    }).catch(function(e) {
+      resolve({
+        gaugeId: 'S3', source: 'SATELLITE', name: 'NO₂ 공단가동',
+        status: 'ERROR', error: e.message, duration_ms: Date.now() - t0
+      });
+    });
+  });
+}
+
 // ═══ 4. 전체 위성 수집 (순차) ═══
 var SENSOR_CONFIG = {
-  S2: { fn: fetchVIIRS, minIntervalDays: 1 },
-  R6: { fn: fetchLandsat, minIntervalDays: 7 },
+  S2: { fn: fetchVIIRS,       minIntervalDays: 1  },
+  R6: { fn: fetchLandsat,     minIntervalDays: 7  },
+  S3: { fn: fetchSentinel5P,  minIntervalDays: 3  }, // Sentinel-5P NO₂ (3~5일 지연)
 };
 
 async function fetchAllSatellite(regionCode, lastSuccessMap) {
@@ -691,6 +782,7 @@ module.exports = {
   authenticateGEE: authenticateGEE,
   fetchVIIRS: fetchVIIRS,
   fetchLandsat: fetchLandsat,
+  fetchSentinel5P: fetchSentinel5P,
   fetchAllSatellite: fetchAllSatellite,
   // facility-level
   fetchFacilityVIIRS: fetchFacilityVIIRS,

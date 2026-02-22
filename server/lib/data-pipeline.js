@@ -291,6 +291,20 @@ const GAUGE_MAP = {
     }
   },
 
+  S3_NO2: {
+    id: 'S3_NO2',
+    source: 'SATELLITE',
+    api: 'fetchSentinel5P',
+    params: { region: 'KR' },
+    name: 'NO₂ 공단가동', unit: '×10⁻⁵ mol/m²',
+    transform: (data) => {
+      // fetchSentinel5P → { anomPct, value, status }
+      // anomPct: (mean_30d - mean_90d) / mean_90d × 100
+      if (!data || data.status !== 'OK') return null;
+      return data.anomPct != null ? data.anomPct : null;
+    }
+  },
+
   S4_CREDIT: {
     id: 'S4_CREDIT', source: 'DERIVED', deps: ['F5_INTEREST','F1_KOSPI'], calc: (a,b) => +(a-b).toFixed(2), name: '신용스프레드', unit: '%p',
   },
@@ -845,15 +859,17 @@ async function fetchTradingEconomics(slug) {
 }
 
 // 위성 모듈 안전 로드 + CircuitBreaker 래핑
-let _rawFetchVIIRS, _rawFetchLandsat;
+let _rawFetchVIIRS, _rawFetchLandsat, _rawFetchSentinel5P;
 try {
   const sat = require('./fetch-satellite.js');
-  _rawFetchVIIRS = sat.fetchVIIRS;
-  _rawFetchLandsat = sat.fetchLandsat;
+  _rawFetchVIIRS      = sat.fetchVIIRS;
+  _rawFetchLandsat    = sat.fetchLandsat;
+  _rawFetchSentinel5P = sat.fetchSentinel5P;
 } catch (e) {
   console.warn('  ⚠️ fetch-satellite.js 로드 실패:', e.message);
-  _rawFetchVIIRS = async () => null;
-  _rawFetchLandsat = async () => null;
+  _rawFetchVIIRS      = async () => null;
+  _rawFetchLandsat    = async () => null;
+  _rawFetchSentinel5P = async () => null;
 }
 
 async function fetchVIIRS(region) {
@@ -911,6 +927,9 @@ async function fetchGauge(gaugeId) {
         } else if (gauge.api === 'fetchLandsat') {
           const lstRegion = gauge.params?.region === 'KOR' ? 'KR' : (gauge.params?.region || 'KR');
           rawData = await fetchLandsat(lstRegion);
+        } else if (gauge.api === 'fetchSentinel5P') {
+          const s5pRegion = gauge.params?.region || 'KR';
+          rawData = await _cbGEE.run(function() { return _rawFetchSentinel5P(s5pRegion); });
         }
         break;
       case 'DERIVED':
