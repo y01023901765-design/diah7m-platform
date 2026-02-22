@@ -1103,8 +1103,25 @@ const DIAH_NARRATIVE = {
   // 경제: 실물 생산 활동 자체가 멈춰 새로운 유동성(매출·수익)이 창출되지 못하는 상태
   H: {
     name: "돈맥경화",
-    dormant: (ctx) => `저산소증(Hypoxia) 잠복 단계다. 기준금리 ${ctx.baseRate || "미확인"}, 국채금리 ${ctx.i6Grade === "양호 ○" ? "안정세" : "상승세"}—생산 현장에 에너지(산소)가 충분히 공급되는지가 관건이다. ${ctx.o6Grade !== "양호 ○" ? `소비(O6) 위축은 실물 생산 수요가 꺼지는 신호다. 생산이 멈추면 새로운 유동성이 생성되지 않는다.` : "아직 생산 중단 수준은 아니다."}`,
-    active: (ctx) => `저산소증(H/Hypoxia) 발동. 실물 생산이 중단되어 새로운 유동성이 생성되지 않고 있다. 기존 유동성만 소진되는 혐기성 대사 상태—외부 수혈 없이는 기능 유지 불가. 돈맥경화 트리거 발동.`,
+    dormant: (ctx) => {
+      // H(저산소) = 생산 중단 → 유동성 생성↓  ← 직접 지표: 산업생산(O3_IP) + 설비가동률(O4_CAPACITY)
+      const prodAlerts = [];
+      if (ctx.o3Grade === "경보 ★") prodAlerts.push(`산업생산 ${ctx.o3Value} 급감(경보)`);
+      else if (ctx.o3Grade === "주의 ●") prodAlerts.push(`산업생산 ${ctx.o3Value} 둔화(주의)`);
+      if (ctx.o4CapGrade === "경보 ★") prodAlerts.push(`설비가동률 ${ctx.o4CapValue} 급락(경보)`);
+      else if (ctx.o4CapGrade === "주의 ●") prodAlerts.push(`설비가동률 ${ctx.o4CapValue} 하락(주의)`);
+      const hasProd = prodAlerts.length > 0;
+      return `저산소증(Hypoxia) 잠복 단계다. H의 핵심은 '생산 현장 중단'—새로운 유동성이 생성되지 않는 상태다. ` +
+        (hasProd
+          ? `[생산 중단 징후 포착] ${prodAlerts.join("; ")}. 공장 라인이 멈추면 미세혈관(가계·소상공인)까지 산소(유동성)가 끊긴다.`
+          : ctx.o6Grade !== "양호 ○"
+            ? `소비(O6) 위축은 생산 수요가 꺼지는 간접 신호다. 산업생산·가동률을 지속 관찰한다—수요가 사라지면 생산도 멈춘다.`
+            : `현재 산업생산·설비가동률 모두 정상 수준. 생산 중단 징후 없음.`);
+    },
+    active: (ctx) => `저산소증(H/Hypoxia) 발동. 실물 생산이 중단되어 새로운 유동성이 생성되지 않고 있다.` +
+      (ctx.o3Grade === "경보 ★" ? ` 산업생산 ${ctx.o3Value} 급감—공장 라인 붕괴.` : "") +
+      (ctx.o4CapGrade === "경보 ★" ? ` 설비가동률 ${ctx.o4CapValue}—유휴 설비 폭증.` : "") +
+      ` 기존 유동성만 소진되는 혐기성 대사 상태—외부 수혈 없이는 기능 유지 불가. 세포(가계·소상공인)부터 괴사 시작. 돈맥경화 트리거 발동.`,
   },
   // A = 대사성 산증(Acidosis): CO₂ 배출 실패 → 체액 pH↓ → 효소 기능 저하
   // 경제: 인플레이션 압력(CO₂) 회수 실패 → 화폐가치 하락 → 유동성 효율↓
@@ -2159,6 +2176,9 @@ function generateNarrative(result, rawData, meta) {
     i1Grade: getGrade("I1"), i1Value: fmtValue("I1"),
     i4Grade: getGrade("I4"), i4Value: fmtValue("I4"),
     o4Grade: getGrade("O4"),
+    // H(저산소) 직접 지표 — 생산 중단 감시 (O3_IP=산업생산, O4_CAPACITY=설비가동률)
+    o3Grade: getGrade("O3_IP"),     o3Value: g["O3_IP"]?.value != null ? `${g["O3_IP"].value}%` : "N/A",
+    o4CapGrade: getGrade("O4_CAPACITY"), o4CapValue: g["O4_CAPACITY"]?.value != null ? `${g["O4_CAPACITY"].value}%` : "N/A",
   };
   const sec4_triggers = ["H", "A", "D", "I"].map(code => {
     const dn = DIAH_NARRATIVE[code];
@@ -2173,6 +2193,8 @@ function generateNarrative(result, rawData, meta) {
   let sec4_summary = `DIAH 종합: 트리거 ${diah.label}`;
   if (diah.active.length === 0) {
     const dormantHints = [];
+    // H(저산소) 직접 지표: 산업생산·가동률 경보 → 생산 중단 선행 신호
+    if (getGrade("O3_IP") !== "양호 ○" || getGrade("O4_CAPACITY") !== "양호 ○") dormantHints.push("H 잠복 — 산업생산·가동률 경계");
     if (getGrade("I6") !== "양호 ○" || getGrade("I4") !== "양호 ○") dormantHints.push("H/D 잠복 관찰");
     if (getGrade("O6") !== "양호 ○") dormantHints.push("소비 위축 지속");
     if (dormantHints.length > 0) sec4_summary += `이나 ${dormantHints.join(", ")} 필요.`;
