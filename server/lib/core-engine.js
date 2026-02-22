@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { GAUGE_RULES } = require('./gauge-rules');
 
 // ═══ 9축 정의 — 실제 게이지 ID 기준 ═══
 // gaugeIds: data-pipeline의 실제 ID 목록
@@ -19,90 +20,18 @@ const AXES = {
   A4: { name: '신경계',   metaphor: '심리/정책',    gaugeIds: ['S1_BSI','S3_NIGHTLIGHT','S4_CREDIT','S5_EMPLOY','E3_VIX','E4_DOLLAR_INDEX'] },
   A5: { name: '면역계',   metaphor: '금융안정',     gaugeIds: ['F1_KOSPI','F2_KOSDAQ','F3_KOSPI_VOL','F7_KOSDAQ_VOL','F8_FOREIGN','S4_CREDIT'] },
   A6: { name: '내분비계', metaphor: '물가/재정',    gaugeIds: ['P1_CPI','P2_PPI','P3_OIL','P4_COMMODITY','P5_IMPORT','P6_EXPORT_PRICE'] },
-  A7: { name: '근골격계', metaphor: '산업/생산',    gaugeIds: ['O2_PMI','O3_IP','O4_CAPACITY','I1_CONSTRUCTION','I2_CEMENT','I3_STEEL','I4_VEHICLE','I5_CARGO','I6_AIRPORT'] },
+  A7: { name: '근골격계', metaphor: '산업/생산',    gaugeIds: ['O2_PMI','O3_IP','O4_CAPACITY','I1_CONSTRUCTION','I2_CEMENT','I3_STEEL','I4_VEHICLE','I5_CARGO','I6_AIRPORT','I7_RAILROAD'] },
   A8: { name: '인구/취약', metaphor: '고용/가계',   gaugeIds: ['L1_UNEMPLOYMENT','L2_PARTICIPATION','L3_WAGE','L4_HOURS','L5_YOUTH_UNEMP'] },
   A9: { name: '재생/대외', metaphor: '에너지/대외', gaugeIds: ['R1_ELECTRICITY','R2_WATER','R3_GAS','R4_COAL','R6_UHI','T3_FDI','T5_SHIPPING','R7_WASTE','R8_FOREST'] },
 };
 
-// ═══ 게이지별 정규화 임계값 — 실제 ID 기준 ═══
-// invert=true: 값이 높을수록 나쁨
-// 값은 data-pipeline이 반환하는 전년비(%) 또는 원본값 기준
-const GAUGE_THRESHOLDS = {
-  // A1 순환계
-  T1_TRADE_BALANCE:   { min: -20, max: 20,  invert: false, unit: '억$',  name: '무역수지(전년비%)' },
-  T2_CURRENT_ACCOUNT: { min: -30, max: 100, invert: false, unit: '억$',  name: '경상수지(억$)' },
-  T4_RESERVES:        { min: -5,  max: 5,   invert: false, unit: '%',    name: '외환보유고(전년비%)' },
-  F4_EXCHANGE:        { min: -5,  max: 5,   invert: true,  unit: '%',    name: '환율변화율' },
-  F6_M2:              { min: -5,  max: 10,  invert: false, unit: '%',    name: 'M2증가율' },
-  F5_INTEREST:        { min: -2,  max: 2,   invert: false, unit: '%p',   name: '금리스프레드' },
-
-  // A2 호흡계
-  O1_EXPORT:          { min: -10, max: 15,  invert: false, unit: '%',    name: '수출증가율' },
-  T6_CONTAINER:       { min: -10, max: 15,  invert: false, unit: '%',    name: '컨테이너물동량' },
-  E1_CHINA_PMI:       { min: 48,  max: 54,  invert: false, unit: 'pt',   name: '중국PMI' },
-  E2_US_PMI:          { min: 45,  max: 60,  invert: false, unit: 'pt',   name: '미국PMI' },
-  E5_BALTIC:          { min: 500, max: 3000,invert: false, unit: 'pt',   name: '발틱운임지수' },
-
-  // A3 소화계
-  S6_RETAIL:          { min: -10, max: 10,  invert: false, unit: '%',    name: '소매판매(전년비%)' },
-  S2_CSI:             { min: -5,  max: 5,   invert: false, unit: 'pt차', name: '소비자심리(전월차)' },
-  O6_SHIPMENT:        { min: -15, max: 10,  invert: false, unit: '%',    name: '출하(전년비%)' },
-  O7_ORDER:           { min: -15, max: 10,  invert: false, unit: '%',    name: '수주(전년비%)' },
-  S7_HOUSING:         { min: -10, max: 5,   invert: false, unit: '%',    name: '주택가격(전년비%)' },
-  O5_INVENTORY:       { min: -10, max: 10,  invert: true,  unit: '%',    name: '재고(전년비%)' },
-
-  // A4 신경계
-  S1_BSI:             { min: -10, max: 20,  invert: false, unit: 'pt차', name: 'BSI(전월차)' },
-  S3_NIGHTLIGHT:      { min: -20, max: 20,  invert: false, unit: '%',    name: '야간광(anomaly%)' },
-  S4_CREDIT:          { min: -1,  max: 2,   invert: true,  unit: '%p',   name: '신용스프레드' },
-  S5_EMPLOY:          { min: -500,max: 500, invert: false, unit: '천명', name: '취업자증감' },
-  E3_VIX:             { min: -10, max: 20,  invert: true,  unit: '%',    name: 'VIX변화율' },
-  E4_DOLLAR_INDEX:    { min: -3,  max: 3,   invert: true,  unit: '%',    name: '달러인덱스변화' },
-
-  // A5 면역계
-  F1_KOSPI:           { min: -15, max: 15,  invert: false, unit: '%',    name: 'KOSPI(전년비%)' },
-  F2_KOSDAQ:          { min: -15, max: 15,  invert: false, unit: '%',    name: 'KOSDAQ(전년비%)' },
-  F3_KOSPI_VOL:       { min: -20, max: 50,  invert: true,  unit: '%',    name: 'KOSPI거래량(전년비%)' },
-  F7_KOSDAQ_VOL:      { min: -20, max: 50,  invert: true,  unit: '%',    name: 'KOSDAQ거래량(전년비%)' },
-  F8_FOREIGN:         { min: -20000, max: 20000, invert: false, unit: '백만원', name: '외국인순매수' },
-
-  // A6 내분비계
-  P1_CPI:             { min: -3,  max: 5,   invert: true,  unit: '%',    name: 'CPI(전년비%)' },
-  P2_PPI:             { min: -5,  max: 5,   invert: true,  unit: '%',    name: 'PPI(전년비%)' },
-  P3_OIL:             { min: -30, max: 30,  invert: true,  unit: '%',    name: '유가(전년비%)' },
-  P4_COMMODITY:       { min: -20, max: 20,  invert: false, unit: '%',    name: '상품수지(전년비%)' },
-  P5_IMPORT:          { min: -5,  max: 5,   invert: true,  unit: '%',    name: '수입물가(전년비%)' },
-  P6_EXPORT_PRICE:    { min: -5,  max: 5,   invert: false, unit: '%',    name: '수출물가(전년비%)' },
-
-  // A7 근골격계
-  O2_PMI:             { min: 45,  max: 56,  invert: false, unit: 'pt',   name: 'PMI(제조업)' },
-  O3_IP:              { min: -15, max: 10,  invert: false, unit: '%',    name: '산업생산(전년비%)' },
-  O4_CAPACITY:        { min: -15, max: 5,   invert: false, unit: '%',    name: '가동률(전년비%)' },
-  I1_CONSTRUCTION:    { min: -15, max: 10,  invert: false, unit: '%',    name: '건설업생산(전년비%)' },
-  I2_CEMENT:          { min: -20, max: 10,  invert: false, unit: '%',    name: '비금속광물생산(전년비%)' },
-  I3_STEEL:           { min: -15, max: 10,  invert: false, unit: '%',    name: '1차금속생산(전년비%)' },
-  I4_VEHICLE:         { min: -15, max: 15,  invert: false, unit: '%',    name: '자동차생산(전년비%)' },
-  I5_CARGO:           { min: -20, max: 300, invert: false, unit: '%',    name: '화물운송수지(전년비%)' },
-  I6_AIRPORT:         { min: -30, max: 30,  invert: false, unit: '%',    name: '항공운송수지(전년비%)' },
-
-  // A8 인구/취약
-  L1_UNEMPLOYMENT:    { min: -1,  max: 2,   invert: true,  unit: '%p',   name: '실업률변화' },
-  L2_PARTICIPATION:   { min: -2,  max: 2,   invert: false, unit: '%p',   name: '경활률변화' },
-  L3_WAGE:            { min: -3,  max: 5,   invert: false, unit: '%',    name: '임금(전년비%)' },
-  L4_HOURS:           { min: -5,  max: 3,   invert: false, unit: '%',    name: '근로시간(전년비%)' },
-  L5_YOUTH_UNEMP:     { min: 200, max: 800, invert: true,  unit: '천명', name: '청년실업자수' },
-
-  // A9 재생/대외
-  R1_ELECTRICITY:     { min: -5,  max: 5,   invert: false, unit: '%',    name: '전기생산(전년비%)' },
-  R2_WATER:           { min: -10, max: 5,   invert: false, unit: '%',    name: '수도생산(전년비%)' },
-  R3_GAS:             { min: -5,  max: 5,   invert: false, unit: '%',    name: '가스생산(전년비%)' },
-  R4_COAL:            { min: -20, max: 10,  invert: false, unit: '%',    name: '석탄생산(전년비%)' },
-  R6_UHI:             { min: -2,  max: 0.15, invert: true,  unit: '°C',   name: '열섬(전년동기비 °C)' },
-  T3_FDI:             { min: -30, max: 30,  invert: false, unit: '%',    name: 'FDI(전년비%)' },
-  T5_SHIPPING:        { min: -20, max: 300, invert: false, unit: '%',    name: '해운수지(전년비%)' },
-  R7_WASTE:           { min: -20, max: 5,   invert: false, unit: '%',    name: '폐기물처리(전년비%)' },
-  R8_FOREST:          { min: -10, max: 5,   invert: false, unit: '%',    name: '농림어업취업(전년비%)' },
-};
+// ═══ 게이지별 정규화 임계값 — gauge-rules.js에서 자동 생성 (SSOT) ═══
+// 이 객체를 직접 수정하지 마세요. gauge-rules.js의 threshold를 수정하세요.
+const GAUGE_THRESHOLDS = Object.fromEntries(
+  Object.entries(GAUGE_RULES)
+    .filter(([, r]) => r.threshold)
+    .map(([id, r]) => [id, { ...r.threshold, unit: r.unit, name: r.name }])
+);
 
 // ═══ 교차신호 정의 (15쌍) ═══
 const CROSS_SIGNALS = [

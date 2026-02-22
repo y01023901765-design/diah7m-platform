@@ -12,6 +12,7 @@ const axios = require('axios');
 const pLimit = require('p-limit');
 const conc = require('./concurrency');
 const alerter = require('./alerter');
+const { validateGauge } = require('./gauge-rules');
 
 const CONCURRENT_LIMIT = 5;
 const CACHE_TTL = 30 * 60 * 1000;
@@ -60,21 +61,11 @@ function setCache(key, data) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
+// validateGaugeValue → gauge-rules.js validateGauge()로 위임
+// hardRange 포함 완전 검증: null/NaN/Infinity/타입오류/범위이탈 모두 차단
 function validateGaugeValue(value, gaugeId) {
-  if (value === null || value === undefined) return { valid: true, value: null };
-  if (typeof value === 'number' && isNaN(value)) {
-    console.warn(`[${gaugeId}] NaN detected`);
-    return { valid: true, value: null };
-  }
-  if (!isFinite(value)) {
-    console.warn(`[${gaugeId}] Infinity detected`);
-    return { valid: true, value: null };
-  }
-  if (typeof value !== 'number') {
-    console.warn(`[${gaugeId}] Invalid type: ${typeof value}`);
-    return { valid: true, value: null };
-  }
-  return { valid: true, value };
+  const result = validateGauge(gaugeId, value);
+  return { valid: result.ok, value: result.value };
 }
 
 // 59개 게이지 정의
@@ -608,7 +599,9 @@ const GAUGE_MAP = {
   },
 
   T5_SHIPPING: {
-    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SC0000', cycle: 'M', name: '해운운송수지', unit: '백만$',
+    // 해상운송수지(해객+화물 합계) — ECOS 301Y014/SCA000
+    // I5_CARGO(SC0000 화물운송)와 소스 중복 해소: SCA000(해상운송 전체)으로 교체
+    id: 'T5_SHIPPING', source: 'ECOS', stat: '301Y014', item: 'SCA000', cycle: 'M', name: '해상운송수지', unit: '백만$',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
@@ -618,7 +611,9 @@ const GAUGE_MAP = {
   },
 
   T6_CONTAINER: {
-    id: 'T6_CONTAINER', source: 'ECOS', stat: '301Y017', item: 'SA110', cycle: 'M', name: '해상수출(컨테이너대리)', unit: '백만$',
+    // 선박 수출액 — ECOS 301Y017/SA200
+    // O1_EXPORT(SA110 전체수출)와 소스 중복 해소: SA200(선박)으로 교체
+    id: 'T6_CONTAINER', source: 'ECOS', stat: '301Y017', item: 'SA200', cycle: 'M', name: '선박수출액(전월비%)', unit: '%',
     transform: (data) => {
       if (!data || data.length < 2) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
