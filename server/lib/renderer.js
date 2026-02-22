@@ -445,15 +445,29 @@ function buildSatelliteOverview(d) {
   const SI   = (narrativeEngine && narrativeEngine.SATELLITE_INTRO) || {};
   const GN   = (narrativeEngine && narrativeEngine.GAUGE_NARRATIVE) || {};
 
-  // ── 위성 게이지 실측값 추출 (진단 데이터에서) ──
+  // ── 위성 게이지 실측값 추출 (d.satellite 스냅샷 직접 조회) ──
+  // 스냅샷 키: S2=VIIRS야간광, R6=Landsat열섬, S3=Sentinel-5P NO₂
   const _satVal = (code) => {
-    const ax = d.axes || {};
-    for (const axData of Object.values(ax)) {
-      const gauges = axData.gauges || [];
-      const found = gauges.find(g => g.code === code);
-      if (found) return { value: found.value || '—', grade: found.grade || '—', status: found.status || '—' };
+    const sat = d.satellite || {};
+    const keyMap = { 'S2': 'S2', 'R6': 'R6', 'G6': 'S3', 'R5': 'R5' };
+    const s = sat[keyMap[code]];
+    if (!s || s.status !== 'OK') return { value: '수집 중', grade: '—', status: '수집 중' };
+    // 야간광 / NO₂ → anomaly %
+    if (code === 'S2' || code === 'G6') {
+      const pct = s.anomPct != null ? +s.anomPct.toFixed(1)
+                : s.anomaly != null ? +(s.anomaly * 100).toFixed(1) : null;
+      const value = pct != null ? `${pct > 0 ? '+' : ''}${pct}%` : '—';
+      const grade = pct < -10 ? '경보 ★' : pct < -3 ? '주의 ●' : '양호 ○';
+      return { value, grade, status: 'OK' };
     }
-    return { value: '—', grade: '—', status: '수집 중' };
+    // 도시열섬 → anomaly_degC
+    if (code === 'R6') {
+      const deg = s.anomaly_degC;
+      const value = deg != null ? `${deg > 0 ? '+' : ''}${deg}°C` : '—';
+      const grade = Math.abs(deg || 0) > 2 ? '경보 ★' : Math.abs(deg || 0) > 1 ? '주의 ●' : '양호 ○';
+      return { value, grade, status: 'OK' };
+    }
+    return { value: '수집 중', grade: '—', status: '수집 중' };
   };
   const s2v  = _satVal('S2');
   const r5v  = _satVal('R5');
