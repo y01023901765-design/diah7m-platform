@@ -16,6 +16,20 @@ const CRITICAL_GAUGE_IDS = ['G_D1', 'G_L1', 'G_P1', 'G_S1', 'G_R2', 'G_F2'];
 // Score mapping: 양호=85, 주의=50, 경보=15
 
 const GAUGE_THRESHOLDS = {
+  // ── 위성 게이지 (국가 수준) ──────────────────────────────────────────────
+  // S3_NIGHTLIGHT: anomaly% (mean_60d vs baseline_365d) — 활력 추세(느린 신호)
+  //   양호 ≥ -5%, 주의 -15~-5%, 경보 < -15%
+  //   higher_better: 값이 높을수록(0 근처) 좋음, 음수 클수록 가동 감소
+  S3_NIGHTLIGHT: { dir: 'higher_better', good: [-5, 100], warn: [-15, -5], alarm: [-100, -15] },
+  // R6_UHI: anomaly_degC (최근60일 vs 전년동기90일) — 도시열섬 추세
+  //   양호 < +0.05°C, 주의 +0.05~+0.15°C, 경보 > +0.15°C
+  //   lower_better: 값 낮을수록(냉각 또는 평년 수준) 양호
+  R6_UHI:        { dir: 'lower_better', good: [-10, 0.05], warn: [0.05, 0.15], alarm: [0.15, 10] },
+  // S3_NO2: anomPct (mean_30d vs mean_90d) — 공단 생산 가동 (단기 주력 센서)
+  //   양호 ≥ -10%, 주의 -10~-25%, 경보 < -25%
+  //   higher_better: 값이 높을수록(0 근처) 좋음, 음수 클수록 가동 감소
+  S3_NO2:        { dir: 'higher_better', good: [-10, 100], warn: [-25, -10], alarm: [-100, -25] },
+
   G_I1: { dir: 'neutral',        good: [0, 8] },
   G_I2: { dir: 'neutral' },
   G_I3: { dir: 'neutral',        good: [40, 120] },
