@@ -334,10 +334,12 @@ const GAUGE_MAP = {
   S7_HOUSING: {
     id: 'S7_HOUSING', source: 'ECOS', stat: '901Y064', item: 'P65A', cycle: 'M', name: '주택매매가격지수(전국)', unit: '2021.06=100',
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      // 전년비(YoY%): data[0]=최신, data[12]=1년 전 동월 — 전월비 불가(지수라 변동 0.x%)
+      if (!data || data.length < 13) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
-      const prev = parseFloat(data[1].DATA_VALUE);
-      return ((latest - prev) / prev) * 100;
+      const yearAgo = parseFloat(data[12].DATA_VALUE);
+      if (isNaN(latest) || isNaN(yearAgo) || yearAgo === 0) return null;
+      return ((latest - yearAgo) / yearAgo) * 100;
     }
   },
 
@@ -379,12 +381,14 @@ const GAUGE_MAP = {
   },
 
   P4_COMMODITY: {
-    id: 'P4_COMMODITY', source: 'ECOS', stat: '301Y013', item: '100000', cycle: 'M', name: '상품수지', unit: '백만$',
+    id: 'P4_COMMODITY', source: 'ECOS', stat: '301Y016', item: '100', cycle: 'M', name: '수출물가지수(전년비%)', unit: '%',
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      // 수출물가지수 전년비(%) — ECOS 301Y016/100, data[0]=최신, data[12]=1년 전
+      if (!data || data.length < 13) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
-      const prev = parseFloat(data[1].DATA_VALUE);
-      return ((latest - prev) / prev) * 100;
+      const yearAgo = parseFloat(data[12].DATA_VALUE);
+      if (isNaN(latest) || isNaN(yearAgo) || yearAgo === 0) return null;
+      return ((latest - yearAgo) / yearAgo) * 100;
     }
   },
 
