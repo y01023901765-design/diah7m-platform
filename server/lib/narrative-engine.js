@@ -643,20 +643,20 @@ const METAPHOR = {
     },
   },
 
-  L3: { // 가계부채 → 근육 부하
-    name: "가계부채", bodyPart: "근육부하", axis: 5,
-    "양호 ○": { metaphor: "근육 부하 정상", prefix: "가계부채가 관리 가능한 수준이며 근육이 감당하고 있다." },
-    "주의 ●": { metaphor: "근육 과부하", prefix: "가계부채가 증가하며 근육에 과부하가 걸리고 있다." },
-    "경보 ★": { metaphor: "근육 파열 위험", prefix: "가계부채가 감당 불가 수준이며 근육 파열이 임박했다." },
+  L3: { // 임금(전년비) → 근육 탄력 [L3_WAGE: ECOS 901Y027, MoM%]
+    name: "임금(전년비)", bodyPart: "근육탄력", axis: 5,
+    "양호 ○": { metaphor: "근육 탄력 정상", prefix: "임금이 상승하며 근육의 탄력이 유지되고 있다." },
+    "주의 ●": { metaphor: "근육 탄력 저하", prefix: "임금 상승이 둔화되며 근육의 탄력이 저하되고 있다." },
+    "경보 ★": { metaphor: "근육 경직", prefix: "임금이 하락하며 근육이 경직되고 있다. 소비 여력이 직접 축소된다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `근육 부하 정상. 가계부채(${v}) 관리 가능. DSR 안정.`,
-      "주의 ●": (v,c) => `근육 과부하. 가계부채(${v}) 증가. 상환 부담 확대.`,
-      "경보 ★": (v,c) => `근육 파열 위험. 가계부채(${v}) 한계. 가계 디폴트 위험.`,
+      "양호 ○": (v,c) => `근육 탄력 정상. 임금(${v}) 상승. 실질구매력 유지.`,
+      "주의 ●": (v,c) => `근육 탄력 저하. 임금(${v}) 정체. 실질임금 하락 위험.`,
+      "경보 ★": (v,c) => `근육 경직. 임금(${v}) 하락. 가계 소비 여력 축소.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      if (grade === "경보 ★") return `가계부채(L3)가 ${v}로 한계 수준이다. 근육이 파열될 위험에 처해 있다. 소득은 줄고 빚은 늘어난다 — 근육이 감당할 수 없는 무게를 들고 있다.`;
-      if (grade === "주의 ●") return `가계부채(L3)가 ${v}로 증가했다. 근육에 과부하가 걸리고 있다. 이자 부담이 소비 여력을 잠식하고 있다.`;
-      return `가계부채(L3)가 ${v}로 관리 가능한 수준이다. 근육 부하가 정상 범위다. 가계의 상환 능력이 유지되고 있다.`;
+      if (grade === "경보 ★") return `임금(L3)이 ${v}로 하락했다. 근육이 경직되고 있다. 소득이 줄면 소비가 줄고, 소비가 줄면 생산이 줄어든다 — 하방 악순환의 첫 단추다.`;
+      if (grade === "주의 ●") return `임금(L3)이 ${v}로 정체됐다. 근육의 탄력이 저하되고 있다. 실질임금이 물가 상승률에 못 미치면 생활수준이 하락한다.`;
+      return `임금(L3)이 ${v}로 상승했다. 근육의 탄력이 유지되고 있다. 실질구매력이 받쳐지며 소비 기반이 견고하다.`;
     },
   },
 
@@ -999,20 +999,20 @@ const METAPHOR = {
   // 축 9. 인구/노화 — 신체 나이 (A1~A5)
   // ════════════════════════════════════════════════════
 
-  A1: { // 합계출산율 → 세포 재생률
-    name: "출산율", bodyPart: "세포재생률", axis: 9,
-    "양호 ○": { metaphor: "세포 재생 정상", prefix: "출산율이 안정적이며 경제의 세포가 재생되고 있다." },
-    "주의 ●": { metaphor: "세포 재생 둔화", prefix: "출산율이 하락하며 경제의 세포 재생이 느려지고 있다." },
-    "경보 ★": { metaphor: "세포 재생 정지", prefix: "출산율이 초저수준이며 경제의 세포 재생이 멈추고 있다." },
+  A1: { // 농림어업취업자(전년비) → 1차산업 생명력 [R8_FOREST, 천명]
+    name: "농림어업취업자", bodyPart: "1차산업활력", axis: 9,
+    "양호 ○": { metaphor: "1차산업 안정", prefix: "농림어업 취업이 안정적이며 기초 식량·원료 공급망이 유지되고 있다." },
+    "주의 ●": { metaphor: "1차산업 위축", prefix: "농림어업 취업자가 감소하며 1차산업 기반이 위축되고 있다." },
+    "경보 ★": { metaphor: "1차산업 붕괴", prefix: "농림어업 취업자가 급감하며 식량·원료 자립 기반이 무너지고 있다." },
     diagnosisTemplate: {
-      "양호 ○": (v,c) => `세포 재생 정상. 출산율(${v}) 안정. 인구 재생산 유지.`,
-      "주의 ●": (v,c) => `세포 재생 둔화. 출산율(${v}) 하락. 인구 감소 가속.`,
-      "경보 ★": (v,c) => `세포 재생 정지. 출산율(${v}) 초저. 인구 소멸 경로 진입.`,
+      "양호 ○": (v,c) => `1차산업 안정. 농림어업 취업(${v}) 유지. 기초 공급망 안정.`,
+      "주의 ●": (v,c) => `1차산업 위축. 농림어업 취업(${v}) 감소. 고령화·도시집중 가속.`,
+      "경보 ★": (v,c) => `1차산업 붕괴 경보. 농림어업 취업(${v}) 급감. 식량자립도 하락 위험.`,
     },
     narrativeTemplate: (v, c, grade) => {
-      if (grade === "경보 ★") return `합계출산율(A1)이 ${v}로 세계 최저 수준이다. 세포 재생이 사실상 정지했다. 새로운 세포가 만들어지지 않으면 신체는 늙어갈 뿐이다 — 한국 경제의 생물학적 시계가 멈추고 있다.`;
-      if (grade === "주의 ●") return `합계출산율(A1)이 ${v}로 하락하고 있다. 세포 재생이 둔화되고 있다. 대체출산율 2.1명에 한참 미달이다.`;
-      return `합계출산율(A1)이 ${v}로 안정적이다. 세포 재생이 정상 범위다.`;
+      if (grade === "경보 ★") return `농림어업취업자(A1)가 ${v}로 급감했다. 1차산업 기반이 흔들리고 있다. 식량·원료 자립도 하락은 대외 의존도를 높이며 공급망 취약성을 키운다.`;
+      if (grade === "주의 ●") return `농림어업취업자(A1)가 ${v}로 감소 추세다. 고령화와 도시 집중으로 1차산업 인력이 줄어들고 있다.`;
+      return `농림어업취업자(A1)가 ${v}로 안정적이다. 1차산업 인력 공급이 유지되고 있다.`;
     },
   },
 
@@ -1564,8 +1564,8 @@ function generateNarrative(result, rawData, meta) {
     // 코드별 포맷
     if (code === "I1") return `${v}억$`;
     if (code === "I2") return `${v}%`;
-    if (code === "I3") return `${v}억$`;
-    if (code === "I4") return `${v}원`;
+    if (code === "I3") return `${v}%p`;      // 외환보유고 전월비% (T4_RESERVES MoM%)
+    if (code === "I4") return `${v}%p`;      // 환율 전월비% (F4_EXCHANGE MoM%)
     if (code === "I5") return `${v}bp`;
     if (code === "I6") return `${v}%`;
     if (code === "O1") return `${v}%`;
@@ -1575,8 +1575,8 @@ function generateNarrative(result, rawData, meta) {
     if (code === "O5") return `${v}%`;
     if (code === "O6") return `${v}%`;
     // 축2 무역/제조업
-    if (code === "S1") return `${v}일`;
-    if (code === "S2") return `${v}%`;
+    if (code === "S1") return `${v}백만$`;  // 화물운송수지(T5_SHIPPING, 절대값 백만$)
+    if (code === "S2") return `${v}pt`;     // 발틱운임지수(E5_BALTIC, BDI pt)
     if (code === "S3") return `${v}%`;
     if (code === "T1") return `${v}만TEU`;
     if (code === "T2") return `${v}pt`;
@@ -1600,7 +1600,7 @@ function generateNarrative(result, rawData, meta) {
     // 축5 고용/가계
     if (code === "L1") return `${v}만명`;     // 고용동향(취업자수 변동)
     if (code === "L2") return `${v}만건`;     // 실업급여 신청
-    if (code === "L3") return `${v}조원`;     // 가계부채
+    if (code === "L3") return `${v}%`;        // 임금(전년비, L3_WAGE MoM%)
     if (code === "L4") return `${v}%`;        // 연체율
     if (code === "L5") return `${v}pt`;       // CSI
     // 축6 지역균형
@@ -1624,7 +1624,7 @@ function generateNarrative(result, rawData, meta) {
     if (code === "E4") return `${v}GWh`;      // 산업용 전력
     if (code === "E5") return `${v}pt`;       // 원자재 가격지수
     // 축9 인구/노화
-    if (code === "A1") return `${v}명`;       // 합계출산율
+    if (code === "A1") return `${v}천명`;     // 농림어업취업자(R8_FOREST, 천명)
     if (code === "A2") return `${v}%`;        // 고령화율
     if (code === "A3") return `${v}만명`;     // 생산가능인구
     if (code === "A4") return `${v}만명`;     // 학령인구
@@ -1649,7 +1649,7 @@ function generateNarrative(result, rawData, meta) {
     if (code === "O5") return `${sign}${c}%p`;
     if (code === "O6") return `${sign}${c}%p`;
     // 축2 무역/제조업
-    if (code === "S1") return `${sign}${c}일`;
+    if (code === "S1") return `${sign}${c}백만$`;
     if (code === "S2") return `${sign}${c}%p`;
     if (code === "S3") return `${sign}${c}%p`;
     if (code === "T1") return `${sign}${c}%`;

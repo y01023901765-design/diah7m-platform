@@ -14,7 +14,7 @@ const ID_MAP = {
   // 경상수지·무역수지·외환보유·환율·신용·금리
   'T1_TRADE_BALANCE':  { code: 'I1', cat: 'Input',  name: '무역수지(경상)',   unit: '억$' },
   'T4_RESERVES':       { code: 'I3', cat: 'Input',  name: '외환보유고변동',   unit: '%' },
-  'F4_EXCHANGE':       { code: 'I4', cat: 'Input',  name: '환율(원/$)',        unit: '원' },
+  'F4_EXCHANGE':       { code: 'I4', cat: 'Input',  name: '환율(전월비%)',     unit: '%(전월비)' },
   'S4_CREDIT':         { code: 'I5', cat: 'Input',  name: '신용스프레드',      unit: '%p' },
   'F5_INTEREST':       { code: 'I6', cat: 'Input',  name: '국채/기준금리',     unit: '%' },
 
@@ -34,7 +34,7 @@ const ID_MAP = {
   'T6_CONTAINER':      { code: 'O1', cat: 'Axis2',  name: '수출(컨테이너)',      unit: '%' },
   'T2_CURRENT_ACCOUNT':{ code: 'T1', cat: 'Axis2',  name: '경상수지',            unit: '억$' },
   'T5_SHIPPING':       { code: 'S1', cat: 'Axis2',  name: '해운수지',            unit: '백만$' },
-  'E5_BALTIC':         { code: 'S1', cat: 'Axis2',  name: '발틱운임지수(BDI)',   unit: 'pt' },
+  'E5_BALTIC':         { code: 'S2', cat: 'Axis2',  name: '발틱운임지수(BDI)',   unit: 'pt' },
   'E1_CHINA_PMI':      { code: 'T3', cat: 'Axis2',  name: '중국PMI(대외)',       unit: 'pt' },
 
   // ══ A4 신경계 → Axis3 (소비/내수 대리지표) ══
