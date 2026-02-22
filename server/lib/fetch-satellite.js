@@ -256,84 +256,136 @@ async function fetchVIIRS(regionCode, lookbackDays) {
 }
 
 // ═══ 3. Landsat-9 도시열섬 (R6) ═══
+// 계절 보정: 최근 60일 평균 vs 전년 동기 90일 평균 → anomaly_degC
+// 판정: < +0.05°C=양호 / +0.05~+0.15°C=주의 / > +0.15°C=경보
+// 품질 게이트: n_current < 1 → HOLD (판정 보류)
 async function fetchLandsat(regionCode, lookbackDays) {
   regionCode = regionCode || 'KR';
-  lookbackDays = lookbackDays || 180; // 구름 없는 이미지 확보 위해 넉넉히
   var t0 = Date.now();
   await authenticateGEE();
 
   var region = REGIONS[regionCode];
   if (!region) throw new Error('Unknown region: ' + regionCode);
   var geometry = ee.Geometry.Rectangle(region.bbox);
+  var dataset = 'LANDSAT/LC09/C02/T1_L2';
 
-  var endDate = new Date();
-  var startDate = new Date();
-  startDate.setDate(startDate.getDate() - lookbackDays);
+  var now = new Date();
+  var endStr = now.toISOString().split('T')[0];
 
-  var collection = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+  // ── 현재 구간: 최근 60일 (16일 주기 × ~4 패스 → 구름 고려 1~3장 확보) ──
+  var cur60Start = new Date(now); cur60Start.setDate(cur60Start.getDate() - 60);
+  var curCol = ee.ImageCollection(dataset)
     .filterBounds(geometry)
-    .filterDate(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0])
+    .filterDate(cur60Start.toISOString().split('T')[0], endStr)
     .filter(ee.Filter.lt('CLOUD_COVER', 30))
-    .sort('system:time_start', false);
+    .select('ST_B10');
 
-  return new Promise(function(resolve) {
-    collection.first().reduceRegion({
-      reducer: ee.Reducer.mean(), geometry: geometry, scale: 100, maxPixels: 1e9
-    }).evaluate(function(stats, err) {
-      if (err || !stats || !stats.ST_B10) {
-        return resolve({
-          gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬',
-          status: 'NO_DATA', error: (err && err.message) || 'No clear Landsat data',
-          duration_ms: Date.now() - t0
-        });
-      }
-      var tempC = Math.round((stats.ST_B10 * 0.00341802 + 149.0 - 273.15) * 10) / 10;
-      var resultData = {
-        gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬', unit: '°C',
-        value: tempC, prevValue: null, date: new Date().toISOString().slice(0, 10),
-        region: regionCode, status: 'OK', duration_ms: Date.now() - t0,
-        source_meta: { dataset: 'LANDSAT/LC09/C02/T1_L2', cloud_filter: 30, scale: 100 }
-      };
+  // ── baseline: 전년 동기 90일 (구름 많은 해 보완 위해 60→90일) ──
+  var blEnd = new Date(now); blEnd.setFullYear(blEnd.getFullYear() - 1);
+  var blStart = new Date(blEnd); blStart.setDate(blStart.getDate() - 90);
+  var blCol = ee.ImageCollection(dataset)
+    .filterBounds(geometry)
+    .filterDate(blStart.toISOString().split('T')[0], blEnd.toISOString().split('T')[0])
+    .filter(ee.Filter.lt('CLOUD_COVER', 30))
+    .select('ST_B10');
 
-      // ── 이미지 썸네일 생성 ──
-      try {
-        // "after": 최신 이미지의 ST_B10 → 켈빈 스케일 적용
-        var afterRaw = collection.first().select('ST_B10');
-        var afterScaled = afterRaw.multiply(0.00341802).add(149.0);
-        // "before": 90~180일 전 구름 30% 미만 최신 이미지
-        var bfStart = new Date();
-        bfStart.setDate(bfStart.getDate() - 180);
-        var bfEnd = new Date();
-        bfEnd.setDate(bfEnd.getDate() - 90);
-        var beforeCol = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
-          .filterBounds(geometry)
-          .filterDate(bfStart.toISOString().split('T')[0], bfEnd.toISOString().split('T')[0])
-          .filter(ee.Filter.lt('CLOUD_COVER', 30))
-          .sort('system:time_start', false);
-        var beforeRaw = beforeCol.first().select('ST_B10');
-        var beforeScaled = beforeRaw.multiply(0.00341802).add(149.0);
+  // ── Kelvin → °C 변환 헬퍼 ──
+  function _toC(rawVal) {
+    return rawVal != null ? Math.round((rawVal * 0.00341802 + 149.0 - 273.15) * 10) / 10 : null;
+  }
 
-        Promise.all([
-          getThumbPromise(afterScaled, geometry, THUMB_PARAMS.LANDSAT),
-          getThumbPromise(beforeScaled, geometry, THUMB_PARAMS.LANDSAT),
-        ]).then(function(urls) {
-          if (urls[0] || urls[1]) {
-            resultData.images = {
-              after: urls[0] ? { url: urls[0], date: resultData.date } : null,
-              before: urls[1] ? { url: urls[1], date: bfEnd.toISOString().slice(0, 10) } : null,
-              palette: THUMB_PARAMS.LANDSAT.palette,
-              paletteLabels: THUMB_PARAMS.LANDSAT.paletteLabels,
-            };
-            console.log('  📸 Landsat thumb:', urls[0] ? 'after✓' : 'after✗', urls[1] ? 'before✓' : 'before✗');
-          }
-          resolve(resultData);
-        }).catch(function() { resolve(resultData); });
-      } catch(imgErr) {
-        console.warn('  ⚠️ Landsat image generation skipped:', imgErr.message);
-        resolve(resultData);
-      }
+  // ── GEE 평가 헬퍼: mean + size ──
+  function _evalCol(col) {
+    return new Promise(function(resolve) {
+      col.mean().reduceRegion({
+        reducer: ee.Reducer.mean(), geometry: geometry, scale: 100, maxPixels: 1e9
+      }).evaluate(function(stats, err) {
+        var raw = (!err && stats && stats.ST_B10 != null) ? stats.ST_B10 : null;
+        resolve(raw);
+      });
     });
-  });
+  }
+
+  function _evalSize(col) {
+    return new Promise(function(resolve) {
+      col.size().evaluate(function(n, err) { resolve((!err && n != null) ? n : 0); });
+    });
+  }
+
+  try {
+    var vals = await Promise.all([
+      _evalCol(curCol), _evalCol(blCol),
+      _evalSize(curCol), _evalSize(blCol),
+    ]);
+    var rawCur = vals[0], rawBl = vals[1];
+    var nCurrent = vals[2], nBaseline = vals[3];
+
+    var tempC    = _toC(rawCur);
+    var baselineC = _toC(rawBl);
+    var anomalyDegC = (tempC != null && baselineC != null)
+      ? Math.round((tempC - baselineC) * 10) / 10
+      : null;
+
+    // ── 품질 판정 ──
+    var qualityStatus = 'GOOD';
+    if (nCurrent < 1) qualityStatus = 'HOLD';       // 판정 불가
+    else if (nBaseline < 1) qualityStatus = 'PARTIAL'; // 추세 비교 불가
+    else if (nCurrent < 2 || nBaseline < 2) qualityStatus = 'LOW';
+
+    var resultData = {
+      gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬', unit: '°C',
+      value: tempC,
+      baseline_tempC: baselineC,
+      anomaly_degC: anomalyDegC,
+      prevValue: baselineC,  // 하위호환 (UI에서 prevValue 참조 시 대응)
+      date: endStr,
+      region: regionCode,
+      status: nCurrent < 1 ? 'NO_DATA' : 'OK',
+      quality: {
+        status: qualityStatus,
+        n_current: nCurrent,
+        n_baseline: nBaseline,
+        cloud_filter: 30,
+        note: nCurrent < 1 ? '최근 60일 유효 이미지 없음 — 판정 보류(HOLD)' : null,
+      },
+      duration_ms: Date.now() - t0,
+      source_meta: {
+        dataset: dataset, scale: 100,
+        current_window: '최근 60일',
+        baseline_window: '전년 동기 90일 (계절 보정)',
+      }
+    };
+
+    if (nCurrent < 1) return resultData; // 썸네일 불필요
+
+    // ── 이미지 썸네일 생성 ──
+    try {
+      var afterScaled = curCol.mean().select('ST_B10').multiply(0.00341802).add(149.0);
+      var beforeScaled = blCol.mean().select('ST_B10').multiply(0.00341802).add(149.0);
+      var urls = await Promise.all([
+        getThumbPromise(afterScaled, geometry, THUMB_PARAMS.LANDSAT),
+        getThumbPromise(beforeScaled, geometry, THUMB_PARAMS.LANDSAT),
+      ]);
+      if (urls[0] || urls[1]) {
+        resultData.images = {
+          after: urls[0] ? { url: urls[0], date: endStr } : null,
+          before: urls[1] ? { url: urls[1], date: blEnd.toISOString().slice(0, 10) } : null,
+          palette: THUMB_PARAMS.LANDSAT.palette,
+          paletteLabels: THUMB_PARAMS.LANDSAT.paletteLabels,
+        };
+        console.log('  📸 Landsat thumb:', urls[0] ? 'after✓' : 'after✗', urls[1] ? 'before✓' : 'before✗');
+      }
+    } catch(imgErr) {
+      console.warn('  ⚠️ Landsat image generation skipped:', imgErr.message);
+    }
+
+    return resultData;
+  } catch(e) {
+    return {
+      gaugeId: 'R6', source: 'SATELLITE', name: '도시열섬',
+      status: 'ERROR', error: e.message, duration_ms: Date.now() - t0
+    };
+  }
 }
 
 // ═══ 3-2. Sentinel-5P NO₂ (S3 — 공단 생산 가동) ═══
