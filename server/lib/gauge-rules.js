@@ -343,13 +343,13 @@ const GAUGE_RULES = {
     threshold: { min: -5, max: 5, invert: false },
   },
   T5_SHIPPING: {
-    // 화물운송수지 절대값(ECOS단위) — ECOS 301Y014/SC0000
-    // 부호 전환 시 MoM%가 무의미한 아티팩트 → absolute로 교체
-    // 단위 불명확: hardRange 크게 설정하여 실제값 수집 후 재보정 예정
+    // 화물운송수지 절대값(백만$) — ECOS 301Y014/SC0000
+    // 실제값 확인: 2025-12 기준 +413.4 백만$, 전월 약+123 백만$
+    // 한국 화물운송수지: 통상 0~+1500 백만$/월 (해운업 흑자 기조)
     source: 'ECOS', statCode: '301Y014', itemCode: 'SC0000', cycle: 'M',
-    transformType: 'absolute', unit: 'ECOS단위', name: '화물운송수지',
-    hardRange: [-5000, 5000],  // 단위 확인 전 광범위 설정
-    threshold: { min: -1000, max: 300, invert: false },  // 음수=적자(나쁨), 양수=흑자(좋음)
+    transformType: 'absolute', unit: '백만$', name: '화물운송수지(백만$)',
+    hardRange: [-3000, 3000],
+    threshold: { min: -500, max: 1500, invert: false },  // 음수=적자(나쁨), 양수=흑자(좋음)
   },
   T6_CONTAINER: {
     // 선박수출액(전월비%) — ECOS 301Y017/SA200
