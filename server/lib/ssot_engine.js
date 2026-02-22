@@ -41,8 +41,9 @@ const GRADE_RULES = {
     양호: [-Infinity, 0], 주의: [0, 2], 경보: [2, Infinity] },
   'I5': { metric: '신용스프레드', unit: '%p', direction: 'lower_better',
     양호: [-Infinity, 0.5], 주의: [0.5, 1.0], 경보: [1.0, Infinity] },
-  'I6': { metric: '국채금리', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 3.0], 주의: [3.0, 4.0], 경보: [4.0, Infinity] },
+  // F5_INTEREST transform: latest - prev (월변동 %p). 0=동결, +0.25=인상, -0.25=인하
+  'I6': { metric: '국채금리(전월변동)', unit: '%p', direction: 'lower_better',
+    양호: [-Infinity, 0], 주의: [0, 0.25], 경보: [0.25, Infinity] },
 
   // ── Output (O1~O7) — O1_EXPORT/O2_PMI/L1_UNEMPLOYMENT/F1_KOSPI/S7_HOUSING/S6_RETAIL/I1_CONSTRUCTION ──
   'O1': { metric: '수출(전년비)', unit: '%', direction: 'higher_better',
@@ -69,8 +70,9 @@ const GRADE_RULES = {
     양호: [25, Infinity], 주의: [15, 25], 경보: [-Infinity, 15] },
   'T1': { metric: '경상수지', unit: '백만$', direction: 'higher_better',
     양호: [0, Infinity], 주의: [-1000, 0], 경보: [-Infinity, -1000] },
-  'T2': { metric: '제조업BSI', unit: 'pt', direction: 'higher_better',
-    양호: [90, Infinity], 주의: [75, 90], 경보: [-Infinity, 75] },
+  // S1_BSI transform: latest - 100 (BSI 기준값 100 대비 편차). +24=BSI 124(낙관), -24=BSI 76(비관)
+  'T2': { metric: '제조업BSI(기준=0)', unit: 'pt', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-25, 0], 경보: [-Infinity, -25] },
   'T3': { metric: '중국PMI(대외)', unit: 'pt', direction: 'higher_better',
     양호: [50, Infinity], 주의: [45, 50], 경보: [-Infinity, 45] },
 

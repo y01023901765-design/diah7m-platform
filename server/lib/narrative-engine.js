@@ -1569,7 +1569,7 @@ function generateNarrative(result, rawData, meta) {
     if (code === "I3") return `${v}%p`;            // 외환보유고변동(전월비%)
     if (code === "I4") return `${v}%p`;            // 환율(전월비%)
     if (code === "I5") return `${v}bp`;            // 신용스프레드
-    if (code === "I6") return `${v}%`;             // 기준금리
+    if (code === "I6") return `${v}%p`;            // 기준금리(전월변동 %p)
     // ── Output (호흡계 핵심) ──
     if (code === "O1") return `${v}%`;             // 수출(전년비)
     if (code === "O2") return `${v}pt`;            // 제조업PMI
