@@ -505,10 +505,10 @@ const GAUGE_MAP = {
   I2_CEMENT: {
     id: 'I2_CEMENT', source: 'ECOS', stat: '901Y032', item: 'I11ACN', item2: '1', cycle: 'M', name: '비금속광물제품생산', unit: '2020=100',
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      if (!data || data.length < 13) return null; // 전년동월비: 13개월 필요 (data[12]=전년동월)
       const latest = parseFloat(data[0].DATA_VALUE);
-      const prev = parseFloat(data[1].DATA_VALUE);
-      return ((latest - prev) / prev) * 100;
+      const yearAgo = parseFloat(data[12].DATA_VALUE);
+      return ((latest - yearAgo) / yearAgo) * 100;
     }
   },
 
