@@ -576,12 +576,12 @@ const GAUGE_MAP = {
   T2_CURRENT_ACCOUNT: {
     id: 'T2_CURRENT_ACCOUNT',
     source: 'ECOS',
-    params: { statisticCode: '301Y013', itemCode1: '100000', cycle: 'M' },
+    params: { statisticCode: '301Y014', itemCode1: '000', cycle: 'M' },
     transform: (data) => {
-      if (!data || data.length < 2) return null;
-      const latest = parseFloat(data[0].DATA_VALUE) / 100;
-      const prev = parseFloat(data[1].DATA_VALUE) / 100;
-      return ((latest - prev) / prev) * 100;
+      // 경상수지 억$ 원본값 — 정론 doctrine-gauges.md 301Y014/000
+      if (!data || data.length === 0) return null;
+      const latest = parseFloat(data[0].DATA_VALUE);
+      return isNaN(latest) ? null : latest;
     }
   },
 

@@ -30,7 +30,7 @@ const AXES = {
 const GAUGE_THRESHOLDS = {
   // A1 순환계
   T1_TRADE_BALANCE:   { min: -20, max: 20,  invert: false, unit: '억$',  name: '무역수지(전년비%)' },
-  T2_CURRENT_ACCOUNT: { min: -30, max: 30,  invert: false, unit: '억$',  name: '경상수지(전년비%)' },
+  T2_CURRENT_ACCOUNT: { min: -30, max: 100, invert: false, unit: '억$',  name: '경상수지(억$)' },
   T4_RESERVES:        { min: -5,  max: 5,   invert: false, unit: '%',    name: '외환보유고(전년비%)' },
   F4_EXCHANGE:        { min: -5,  max: 5,   invert: true,  unit: '%',    name: '환율변화율' },
   F6_M2:              { min: -5,  max: 10,  invert: false, unit: '%',    name: 'M2증가율' },
