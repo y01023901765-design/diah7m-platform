@@ -64,16 +64,16 @@ const ID_MAP = {
   'P1_CPI':            { code: 'E1', cat: 'Axis6',  name: 'CPI(소비자물가전년비)', unit: '%' },
   'P2_PPI':            { code: 'E2', cat: 'Axis6',  name: 'PPI(생산자물가전년비)', unit: '%' },
   'P4_COMMODITY':      { code: 'E5', cat: 'Axis6',  name: '상품수지(원자재대리)', unit: '백만$' },
-  'P5_IMPORT':         { code: 'E3', cat: 'Axis6',  name: '수입물가지수',          unit: 'pt' },
-  'P6_EXPORT_PRICE':   { code: 'E4', cat: 'Axis6',  name: '수출물가지수',          unit: 'pt' },
+  'P5_IMPORT':         { code: 'E3', cat: 'Axis6',  name: '수입물가지수(전년비)',    unit: '%(YoY)' },
+  'P6_EXPORT_PRICE':   { code: 'E4', cat: 'Axis6',  name: '수출물가지수(전년비)',    unit: '%(YoY)' },
 
   // ══ 금융스트레스 → Axis7 (금융안정) ← core-engine A5 면역계와 일치 ══
   'F2_KOSDAQ':         { code: 'F1', cat: 'Axis7',  name: 'KOSDAQ(전일비%)',       unit: '%' },
   // F3_KOSPI_VOL: F4 충돌 제거 (F7_KOSDAQ_VOL이 F4 단독 점유)
   // F6_M2: F2 충돌 제거 (E4_DOLLAR_INDEX가 F2 단독 점유)
-  'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량',          unit: '천주' },
+  'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량(전일비)',    unit: '%(전일비)' },
   'F8_FOREIGN':        { code: 'F8', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
-  'E3_VIX':            { code: 'F3', cat: 'Axis7',  name: 'VIX(공포지수)',         unit: 'pt' },
+  'E3_VIX':            { code: 'F3', cat: 'Axis7',  name: 'VIX(공포지수 전일비)',   unit: '%(전일비)' },
   'E4_DOLLAR_INDEX':   { code: 'F2', cat: 'Axis7',  name: '달러인덱스(전일비)',    unit: '%' },
 
   // ══ A8 인구/취약 → Axis8 (고용/가계) ← core-engine A8 고용 점수와 일치 ══

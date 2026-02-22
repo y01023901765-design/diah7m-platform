@@ -27,148 +27,155 @@ const fs = require('fs');
 // 구조: { 양호: [min, max], 주의: [min, max], 경보: [min, max] }
 // direction: 'lower_better' = 낮을수록 좋음, 'higher_better' = 높을수록 좋음, 'range' = 범위
 
+// ★ GRADE_RULES — gauge-adapter.js ID_MAP 기준으로 정합 (d251bc1 axis 재배치 반영)
+// 각 코드의 실제 데이터: gauge-adapter.js ID_MAP 참조
 const GRADE_RULES = {
-  // ── Input (I1~I6) ──
-  'I1': { metric: '경상수지', unit: '억$', direction: 'higher_better',
+  // ── Input (I1~I6) — T1_TRADE_BALANCE/T4_RESERVES/F4_EXCHANGE/S4_CREDIT/F5_INTEREST ──
+  'I1': { metric: '무역수지', unit: '억$', direction: 'higher_better',
     양호: [0, Infinity], 주의: [-50, 0], 경보: [-Infinity, -50] },
   'I2': { metric: '단기외채비율', unit: '%', direction: 'lower_better',
     양호: [-Infinity, 40], 주의: [40, 50], 경보: [50, Infinity] },
-  'I3': { metric: '외환보유고', unit: '억$', direction: 'higher_better',
-    양호: [4000, Infinity], 주의: [3500, 4000], 경보: [-Infinity, 3500] },
-  'I4': { metric: '환율', unit: '원', direction: 'lower_better',
-    양호: [-Infinity, 1400], 주의: [1400, 1500], 경보: [1500, Infinity] },
-  'I5': { metric: '신용스프레드', unit: 'bp', direction: 'lower_better',
-    양호: [-Infinity, 50], 주의: [50, 100], 경보: [100, Infinity] },
+  'I3': { metric: '외환보유고변동', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-2, 0], 경보: [-Infinity, -2] },
+  'I4': { metric: '환율변동(전월비)', unit: '%', direction: 'lower_better',
+    양호: [-Infinity, 0], 주의: [0, 2], 경보: [2, Infinity] },
+  'I5': { metric: '신용스프레드', unit: '%p', direction: 'lower_better',
+    양호: [-Infinity, 0.5], 주의: [0.5, 1.0], 경보: [1.0, Infinity] },
   'I6': { metric: '국채금리', unit: '%', direction: 'lower_better',
     양호: [-Infinity, 3.0], 주의: [3.0, 4.0], 경보: [4.0, Infinity] },
 
-  // ── Output (O1~O6) ──
-  'O1': { metric: '산업생산', unit: '%', direction: 'higher_better',
+  // ── Output (O1~O7) — O1_EXPORT/O2_PMI/L1_UNEMPLOYMENT/F1_KOSPI/S7_HOUSING/S6_RETAIL/I1_CONSTRUCTION ──
+  'O1': { metric: '수출(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-5, 0], 경보: [-Infinity, -5] },
+  'O2': { metric: '제조업PMI', unit: 'pt', direction: 'higher_better',
+    양호: [50, Infinity], 주의: [45, 50], 경보: [-Infinity, 45] },
+  'O3': { metric: '실업률변동', unit: '%', direction: 'lower_better',
+    양호: [-Infinity, 0], 주의: [0, 0.5], 경보: [0.5, Infinity] },
+  'O4': { metric: 'KOSPI지수', unit: 'pt', direction: 'higher_better',
+    양호: [2400, Infinity], 주의: [2000, 2400], 경보: [-Infinity, 2000] },
+  'O5': { metric: '주택가격지수', unit: 'pt', direction: 'range',
+    양호: [95, 115], 주의: [115, 130], 경보: [130, Infinity], 주의low: [-Infinity, 95] },
+  'O6': { metric: '소매판매(전년비)', unit: '%', direction: 'higher_better',
     양호: [0, Infinity], 주의: [-2, 0], 경보: [-Infinity, -2] },
-  'O2': { metric: '물가', unit: '%', direction: 'range',
-    양호: [0, 3], 주의: [3, 5], 경보: [5, Infinity], 주의low: [-Infinity, 0] },
-  'O3': { metric: '실업률', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 3.5], 주의: [3.5, 5], 경보: [5, Infinity] },
-  'O4': { metric: '주가', unit: 'pt', direction: 'change_based',
-    // 주가는 절대값이 아니라 변동률로 판정
-    양호: [-5, Infinity], 주의: [-10, -5], 경보: [-Infinity, -10] },
-  'O5': { metric: '주택가격', unit: '%', direction: 'range',
-    양호: [-0.5, 1.0], 주의: [1.0, 3.0], 경보: [3.0, Infinity], 주의low: [-Infinity, -0.5] },
-  'O6': { metric: '소비', unit: '%', direction: 'higher_better',
-    양호: [0, Infinity], 주의: [-2, 0], 경보: [-Infinity, -2] },
-  'O7': { metric: '건설투자', unit: '%', direction: 'higher_better',
+  'O7': { metric: '건설생산(전년비)', unit: '%', direction: 'higher_better',
     양호: [0, Infinity], 주의: [-5, 0], 경보: [-Infinity, -5] },
 
-  // ── Axis2: 무역/제조 (S1~S3, T1~T3) ──
-  'S1': { metric: '선박대기', unit: '일', direction: 'range',
-    양호: [5, 20], 주의: [20, 30], 경보: [30, Infinity], 주의low: [-Infinity, 5] },
-  'S2': { metric: '야간광량', unit: '%', direction: 'higher_better', satellite: true,
-    양호: [90, Infinity], 주의: [70, 90], 경보: [-Infinity, 70] },
+  // ── Axis2: 무역/해운 — T5_SHIPPING/E5_BALTIC/T2_CURRENT_ACCOUNT/S1_BSI/E1_CHINA_PMI ──
+  'S1': { metric: '해운수지', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-500, 0], 경보: [-Infinity, -500] },
+  'S2': { metric: '발틱운임지수(BDI)', unit: 'pt', direction: 'higher_better',
+    양호: [1500, Infinity], 주의: [500, 1500], 경보: [-Infinity, 500] },
   'S3': { metric: 'NO₂농도', unit: 'ppb', direction: 'higher_better', satellite: true,
     양호: [25, Infinity], 주의: [15, 25], 경보: [-Infinity, 15] },
-  'T1': { metric: '컨테이너', unit: '만TEU', direction: 'higher_better',
-    양호: [180, Infinity], 주의: [150, 180], 경보: [-Infinity, 150] },
+  'T1': { metric: '경상수지', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-1000, 0], 경보: [-Infinity, -1000] },
   'T2': { metric: '제조업BSI', unit: 'pt', direction: 'higher_better',
     양호: [90, Infinity], 주의: [75, 90], 경보: [-Infinity, 75] },
-  'T3': { metric: '산업전력', unit: '%', direction: 'higher_better',
-    양호: [65, Infinity], 주의: [55, 65], 경보: [-Infinity, 55] },
+  'T3': { metric: '중국PMI(대외)', unit: 'pt', direction: 'higher_better',
+    양호: [50, Infinity], 주의: [45, 50], 경보: [-Infinity, 45] },
 
-  // ── Axis3: 골목시장 (M1~M5) ──
-  'M1': { metric: '개폐업', unit: '배', direction: 'higher_better',
-    양호: [0.8, Infinity], 주의: [0.6, 0.8], 경보: [-Infinity, 0.6] },
-  'M2': { metric: '유동인구', unit: '만명', direction: 'higher_better',
-    양호: [1000, Infinity], 주의: [800, 1000], 경보: [-Infinity, 800] },
-  'M3': { metric: '카드매출', unit: '조원', direction: 'higher_better',
-    양호: [90, Infinity], 주의: [70, 90], 경보: [-Infinity, 70] },
-  'M4': { metric: '상가임대', unit: '만원/㎡', direction: 'range',
-    양호: [1.5, 3.0], 주의: [3.0, 4.0], 경보: [4.0, Infinity], 주의low: [-Infinity, 1.5] },
-  'M5': { metric: '상권등급', unit: '등급', direction: 'grade_letter',
-    // 특수: A+/A/A-=양호, B+/B/B-=양호, C+=주의, C/C-=주의, D이하=경보
-    양호: ['A+','A','A-','B+','B','B-'], 주의: ['C+','C','C-'], 경보: ['D+','D','D-','F'] },
+  // ── Axis3: 내수/산업 — O5_INVENTORY/O6_SHIPMENT/O3_IP/O4_CAPACITY ──
+  'M1': { metric: '재고지수(전년비)', unit: '%', direction: 'range',
+    양호: [-3, 3], 주의: [3, 8], 경보: [8, Infinity], 주의low: [-Infinity, -3] },
+  'M2': { metric: '출하지수(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
+  'M3': { metric: '산업생산지수(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-2, 0], 경보: [-Infinity, -2] },
+  'M4': { metric: '설비가동률(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
+  'M5': { metric: '내수활동', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
 
-  // ── Axis4: 부동산 (R1~R9) ──
-  'R1': { metric: '실거래가', unit: '만원/㎡', direction: 'range',
-    양호: [0.8, 2.0], 주의: [2.0, 3.0], 경보: [3.0, Infinity], 주의low: [-Infinity, 0.8] },
-  'R2': { metric: '미분양', unit: '호', direction: 'lower_better',
-    양호: [-Infinity, 30000], 주의: [30000, 60000], 경보: [60000, Infinity] },
-  'R3': { metric: '전세가율', unit: '%', direction: 'range',
-    양호: [40, 70], 주의: [70, 80], 경보: [80, Infinity], 주의low: [-Infinity, 40] },
-  'R4': { metric: '경매건수', unit: '건/1000세대', direction: 'lower_better',
-    양호: [-Infinity, 8], 주의: [8, 15], 경보: [15, Infinity] },
+  // ── Axis4: 산업/건설 대리 — I2_CEMENT/I3_STEEL/I4_VEHICLE/R6_UHI ──
+  'R1': { metric: '전기료', unit: '원/kWh', direction: 'lower_better',
+    양호: [-Infinity, 100], 주의: [100, 150], 경보: [150, Infinity] },
+  'R2': { metric: '시멘트생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-10, 0], 경보: [-Infinity, -10] },
+  'R3': { metric: '철강재생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-5, 0], 경보: [-Infinity, -5] },
+  'R4': { metric: '자동차생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-5, 0], 경보: [-Infinity, -5] },
   'R5': { metric: 'SAR높이', unit: 'm', direction: 'range', satellite: true,
     양호: [-0.1, 0.1], 주의: [0.1, 0.3], 경보: [0.3, Infinity] },
-  'R6': { metric: '신축야간광', unit: '%', direction: 'higher_better', satellite: true,
-    양호: [80, Infinity], 주의: [50, 80], 경보: [-Infinity, 50] },
+  'R6': { metric: '도시열섬이상(UHI)', unit: '°C', direction: 'lower_better', satellite: true,
+    양호: [-Infinity, 0.5], 주의: [0.5, 1.5], 경보: [1.5, Infinity] },
   'R7': { metric: '주차점유', unit: '%', direction: 'higher_better',
     양호: [60, Infinity], 주의: [40, 60], 경보: [-Infinity, 40] },
-  'R8': { metric: '표면온도', unit: '℃', direction: 'range', satellite: true,
+  'R8': { metric: '건물체온', unit: '℃', direction: 'range', satellite: true,
     양호: [10, 25], 주의: [5, 10], 경보: [-Infinity, 5] },
   'R9': { metric: '괴리경보', unit: '개월', direction: 'lower_better', satellite: true,
     양호: [-Infinity, 18], 주의: [18, 36], 경보: [36, Infinity] },
 
-  // ── Axis5: 고용/가계 (L1~L5) ──
-  'L1': { metric: '고용동향', unit: '만명', direction: 'higher_better',
-    양호: [10, Infinity], 주의: [0, 10], 경보: [-Infinity, 0] },
-  'L2': { metric: '실업급여', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 5], 주의: [5, 8], 경보: [8, Infinity] },
-  'L3': { metric: '가계부채', unit: '조원', direction: 'lower_better',
-    양호: [-Infinity, 1800], 주의: [1800, 2000], 경보: [2000, Infinity] },
-  'L4': { metric: '연체율', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 1.0], 주의: [1.0, 2.0], 경보: [2.0, Infinity] },
-  'L5': { metric: '체감경기', unit: 'pt', direction: 'higher_better',
+  // ── Axis5: 소비심리 — S2_CSI → L5 단독 ──
+  'L5': { metric: '소비자심리(CSI)', unit: 'pt', direction: 'higher_better',
     양호: [90, Infinity], 주의: [75, 90], 경보: [-Infinity, 75] },
 
-  // ── Axis6: 지역균형 (G1~G7) ──
-  'G1': { metric: '소멸지수', unit: '개지역', direction: 'lower_better',
-    양호: [-Infinity, 80], 주의: [80, 120], 경보: [120, Infinity] },
-  'G2': { metric: '지역GRDP', unit: '배', direction: 'lower_better',
-    양호: [-Infinity, 0.35], 주의: [0.35, 0.50], 경보: [0.50, Infinity] },
-  'G3': { metric: '인구이동', unit: '만명', direction: 'lower_better',
-    양호: [-Infinity, 80], 주의: [80, 120], 경보: [120, Infinity] },
-  'G4': { metric: '지역창폐업', unit: '배', direction: 'lower_better',
-    양호: [-Infinity, 2.0], 주의: [2.0, 3.0], 경보: [3.0, Infinity] },
-  'G5': { metric: '재정자립', unit: '%', direction: 'higher_better',
-    양호: [50, Infinity], 주의: [35, 50], 경보: [-Infinity, 35] },
-  'G6': { metric: '지역야간광', unit: '%', direction: 'higher_better', satellite: true,
-    양호: [80, Infinity], 주의: [60, 80], 경보: [-Infinity, 60] },
-  'G7': { metric: '특구투자', unit: '건', direction: 'higher_better',
-    양호: [2, Infinity], 주의: [1, 2], 경보: [-Infinity, 1] },
+  // ── Axis6: 물가/재정 (E1~E5) ← core-engine A6, gauge-adapter P1~P6 ──
+  // P1_CPI→E1(%), P2_PPI→E2(%), P5_IMPORT→E3(YoY%), P6_EXPORT_PRICE→E4(YoY%), P4_COMMODITY→E5(백만$)
+  'E1': { metric: 'CPI(소비자물가전년비)', unit: '%', direction: 'range',
+    양호: [0, 3], 주의: [3, 5], 경보: [5, Infinity], 주의low: [-Infinity, 0] },
+  'E2': { metric: 'PPI(생산자물가전년비)', unit: '%', direction: 'range',
+    양호: [-1, 4], 주의: [4, 7], 경보: [7, Infinity], 주의low: [-Infinity, -1] },
+  'E3': { metric: '수입물가지수(전년비)', unit: '%(YoY)', direction: 'range',
+    양호: [-3, 5], 주의: [5, 10], 경보: [10, Infinity], 주의low: [-Infinity, -3] },
+  'E4': { metric: '수출물가지수(전년비)', unit: '%(YoY)', direction: 'range',
+    양호: [-3, 5], 주의: [5, 10], 경보: [10, Infinity], 주의low: [-Infinity, -3] },
+  'E5': { metric: '상품수지(원자재대리)', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3000, 0], 경보: [-Infinity, -3000] },
 
-  // ── Axis7: 금융 스트레스 (F1~F5) ──
-  'F1': { metric: '회사채스프레드', unit: 'bp', direction: 'lower_better',
-    양호: [-Infinity, 80], 주의: [80, 150], 경보: [150, Infinity] },
-  'F2': { metric: 'CP금리', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 4.0], 주의: [4.0, 6.0], 경보: [6.0, Infinity] },
-  'F3': { metric: 'BIS비율', unit: '%', direction: 'higher_better',
-    양호: [13, Infinity], 주의: [10, 13], 경보: [-Infinity, 10] },
-  'F4': { metric: '코스피변동성', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 25], 주의: [25, 40], 경보: [40, Infinity] },
+  // ── Axis7: 금융안정 (F1~F8) ← gauge-adapter F2_KOSDAQ/E4_DOLLAR/E3_VIX/F7_VOL/F8_FOREIGN ──
+  'F1': { metric: 'KOSDAQ(전일비)', unit: '%', direction: 'higher_better',
+    양호: [-3, Infinity], 주의: [-7, -3], 경보: [-Infinity, -7] },
+  'F2': { metric: '달러인덱스(전일비)', unit: '%', direction: 'lower_better',
+    양호: [-Infinity, 0.5], 주의: [0.5, 2], 경보: [2, Infinity] },
+  'F3': { metric: 'VIX(공포지수 전일비)', unit: '%(전일비)', direction: 'lower_better',
+    양호: [-Infinity, 5], 주의: [5, 15], 경보: [15, Infinity] },
+  'F4': { metric: 'KOSDAQ거래량변동', unit: '%', direction: 'higher_better',
+    양호: [-10, Infinity], 주의: [-30, -10], 경보: [-Infinity, -30] },
   'F5': { metric: '은행채스프레드', unit: 'bp', direction: 'lower_better',
     양호: [-Infinity, 60], 주의: [60, 100], 경보: [100, Infinity] },
+  'F8': { metric: '외국인순매수', unit: '백만원', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-100000, 0], 경보: [-Infinity, -100000] },
 
-  // ── Axis8: 에너지 (E1~E5) ──
-  'E1': { metric: '유가', unit: '$/bbl', direction: 'range',
-    양호: [40, 80], 주의: [80, 100], 경보: [100, Infinity], 주의low: [-Infinity, 40] },
-  'E2': { metric: '전력예비율', unit: '%', direction: 'higher_better',
-    양호: [10, Infinity], 주의: [5, 10], 경보: [-Infinity, 5] },
-  'E3': { metric: 'LNG재고', unit: '만톤', direction: 'higher_better',
-    양호: [10, Infinity], 주의: [5, 10], 경보: [-Infinity, 5] },
-  'E4': { metric: '산업전력', unit: 'GWh', direction: 'higher_better',
-    양호: [100, Infinity], 주의: [80, 100], 경보: [-Infinity, 80] },
-  'E5': { metric: '원자재지수', unit: 'pt', direction: 'range',
-    양호: [0.5, 1.2], 주의: [1.2, 1.5], 경보: [1.5, Infinity], 주의low: [-Infinity, 0.5] },
+  // ── Axis8: 고용/가계 (L1~L4) ← core-engine A8, gauge-adapter S5_EMPLOY/L2~L4 ──
+  // S5_EMPLOY→L1(천명), L2_PARTICIPATION→L2(%), L3_WAGE→L3(YoY%), L4_HOURS→L4(%)
+  'L1': { metric: '취업자수증감', unit: '천명', direction: 'higher_better',
+    양호: [100, Infinity], 주의: [0, 100], 경보: [-Infinity, 0] },
+  'L2': { metric: '경제활동참가율변동', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-0.5, 0], 경보: [-Infinity, -0.5] },
+  'L3': { metric: '임금(전년비)', unit: '%', direction: 'higher_better',
+    양호: [2, Infinity], 주의: [0, 2], 경보: [-Infinity, 0] },
+  'L4': { metric: '근로시간변동', unit: '%', direction: 'range',
+    양호: [-1, 1], 주의: [1, 3], 경보: [3, Infinity], 주의low: [-Infinity, -1] },
 
-  // ── Axis9: 인구/노화 (A1~A5) ──
-  'A1': { metric: '출산율', unit: '명', direction: 'higher_better',
-    양호: [1.3, Infinity], 주의: [1.0, 1.3], 경보: [-Infinity, 1.0] },
-  'A2': { metric: '고령화율', unit: '%', direction: 'lower_better',
-    양호: [-Infinity, 14], 주의: [14, 20], 경보: [20, Infinity] },
-  'A3': { metric: '생산인구', unit: '만명', direction: 'higher_better',
-    양호: [3600, Infinity], 주의: [3400, 3600], 경보: [-Infinity, 3400] },
-  'A4': { metric: '학령인구', unit: '만명', direction: 'higher_better',
-    양호: [500, Infinity], 주의: [400, 500], 경보: [-Infinity, 400] },
-  'A5': { metric: '이민순유입', unit: '만명', direction: 'higher_better',
-    양호: [5, Infinity], 주의: [2, 5], 경보: [-Infinity, 2] },
+  // ── Axis9: 대외/에너지/환경 (G1~G6, A1~A5) ← core-engine A9 ──
+  // T3_FDI→G1(백만$), I5_CARGO→G2(백만$), I6_AIRPORT→G3(백만$), I7_RAILROAD→G4(천명)
+  // E2_US_PMI→G5(pt), S3_NIGHTLIGHT→G6(nW/cm²/sr)
+  // R8_FOREST→A1(천명), R7_WASTE→A2(%), R1_ELECTRICITY→A3(%), R2_WATER→A4(%), R4_COAL→A5(%)
+  'G1': { metric: '서비스수지(FDI대리)', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-2000, 0], 경보: [-Infinity, -2000] },
+  'G2': { metric: '운송수지(화물)', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-500, 0], 경보: [-Infinity, -500] },
+  'G3': { metric: '항공운송수지', unit: '백만$', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-300, 0], 경보: [-Infinity, -300] },
+  'G4': { metric: '운수창고취업자', unit: '천명', direction: 'higher_better',
+    양호: [1200, Infinity], 주의: [1000, 1200], 경보: [-Infinity, 1000] },
+  'G5': { metric: '미국경기(OECD CLI)', unit: 'pt', direction: 'higher_better',
+    양호: [99, Infinity], 주의: [97, 99], 경보: [-Infinity, 97] },
+  'G6': { metric: '야간광량(위성)', unit: 'nW/cm²/sr', direction: 'higher_better', satellite: true,
+    양호: [0, Infinity], 주의: [-5, 0], 경보: [-Infinity, -5] },
+  'G7': { metric: '특구투자', unit: '건', direction: 'higher_better',
+    양호: [2, Infinity], 주의: [1, 2], 경보: [-Infinity, 1] },
+  'A1': { metric: '농림어업취업자', unit: '천명', direction: 'higher_better',
+    양호: [1200, Infinity], 주의: [900, 1200], 경보: [-Infinity, 900] },
+  'A2': { metric: '폐기물처리업생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
+  'A3': { metric: '전기가스수도업생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
+  'A4': { metric: '수도업생산(전년비)', unit: '%', direction: 'higher_better',
+    양호: [0, Infinity], 주의: [-3, 0], 경보: [-Infinity, -3] },
+  'A5': { metric: '석탄광업생산(전년비)', unit: '%', direction: 'range',
+    양호: [-10, 10], 주의: [10, 30], 경보: [30, Infinity], 주의low: [-Infinity, -10] },
 };
 
 // ═══════════════════════════════════════════
@@ -262,60 +269,60 @@ const METAPHOR_MAP = {
   'O6': { organ: '손끝', good: '손끝 체온이 정상이다. 소비가 양호하다.', warn: '손끝이 차가워지고 있다. 소비가 둔화되고 있다.', alert: '손끝 체온 경보. 소비가 위축되고 있다.' },
   'O7': { organ: '골격', good: '골격이 튼튼하다. 건설투자가 양호하다.', warn: '골격이 약해지고 있다. 건설투자가 감소하고 있다.', alert: '골격 괴사. 건설투자가 급감하고 있다. 구조적 붕괴 위험.' },
 
-  'S1': { organ: '동맥맥박', good: '동맥 맥박이 정상이다.', warn: '동맥 맥박이 불규칙하다.', alert: '동맥 맥박 이상.' },
-  'S2': { organ: '동맥활력', good: '동맥 활력이 양호하다.', warn: '동맥 활력이 약화되고 있다.', alert: '동맥 활력 부전.' },
+  'S1': { organ: '동맥맥박', good: '동맥 맥박이 정상이다. 해운수지가 흑자다.', warn: '동맥 맥박이 약해지고 있다. 해운수지가 적자다.', alert: '동맥 맥박 이상. 해운수지 적자가 심각하다.' },
+  'S2': { organ: '동맥활력', good: '동맥 활력이 양호하다. 발틱운임지수가 정상 범위다.', warn: '동맥 활력이 약화되고 있다. 운임지수가 하락하고 있다.', alert: '동맥 활력 부전. 운임지수가 위험 수준이다.' },
   'S3': { organ: '동맥배기', good: '동맥 배기가 정상이다.', warn: '동맥 배기가 감소하고 있다.', alert: '동맥 배기 이상.' },
-  'T1': { organ: '혈류총량', good: '혈류 총량이 정상이다. 수출 물동량이 양호하다.', warn: '혈류가 줄고 있다. 물동량이 감소하고 있다.', alert: '혈류 부족. 물동량이 위험 수준이다.' },
+  'T1': { organ: '혈류총량', good: '혈류 총량이 정상이다. 경상수지 흑자가 양호하다.', warn: '혈류가 줄고 있다. 경상수지 흑자가 감소하고 있다.', alert: '혈류 부족. 경상수지가 적자로 전환되고 있다.' },
   'T2': { organ: '동맥탄력', good: '동맥 탄력이 양호하다. 제조업 체감이 긍정적이다.', warn: '동맥이 경직되고 있다. 제조업 체감이 악화되고 있다.', alert: '동맥 경직. 제조업이 위축되고 있다.' },
-  'T3': { organ: '동맥가동', good: '동맥 가동률이 정상이다. 산업 가동이 양호하다.', warn: '동맥 가동률이 떨어지고 있다.', alert: '동맥 가동 부전.' },
+  'T3': { organ: '동맥가동', good: '동맥 가동률이 정상이다. 중국 경기가 확장 국면이다.', warn: '동맥 가동률이 떨어지고 있다. 중국 PMI가 위축 전환하고 있다.', alert: '동맥 가동 부전. 중국 경기 위축이 심각하다.' },
 
-  'M1': { organ: '미세혈관재생', good: '미세혈관 재생이 양호 범위이다. 개폐업 비율이 안정적이다.', warn: '미세혈관 재생이 둔화되고 있다.', alert: '미세혈관 괴사. 폐업이 창업을 크게 초과한다.' },
-  'M2': { organ: '미세혈관혈류', good: '미세혈관 혈류가 원활하다. 유동인구가 충분하다.', warn: '미세혈관 혈류가 줄고 있다.', alert: '미세혈관 혈류 차단.' },
-  'M3': { organ: '산소교환', good: '산소 교환이 정상이다. 카드매출이 양호하다.', warn: '산소 교환이 약화되고 있다.', alert: '산소 교환 부전.' },
-  'M4': { organ: '혈관벽압', good: '혈관벽 압력이 정상이다. 임대료가 안정적이다.', warn: '혈관벽 압력이 높아지고 있다.', alert: '혈관벽 파열 위험.' },
+  'M1': { organ: '미세혈관압력', good: '미세혈관 압력이 안정적이다. 재고가 적정 수준이다.', warn: '미세혈관 압력이 높아지고 있다. 재고가 쌓이고 있다.', alert: '미세혈관 혈전 위험. 재고가 과잉 누적되고 있다.' },
+  'M2': { organ: '미세혈관혈류', good: '미세혈관 혈류가 원활하다. 출하가 증가하고 있다.', warn: '미세혈관 혈류가 줄고 있다. 출하가 감소하고 있다.', alert: '미세혈관 혈류 차단. 출하가 급감하고 있다.' },
+  'M3': { organ: '산소교환', good: '산소 교환이 정상이다. 산업생산이 증가하고 있다.', warn: '산소 교환이 약화되고 있다. 산업생산이 둔화되고 있다.', alert: '산소 교환 부전. 산업생산이 역성장이다.' },
+  'M4': { organ: '혈관탄력', good: '혈관 탄력이 양호하다. 설비가동률이 상승하고 있다.', warn: '혈관 탄력이 약화되고 있다. 설비가동률이 하락하고 있다.', alert: '혈관 경직. 설비가동률이 급락하고 있다.' },
   'M5': { organ: '미세혈관등급', good: '미세혈관 등급이 양호하다.', warn: '미세혈관 등급이 하락하고 있다.', alert: '미세혈관 등급 위험.' },
 
-  'R1': { organ: '골밀도', good: '골밀도가 정상이다. 실거래가가 안정적이다.', warn: '골밀도가 변화하고 있다.', alert: '골밀도 이상.' },
-  'R2': { organ: '골절', good: '골절 징후가 없다. 미분양이 안정적이다.', warn: '골절 전조가 감지된다. 미분양이 증가하고 있다.', alert: '골절 임박. 미분양이 위험 수준이다.' },
-  'R3': { organ: '골수', good: '골수 충전이 정상이다.', warn: '골수 충전이 불안정하다.', alert: '골수 부전.' },
-  'R4': { organ: '골절발생', good: '골절이 발생하지 않았다. 경매가 안정적이다.', warn: '미세 골절이 감지된다.', alert: '골절 발생.' },
+  'R1': { organ: '골밀도', good: '골밀도가 정상이다.', warn: '골밀도가 변화하고 있다.', alert: '골밀도 이상.' },
+  'R2': { organ: '골격생성', good: '골격 생성이 양호하다. 시멘트 생산이 증가하고 있다.', warn: '골격 생성이 둔화되고 있다. 시멘트 생산이 감소하고 있다.', alert: '골격 생성 정지. 시멘트 생산이 급감하고 있다.' },
+  'R3': { organ: '골수', good: '골수 충전이 정상이다. 철강 생산이 증가하고 있다.', warn: '골수 충전이 불안정하다. 철강 생산이 감소하고 있다.', alert: '골수 부전. 철강 생산이 급감하고 있다.' },
+  'R4': { organ: '운동기능', good: '운동기능이 정상이다. 자동차 생산이 증가하고 있다.', warn: '운동기능이 저하되고 있다. 자동차 생산이 감소하고 있다.', alert: '운동기능 마비. 자동차 생산이 급감하고 있다.' },
   'R5': { organ: 'X-ray공정', good: 'X-ray상 공정률 정상이다.', warn: 'X-ray상 이상 감지.', alert: 'X-ray상 심각한 이상.' },
-  'R6': { organ: 'X-ray입주', good: '실입주가 확인된다.', warn: '실입주율이 떨어지고 있다.', alert: '실입주 부진.' },
+  'R6': { organ: '체온계', good: '도시 체온이 정상이다. 열섬 이상이 없다.', warn: '도시 체온이 높아지고 있다. 열섬 이상이 감지된다.', alert: '도시 고열. 열섬 이상이 위험 수준이다.' },
   'R7': { organ: '생활흔적', good: '생활 흔적이 확인된다. 주차 점유가 양호하다.', warn: '생활 흔적이 줄고 있다.', alert: '생활 흔적 부족.' },
   'R8': { organ: '건물체온', good: '건물 체온이 정상이다.', warn: '건물 체온이 비정상이다.', alert: '건물 체온 이상.' },
   'R9': { organ: '괴리판독', good: 'X-ray 판독 일치. 괴리가 없다.', warn: '판독 괴리가 감지된다.', alert: '판독 괴리 심각.' },
 
-  'L1': { organ: '근력', good: '근력이 정상이다. 고용이 양호하다.', warn: '근력이 약화되고 있다.', alert: '근력 상실. 고용이 위축되고 있다.' },
-  'L2': { organ: '통증', good: '통증이 없다. 실업급여 수급이 안정적이다.', warn: '통증 신호가 감지된다.', alert: '통증 심각.' },
-  'L3': { organ: '근육부하', good: '근육 부하가 정상이다. 가계부채가 관리 가능하다.', warn: '근육 부하가 높아지고 있다. 가계부채에 주의가 필요하다.', alert: '근육 파열 위험. 가계부채가 위험 수준이다.' },
-  'L4': { organ: '신경', good: '신경이 정상이다. 연체율이 안정적이다.', warn: '신경 손상 징후. 연체율이 상승하고 있다.', alert: '신경 손상. 연체율이 위험하다.' },
-  'L5': { organ: '통증자각', good: '통증 자각이 없다. 체감경기가 양호하다.', warn: '통증을 자각하기 시작했다.', alert: '통증 심각. 체감경기가 위축되고 있다.' },
+  'L1': { organ: '근력', good: '근력이 정상이다. 취업자수가 증가하고 있다.', warn: '근력이 약화되고 있다. 취업자 증가세가 둔화되고 있다.', alert: '근력 상실. 취업자수가 감소하고 있다.' },
+  'L2': { organ: '호흡깊이', good: '호흡이 깊다. 경제활동 참가율이 상승하고 있다.', warn: '호흡이 얕아지고 있다. 경제활동 참가율이 하락하고 있다.', alert: '호흡 부전. 경제활동 참가율이 급감하고 있다.' },
+  'L3': { organ: '혈당', good: '혈당이 정상이다. 임금이 물가 이상으로 상승하고 있다.', warn: '혈당이 낮아지고 있다. 임금 상승이 둔화되고 있다.', alert: '저혈당. 실질임금이 감소하고 있다.' },
+  'L4': { organ: '신경긴장도', good: '신경 긴장도가 정상이다. 근로시간이 안정적이다.', warn: '신경 긴장도가 변하고 있다. 근로시간이 비정상 범위다.', alert: '신경 이상. 근로시간이 급변하고 있다.' },
+  'L5': { organ: '통증자각', good: '통증 자각이 없다. 소비자심리가 양호하다.', warn: '통증을 자각하기 시작했다. 소비심리가 위축되고 있다.', alert: '통증 심각. 소비자심리가 위험 수준이다.' },
 
-  'G1': { organ: '편마비', good: '편마비 징후가 없다.', warn: '편마비가 진행 중이다.', alert: '편마비 심각. 소멸위험 지역이 위험 수준이다.' },
-  'G2': { organ: '좌우근력', good: '좌우 근력이 균형이다.', warn: '좌우 근력 불균형이 감지된다.', alert: '좌우 근력 불균형 심각.' },
-  'G3': { organ: '혈류분배', good: '혈류 분배가 균형이다.', warn: '혈류 편중이 진행 중이다.', alert: '혈류 편중 심각.' },
-  'G4': { organ: '좌우세포', good: '좌우 세포 활력이 균형이다.', warn: '좌우 세포 활력 불균형.', alert: '좌우 세포 활력 불균형 심각.' },
-  'G5': { organ: '자율신경', good: '자율신경이 정상이다. 재정자립이 양호하다.', warn: '자율신경이 약화되고 있다.', alert: '자율신경 부전.' },
-  'G6': { organ: '좌우활력', good: '좌우 활력이 균형이다.', warn: '좌우 활력 불균형.', alert: '좌우 활력 불균형 심각.' },
+  'G1': { organ: '외부순환', good: '외부 순환이 정상이다. 서비스수지가 양호하다.', warn: '외부 순환이 약화되고 있다. 서비스수지 적자가 확대되고 있다.', alert: '외부 순환 부전. 서비스수지 적자가 심각하다.' },
+  'G2': { organ: '림프순환', good: '림프 순환이 정상이다. 운송수지가 양호하다.', warn: '림프 순환이 약화되고 있다. 운송수지가 악화되고 있다.', alert: '림프 순환 부전. 운송수지 적자가 심각하다.' },
+  'G3': { organ: '공중혈류', good: '공중 혈류가 정상이다. 항공운송수지가 양호하다.', warn: '공중 혈류가 약화되고 있다. 항공수지가 악화되고 있다.', alert: '공중 혈류 부전. 항공수지 적자가 심각하다.' },
+  'G4': { organ: '물류세포', good: '물류 세포가 충분하다. 운수창고 취업자가 안정적이다.', warn: '물류 세포가 줄고 있다. 취업자수가 감소하고 있다.', alert: '물류 세포 부족. 취업자수가 위험 수준이다.' },
+  'G5': { organ: '자율신경', good: '자율신경이 정상이다. 미국 경기가 확장 국면이다.', warn: '자율신경이 약화되고 있다. 미국 경기가 둔화되고 있다.', alert: '자율신경 부전. 미국 경기가 수축 국면이다.' },
+  'G6': { organ: '좌우활력', good: '야간 경제활동이 정상이다. 야간광량이 안정적이다.', warn: '야간 경제활동이 줄고 있다. 야간광량이 감소하고 있다.', alert: '야간 경제활동 위축. 야간광량이 급감하고 있다.' },
   'G7': { organ: '재활', good: '재활 치료가 진행 중이다.', warn: '재활이 부족하다.', alert: '재활 부재.' },
 
-  'F1': { organ: '혈액점도', good: '혈액 점도가 안정이다.', warn: '혈액 점도가 높아지고 있다.', alert: '혈액 점도 위험.' },
-  'F2': { organ: '혈중독소', good: '혈중 독소가 정상이다.', warn: '혈중 독소가 증가하고 있다.', alert: '혈중 독소 위험.' },
-  'F3': { organ: '면역력', good: '면역력이 양호하다. 은행 건전성이 양호하다.', warn: '면역력이 약화되고 있다.', alert: '면역력 부전.' },
-  'F4': { organ: '혈압변동', good: '혈압 변동이 안정적이다.', warn: '혈압 변동이 커지고 있다. 시장 변동성에 주의가 필요하다.', alert: '혈압 급변. 시장 변동성이 위험 수준이다.' },
+  'F1': { organ: '혈압변동', good: '혈압 변동이 안정적이다. KOSDAQ이 안정적이다.', warn: '혈압이 떨어지고 있다. KOSDAQ이 하락하고 있다.', alert: '혈압 급락. KOSDAQ이 급락하고 있다.' },
+  'F2': { organ: '혈중독소', good: '혈중 독소가 정상이다. 달러가 안정적이다.', warn: '혈중 독소가 증가하고 있다. 달러가 강세로 전환되고 있다.', alert: '혈중 독소 위험. 달러 강세가 심각하다.' },
+  'F3': { organ: '자율신경공포', good: '공포지수가 낮다. 시장이 안정적이다.', warn: '공포지수가 상승하고 있다. 시장 불안이 커지고 있다.', alert: '공포지수 위험. 시장 공황 수준이다.' },
+  'F4': { organ: '혈류량', good: '혈류량이 충분하다. 거래량이 정상이다.', warn: '혈류량이 줄고 있다. 거래량이 감소하고 있다.', alert: '혈류량 부족. 거래량이 급감하고 있다.' },
   'F5': { organ: '응고인자', good: '응고 인자가 정상이다.', warn: '응고 인자가 불안정하다.', alert: '응고 인자 위험.' },
 
-  'E1': { organ: '산소가격', good: '산소 가격이 안정적이다. 유가가 적정 범위다.', warn: '산소 가격이 상승하고 있다.', alert: '산소 가격 급등.' },
-  'E2': { organ: '산소통', good: '산소통이 충분하다. 전력 여유가 있다.', warn: '산소통이 부족해지고 있다. 전력예비율에 주의가 필요하다.', alert: '산소통 고갈 위험.' },
-  'E3': { organ: '연료비축', good: '연료 비축이 충분하다.', warn: '연료 비축이 줄고 있다.', alert: '연료 비축 부족.' },
-  'E4': { organ: '산소소비', good: '산소 소비가 정상이다.', warn: '산소 소비가 감소하고 있다.', alert: '산소 소비 이상.' },
-  'E5': { organ: '영양소', good: '영양소 가격이 안정적이다.', warn: '영양소 가격이 변동하고 있다.', alert: '영양소 가격 이상.' },
+  'E1': { organ: '체온(물가)', good: '체온이 정상이다. 소비자물가가 안정 범위다.', warn: '체온이 올라가고 있다. 물가 상승 압력이 있다.', alert: '고열. 소비자물가가 위험 수준이다.' },
+  'E2': { organ: '생산체온', good: '생산 체온이 정상이다. 생산자물가가 안정적이다.', warn: '생산 체온이 변하고 있다. 생산자물가가 상승하고 있다.', alert: '생산 고열. 생산자물가가 위험 수준이다.' },
+  'E3': { organ: '혈관압력', good: '혈관 압력이 정상이다. 수입물가가 안정적이다.', warn: '혈관 압력이 높아지고 있다. 수입물가가 상승하고 있다.', alert: '혈관 압력 위험. 수입물가가 급등하고 있다.' },
+  'E4': { organ: '수출활력', good: '수출 활력이 양호하다. 수출물가가 안정적이다.', warn: '수출 활력이 변하고 있다. 수출물가가 변동하고 있다.', alert: '수출 활력 이상. 수출물가가 급변하고 있다.' },
+  'E5': { organ: '영양공급', good: '영양 공급이 원활하다. 상품수지가 흑자다.', warn: '영양 공급이 줄고 있다. 상품수지 흑자가 감소하고 있다.', alert: '영양 공급 부족. 상품수지가 적자로 전환됐다.' },
 
-  'A1': { organ: '세포재생', good: '세포 재생이 양호하다.', warn: '세포 재생이 둔화되고 있다.', alert: '세포 재생 정지. 출산율이 위험 수준이다.' },
-  'A2': { organ: '신체나이', good: '신체 나이가 양호하다.', warn: '신체가 노화되고 있다. 고령화에 주의가 필요하다.', alert: '신체 노화 심각.' },
-  'A3': { organ: '근육세포', good: '근육 세포가 충분하다.', warn: '근육 세포가 줄고 있다. 생산인구 감소에 주의가 필요하다.', alert: '근육 세포 부족.' },
-  'A4': { organ: '줄기세포', good: '줄기세포가 충분하다. 학령인구가 양호하다.', warn: '줄기세포가 줄고 있다.', alert: '줄기세포 부족.' },
-  'A5': { organ: '수혈', good: '수혈이 진행 중이다. 이민 유입이 양호하다.', warn: '수혈이 부족하다.', alert: '수혈 부재.' },
+  'A1': { organ: '토양세포', good: '토양 세포가 충분하다. 농림어업 취업자가 안정적이다.', warn: '토양 세포가 줄고 있다. 농림어업 취업자가 감소하고 있다.', alert: '토양 세포 부족. 농림어업 기반이 약화되고 있다.' },
+  'A2': { organ: '노폐물처리', good: '노폐물 처리가 정상이다. 폐기물처리업 생산이 증가하고 있다.', warn: '노폐물 처리가 둔화되고 있다.', alert: '노폐물 처리 부전. 폐기물처리업 생산이 급감하고 있다.' },
+  'A3': { organ: '에너지혈관', good: '에너지 혈관이 정상이다. 전기가스 생산이 증가하고 있다.', warn: '에너지 혈관이 약화되고 있다. 전기가스 생산이 감소하고 있다.', alert: '에너지 혈관 부전. 전기가스 생산이 급감하고 있다.' },
+  'A4': { organ: '수분공급', good: '수분 공급이 정상이다. 수도업 생산이 안정적이다.', warn: '수분 공급이 줄고 있다.', alert: '수분 공급 부족. 수도업 생산이 급감하고 있다.' },
+  'A5': { organ: '원료채취', good: '원료 채취가 안정적이다. 석탄광업 생산이 안정적이다.', warn: '원료 채취가 비정상 범위다.', alert: '원료 채취 이상. 석탄광업 생산이 급변하고 있다.' },
 };
 
 function generateNarrative(code, gauge) {
@@ -445,11 +452,11 @@ function transform(data) {
     { key: 'axis2_gauges', name: '동맥(무역/제조)', summaryKey: 'axis2_summary', narrKey: 'axis2_summaryNarrative' },
     { key: 'axis3_gauges', name: '미세혈관(골목시장)', summaryKey: 'axis3_summary', narrKey: 'axis3_summaryNarrative' },
     { key: 'axis4_gauges', name: '골격(부동산)', summaryKey: 'axis4_summary', narrKey: 'axis4_summaryNarrative' },
-    { key: 'axis5_gauges', name: '근육/신경(고용/가계)', summaryKey: 'axis5_summary', narrKey: 'axis5_summaryNarrative' },
-    { key: 'axis6_gauges', name: '좌우대칭(지역균형)', summaryKey: 'axis6_summary', narrKey: 'axis6_summaryNarrative' },
-    { key: 'axis7_gauges', name: '혈액의질(금융스트레스)', summaryKey: 'axis7_summary', narrKey: 'axis7_summaryNarrative' },
-    { key: 'axis8_gauges', name: '산소공급(에너지)', summaryKey: 'axis8_summary', narrKey: 'axis8_summaryNarrative' },
-    { key: 'axis9_gauges', name: '신체나이(인구/노화)', summaryKey: 'axis9_summary', narrKey: 'axis9_summaryNarrative' },
+    { key: 'axis5_gauges', name: '[신경]소비심리(CSI)', summaryKey: 'axis5_summary', narrKey: 'axis5_summaryNarrative' },
+    { key: 'axis6_gauges', name: '[내분비]물가/재정', summaryKey: 'axis6_summary', narrKey: 'axis6_summaryNarrative' },
+    { key: 'axis7_gauges', name: '[면역]금융스트레스', summaryKey: 'axis7_summary', narrKey: 'axis7_summaryNarrative' },
+    { key: 'axis8_gauges', name: '[근골격]고용/가계', summaryKey: 'axis8_summary', narrKey: 'axis8_summaryNarrative' },
+    { key: 'axis9_gauges', name: '[재생/대외]에너지·환경', summaryKey: 'axis9_summary', narrKey: 'axis9_summaryNarrative' },
   ];
 
   // ── A. 각 게이지 변환 ──
@@ -650,7 +657,7 @@ function transform(data) {
       'H': `국채금리 ${i6?.value || '?'}로 ${i6?.grade?.includes('양호') ? '안정' : '불안'}. 소비(O6) ${o6?.value || '?'}로 ${o6?.grade?.includes('양호') ? '양호' : '위축'}. 돈맥경화 트리거 ${triggerStatus} (발동 조건: 금리 급등 + 소비 위축 동시 발생).`,
       'A': `물가 ${o2?.value || '?'}로 ${o2?.grade?.includes('양호') ? '안정 범위' : '상승 압력'}. 물가폭등 트리거 ${triggerStatus} (발동 조건: CPI 5% 초과 + 에너지 가격 급등).`,
       'D': `고용 ${allGaugeMap.get('L1')?.value || '?'} 증가, 소비(O6) ${o6?.value || '?'}. 소득절벽 트리거 ${triggerStatus} (발동 조건: 고용 감소 + 소비 2개월 연속 마이너스).`,
-      'I': `가계부채 ${l3?.value || '?'}, 소멸지수 ${g1?.value || '?'}. 빈부격차 트리거 ${triggerStatus} (발동 조건: 가계부채 2,000조 돌파 + 소멸지역 150개 초과).`
+      'I': `실질임금 ${l3?.value || '?'}, 서비스수지 ${g1?.value || '?'}. 빈부격차 트리거 ${triggerStatus} (발동 조건: 실질임금 하락 지속 + 서비스수지 적자 확대 동시 발생).`
     };
 
     for (const t of result.sec4_triggers) {
@@ -835,8 +842,8 @@ function transform(data) {
     }
     if (g1?.grade?.includes('경보')) {
       newRx.push({
-        title: `관찰 2: 지역소멸 경보 (${g1.value})`,
-        text: `소멸위험지역(G1) ${g1.value}(${g1._period})이 경보 수준이다. 좌우 균형 회복을 위한 지역 재정·인구 유입 동향이 관찰 대상이다.`
+        title: `관찰 ${newRx.length + 1}: 서비스수지 경보 (${g1.value})`,
+        text: `서비스수지(G1) ${g1.value}(${g1._period})이 경보 수준이다. 외국인 관광·교육·의료 서비스 유출 확대 동향이 관찰 대상이다.`
       });
     }
     if (f4?.grade?.includes('경보')) {
@@ -860,8 +867,8 @@ function transform(data) {
     }
     if (l3?.grade?.includes('주의')) {
       newRx.push({
-        title: `관찰 ${newRx.length + 1}: 가계부채 주의 (${l3.value})`,
-        text: `가계부채(L3) ${l3.value}(${l3._period})이 주의 수준이다. 총량 증가 속도와 취약계층 부담 추이가 관찰 대상이다.`
+        title: `관찰 ${newRx.length + 1}: 실질임금 주의 (${l3.value})`,
+        text: `실질임금(L3) ${l3.value}(${l3._period})이 주의 수준이다. 임금 상승 둔화가 소비 위축으로 이어지는 2차 경로가 관찰 대상이다.`
       });
     }
 
