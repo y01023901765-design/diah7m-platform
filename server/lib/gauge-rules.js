@@ -323,11 +323,14 @@ const GAUGE_RULES = {
     threshold: { min: -20, max: 20, invert: false },
   },
   T2_CURRENT_ACCOUNT: {
-    // 경상수지 억$ 원본값 — ECOS 301Y014/000 (정론 기준)
-    source: 'ECOS', statCode: '301Y014', itemCode: '000', cycle: 'M',
-    transformType: 'absolute', unit: '억$', name: '경상수지(억$)',
-    hardRange: [-200, 500],
-    threshold: { min: -30, max: 100, invert: false },
+    // 경상수지 합계(백만$) — ECOS 301Y013/000000
+    // 301Y014/000은 존재하지 않음(rawLen=0 확인). 올바른 테이블은 301Y013
+    // 301Y013: 000000=경상수지, 100000=상품수지, 200000=서비스수지
+    // 실측(2024): Oct=9861, Nov=9456, Dec=12741 백만$ (한국 경상수지 강한 흑자)
+    source: 'ECOS', statCode: '301Y013', itemCode: '000000', cycle: 'M',
+    transformType: 'absolute', unit: '백만$', name: '경상수지(백만$)',
+    hardRange: [-6000, 16000],
+    threshold: { min: -2000, max: 10000, invert: false },
   },
   T3_FDI: {
     source: 'ECOS', statCode: '301Y014', itemCode: 'S00000', cycle: 'M',
