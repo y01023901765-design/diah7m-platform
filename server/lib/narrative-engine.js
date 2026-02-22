@@ -1539,20 +1539,22 @@ function generateNarrative(result, rawData, meta) {
   const AXIS4_ALERT = ["R9"];                                // 4D 괴리경보
   const AXIS4_CODES = [...AXIS4_MARKET, ...AXIS4_SAT, ...AXIS4_ALERT];
 
-  // 축5 고용/가계 — 근육/신경
-  const AXIS5_CODES = ["L1", "L2", "L3", "L4", "L5"];
+  // 축5 소비심리 — CSI (gauge-adapter Axis5 = S2_CSI만 남음)
+  const AXIS5_CODES = ["L5"];
 
-  // 축6 지역균형 — 좌우대칭
-  const AXIS6_CODES = ["G1", "G2", "G3", "G4", "G5", "G6", "G7"];
+  // 축6 물가/재정 — 내분비 (gauge-adapter Axis6 = P1~P6 → E1~E5)
+  // ★ core-engine A6(내분비/물가) 점수와 일치하도록 E 코드 사용
+  const AXIS6_CODES = ["E1", "E2", "E3", "E4", "E5"];
 
   // 축7 금융 스트레스 — 혈액의 질
   const AXIS7_CODES = ["F1", "F2", "F3", "F4", "F5"];
 
-  // 축8 에너지/자원 — 산소 공급원
-  const AXIS8_CODES = ["E1", "E2", "E3", "E4", "E5"];
+  // 축8 고용/가계 — 인구취약 (gauge-adapter Axis8 = L2~L4, S5 → L1~L4)
+  // ★ core-engine A8(인구/취약) 고용 점수와 일치하도록 L 코드 사용
+  const AXIS8_CODES = ["L1", "L2", "L3", "L4"];
 
-  // 축9 인구/노화 — 신체 나이
-  const AXIS9_CODES = ["A1", "A2", "A3", "A4", "A5"];
+  // 축9 에너지/대외/환경 — 재생 (gauge-adapter Axis9 = G1~G6 + A1~A5)
+  const AXIS9_CODES = ["G1", "G2", "G3", "G4", "G5", "G6", "A1", "A2", "A3", "A4", "A5"];
 
   // 헬퍼: 값 포맷
   function fmtValue(code) {
@@ -2416,17 +2418,17 @@ function generateNarrative(result, rawData, meta) {
       : "축5 데이터 미입력"),
     axis5_available: axis5_available.length > 0,
 
-    // ── 축6 지역균형 (좌우대칭) ──
+    // ── 축6 물가/재정 (내분비) — core-engine A6 물가 점수와 일치 ──
     axis6_title: meta.axis6_titleSuffix
-      ? `[좌우대칭] ${meta.axis6_titleSuffix}`
-      : `[좌우대칭] 지역균형 — 편마비 진단과 재활 점검`,
+      ? `[내분비] ${meta.axis6_titleSuffix}`
+      : `[내분비] 물가/재정 — 인플레이션·물가 점검`,
     axis6_gauges,
     axis6_gaugeTable,
     axis6_summary: meta.axis6_summary || (axis6_available.length > 0
-      ? `좌우대칭 종합: ${axis6_keywords.join(", ")}`
+      ? `물가/재정 종합: ${axis6_keywords.join(", ")}`
       : "축6 데이터 미입력"),
     axis6_summaryNarrative: meta.axis6_summaryNarrative || (axis6_available.length > 0
-      ? `${axis6_gradeCount.ok}개 양호, ${axis6_gradeCount.warn}개 주의, ${axis6_gradeCount.alert}개 경보. ${axis6_gradeCount.alert > 0 ? "편마비가 진행 중이다. 지역 균형이 심각하게 무너지고 있다." : axis6_gradeCount.warn > 0 ? "좌우 불균형 징후가 관찰된다. 수도권 쏠림이 심화되고 있다." : "좌우 균형이 유지되고 있다. 지역 발전이 안정적이다."}`
+      ? `${axis6_gradeCount.ok}개 양호, ${axis6_gradeCount.warn}개 주의, ${axis6_gradeCount.alert}개 경보. ${axis6_gradeCount.alert > 0 ? "물가 압력이 임계점을 넘었다. 인플레이션이 경제 전반을 잠식하고 있다." : axis6_gradeCount.warn > 0 ? "물가 불안 징후가 관찰된다. 미세석회(빚 이자)가 굳어가고 있다." : "물가가 안정적이다. 인플레이션 압력이 통제 범위 내에 있다."}`
       : "축6 데이터 미입력"),
     axis6_available: axis6_available.length > 0,
 
@@ -2444,24 +2446,24 @@ function generateNarrative(result, rawData, meta) {
       : "축7 데이터 미입력"),
     axis7_available: axis7_available.length > 0,
 
-    // ── 축8 에너지/자원 (산소 공급원) ──
+    // ── 축8 고용/가계 (인구취약) — core-engine A8 고용 점수와 일치 ──
     axis8_title: meta.axis8_titleSuffix
-      ? `[산소 공급원] ${meta.axis8_titleSuffix}`
-      : `[산소 공급원] 에너지/자원 — 산소 가격·비축·소비 점검`,
+      ? `[인구취약] ${meta.axis8_titleSuffix}`
+      : `[인구취약] 고용/가계 — 노동시장·가계 체력 점검`,
     axis8_gauges,
     axis8_gaugeTable,
     axis8_summary: meta.axis8_summary || (axis8_available.length > 0
-      ? `산소 공급원 종합: ${axis8_keywords.join(", ")}`
+      ? `고용/가계 종합: ${axis8_keywords.join(", ")}`
       : "축8 데이터 미입력"),
     axis8_summaryNarrative: meta.axis8_summaryNarrative || (axis8_available.length > 0
-      ? `${axis8_gradeCount.ok}개 양호, ${axis8_gradeCount.warn}개 주의, ${axis8_gradeCount.alert}개 경보. ${axis8_gradeCount.alert > 0 ? "산소 공급에 위기가 발생했다. 에너지 비상." : axis8_gradeCount.warn > 0 ? "산소 공급에 불안 징후가 있다." : "산소 공급이 안정적이다. 에너지 수급 양호."}`
+      ? `${axis8_gradeCount.ok}개 양호, ${axis8_gradeCount.warn}개 주의, ${axis8_gradeCount.alert}개 경보. ${axis8_gradeCount.alert > 0 ? "고용이 무너졌다. 세포(가계·소상공인)가 가장 먼저 죽어가고 있다." : axis8_gradeCount.warn > 0 ? "고용 불안 징후가 관찰된다. 노동시장이 흔들리고 있다." : "고용이 안정적이다. 가계 체력이 유지되고 있다."}`
       : "축8 데이터 미입력"),
     axis8_available: axis8_available.length > 0,
 
-    // ── 축9 인구/노화 (신체 나이) — ⚠️ 구조축 [v2.8] ──
+    // ── 축9 에너지/대외/환경 (재생) — ⚠️ 구조축 [v2.8] ——
     axis9_title: meta.axis9_titleSuffix
       ? `[신체 나이] ${meta.axis9_titleSuffix}`
-      : `[신체 나이] 인구/노화 — 세포 재생·근육·줄기세포 점검 ⚠️구조축`,
+      : `[재생/대외] 에너지·환경·대외 — 재생 가능성 점검 ⚠️구조축`,
     axis9_type: 'structural',  // v2.8 신규: 구조축 타입 플래그
     axis9_gauges,
     axis9_gaugeTable,

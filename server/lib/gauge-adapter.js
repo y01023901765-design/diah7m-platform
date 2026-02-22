@@ -8,7 +8,8 @@
 // dataStore ID는 data-pipeline.js의 GAUGE_MAP 키 기준 (실측값 기준)
 // ssot_engine GRADE_RULES: Input(I1~I6), Output(O1~O7),
 //   Axis2(S1~S3,T1~T3), Axis3(M1~M5), Axis4(R1~R9),
-//   Axis5(L1~L5), Axis6(G1~G7), Axis7(F1~F5), Axis8(E1~E5), Axis9(A1~A5)
+//   Axis5(L5/CSI), Axis6(E1~E5 물가=A6), Axis7(F1~F8 금융), Axis8(L1~L4 고용=A8), Axis9(G1~G6,A1~A5 대외/에너지=A9)
+// ★ Axis# = core-engine A# 와 대응 (A6=물가, A7=금융, A8=고용, A9=대외)
 const ID_MAP = {
   // ══ A1 순환계 → Input (sec2) ══
   // 경상수지·무역수지·외환보유·환율·신용·금리
@@ -51,43 +52,46 @@ const ID_MAP = {
   'I4_VEHICLE':        { code: 'R4', cat: 'Axis4',  name: '자동차생산(전년비)',   unit: '%' },
   'R6_UHI':            { code: 'R6', cat: 'Axis4',  name: '도시열섬이상(UHI)',    unit: '°C' },
 
-  // ══ A6 내분비계 → Axis5 (고용/가계) ══
-  'L2_PARTICIPATION':  { code: 'L2', cat: 'Axis5',  name: '경제활동참가율변동',   unit: '%' },
-  'L3_WAGE':           { code: 'L3', cat: 'Axis5',  name: '임금(전년비)',          unit: '%' },
-  'L4_HOURS':          { code: 'L4', cat: 'Axis5',  name: '근로시간변동',          unit: '%' },
+  // ══ A8 인구/취약 → Axis8 (고용/가계) ← core-engine A8 고용 점수와 일치 ══
+  'L2_PARTICIPATION':  { code: 'L2', cat: 'Axis8',  name: '경제활동참가율변동',   unit: '%' },
+  'L3_WAGE':           { code: 'L3', cat: 'Axis8',  name: '임금(전년비)',          unit: '%' },
+  'L4_HOURS':          { code: 'L4', cat: 'Axis8',  name: '근로시간변동',          unit: '%' },
   // L5_YOUTH_UNEMP: L1 충돌 제거 (S5_EMPLOY가 L1 단독 점유)
-  'S5_EMPLOY':         { code: 'L1', cat: 'Axis5',  name: '취업자수증감',          unit: '천명' },
+  'S5_EMPLOY':         { code: 'L1', cat: 'Axis8',  name: '취업자수증감',          unit: '천명' },
 
-  // ══ A7 근골격계 → Axis6 (지역균형/대외) ══
-  'T3_FDI':            { code: 'G1', cat: 'Axis6',  name: '서비스수지(FDI대리)',   unit: '백만$' },
-  'I5_CARGO':          { code: 'G2', cat: 'Axis6',  name: '운송수지(화물)',        unit: '백만$' },
-  'I6_AIRPORT':        { code: 'G3', cat: 'Axis6',  name: '항공운송수지',          unit: '백만$' },
-  'I7_RAILROAD':       { code: 'G4', cat: 'Axis6',  name: '운수창고취업자',        unit: '천명' },
-  'S3_NIGHTLIGHT':     { code: 'G6', cat: 'Axis6',  name: '야간광량(위성)',        unit: 'nW/cm²/sr' },
+  // ══ A6 내분비계 → Axis6 (물가/재정) ← core-engine A6 물가 점수와 일치 ══
+  // P3_OIL: E1 충돌 제거 (P1_CPI가 E1 단독 점유)
+  'P1_CPI':            { code: 'E1', cat: 'Axis6',  name: 'CPI(소비자물가전년비)', unit: '%' },
+  'P2_PPI':            { code: 'E2', cat: 'Axis6',  name: 'PPI(생산자물가전년비)', unit: '%' },
+  'P4_COMMODITY':      { code: 'E5', cat: 'Axis6',  name: '상품수지(원자재대리)', unit: '백만$' },
+  'P5_IMPORT':         { code: 'E3', cat: 'Axis6',  name: '수입물가지수',          unit: 'pt' },
+  'P6_EXPORT_PRICE':   { code: 'E4', cat: 'Axis6',  name: '수출물가지수',          unit: 'pt' },
 
-  // ══ A8 인구/취약 → Axis7 (금융스트레스) + Axis8 (에너지/물가) ══
+  // ══ 금융스트레스 → Axis7 (금융안정) ← core-engine A5 면역계와 일치 ══
   'F2_KOSDAQ':         { code: 'F1', cat: 'Axis7',  name: 'KOSDAQ(전일비%)',       unit: '%' },
   // F3_KOSPI_VOL: F4 충돌 제거 (F7_KOSDAQ_VOL이 F4 단독 점유)
   // F6_M2: F2 충돌 제거 (E4_DOLLAR_INDEX가 F2 단독 점유)
   'F7_KOSDAQ_VOL':     { code: 'F4', cat: 'Axis7',  name: 'KOSDAQ거래량',          unit: '천주' },
   'F8_FOREIGN':        { code: 'F8', cat: 'Axis7',  name: '외국인순매수',          unit: '백만원' },
-  // P3_OIL: E1 충돌 제거 (P1_CPI가 E1 단독 점유)
-  'P1_CPI':            { code: 'E1', cat: 'Axis8',  name: 'CPI(소비자물가전년비)', unit: '%' },
-  'P2_PPI':            { code: 'E2', cat: 'Axis8',  name: 'PPI(생산자물가전년비)', unit: '%' },
-  'P4_COMMODITY':      { code: 'E5', cat: 'Axis8',  name: '상품수지(원자재대리)', unit: '백만$' },
-  'P5_IMPORT':         { code: 'E3', cat: 'Axis8',  name: '수입물가지수',          unit: 'pt' },
-  'P6_EXPORT_PRICE':   { code: 'E4', cat: 'Axis8',  name: '수출물가지수',          unit: 'pt' },
+  'E3_VIX':            { code: 'F3', cat: 'Axis7',  name: 'VIX(공포지수)',         unit: 'pt' },
+  'E4_DOLLAR_INDEX':   { code: 'F2', cat: 'Axis7',  name: '달러인덱스(전일비)',    unit: '%' },
 
-  // ══ A9 재생/대외 → Axis9 (인구/노화/환경) ══
+  // ══ A8 인구/취약 → Axis8 (고용/가계) ← core-engine A8 고용 점수와 일치 ══
+  // (L2~L4, S5는 Axis5에서 이동 — A6 내분비계 주석 참조)
+
+  // ══ A9 재생/대외 → Axis9 (에너지/환경/대외) ══
+  'T3_FDI':            { code: 'G1', cat: 'Axis9',  name: '서비스수지(FDI대리)',   unit: '백만$' },
+  'I5_CARGO':          { code: 'G2', cat: 'Axis9',  name: '운송수지(화물)',        unit: '백만$' },
+  'I6_AIRPORT':        { code: 'G3', cat: 'Axis9',  name: '항공운송수지',          unit: '백만$' },
+  'I7_RAILROAD':       { code: 'G4', cat: 'Axis9',  name: '운수창고취업자',        unit: '천명' },
+  'S3_NIGHTLIGHT':     { code: 'G6', cat: 'Axis9',  name: '야간광량(위성)',        unit: 'nW/cm²/sr' },
+  'E2_US_PMI':         { code: 'G5', cat: 'Axis9',  name: '미국경기(OECD CLI)',    unit: 'pt' },
   'R1_ELECTRICITY':    { code: 'A3', cat: 'Axis9',  name: '전기가스수도업생산',    unit: '%' },
   'R2_WATER':          { code: 'A4', cat: 'Axis9',  name: '수도업생산',            unit: '%' },
   // R3_GAS: A3 충돌 제거 (R1_ELECTRICITY가 A3 단독 점유)
   'R4_COAL':           { code: 'A5', cat: 'Axis9',  name: '석탄광업생산',          unit: '%' },
   'R7_WASTE':          { code: 'A2', cat: 'Axis9',  name: '폐기물처리업생산',      unit: '%' },
   'R8_FOREST':         { code: 'A1', cat: 'Axis9',  name: '농림어업취업자',        unit: '천명' },
-  'E2_US_PMI':         { code: 'G5', cat: 'Axis6',  name: '미국경기(OECD CLI)',    unit: 'pt' },
-  'E3_VIX':            { code: 'F3', cat: 'Axis7',  name: 'VIX(공포지수)',         unit: 'pt' },
-  'E4_DOLLAR_INDEX':   { code: 'F2', cat: 'Axis7',  name: '달러인덱스(전일비)',    unit: '%' },
 };
 
 // cat → ssot_engine 배열 키 매핑
@@ -182,11 +186,11 @@ function toDataJson(flatGauges, meta = {}) {
   result.axis2_title = '[동맥] 무역/제조 — 산업 혈관 점검';
   result.axis3_title = '[미세혈관] 골목시장 — 소비/내수 점검';
   result.axis4_title = '[골격] 산업/생산 — 부동산/에너지 점검';
-  result.axis5_title = '[근육/신경] 고용/가계 — 경제 체력 점검';
-  result.axis6_title = '[좌우대칭] 재생/대외 — 지역균형 점검';
+  result.axis5_title = '[신경] 소비심리/CSI — 심리 점검';
+  result.axis6_title = '[내분비] 물가/재정 — 인플레이션 점검';
   result.axis7_title = '[혈액의 질] 금융안정 — 스트레스 점검';
-  result.axis8_title = '[산소 공급원] 물가/재정 — 에너지 점검';
-  result.axis9_title = '[신체 나이] 인구/취약 — 구조 점검';
+  result.axis8_title = '[근육] 고용/가계 — 노동시장 점검';
+  result.axis9_title = '[신체 나이] 에너지/대외/환경 — 재생 점검';
 
   result.sec2_available = result.sec2_gauges.length > 0;
   result.sec3_available = result.sec3_gauges.length > 0;
