@@ -2309,11 +2309,11 @@ function generateNarrative(result, rawData, meta) {
     { code: "F1",  data: "코스피 변동성",  source: "KRX",       org: "한국거래소",     period: "일간/준실시간" },
     { code: "F2",  data: "은행채 스프레드", source: "금투협",    org: "금융투자협회",    period: "일간" },
     // 축6 물가/재정 출처 (E1=CPI, E2=PPI, E3=수입물가, E4=수출물가, E5=상품수지)
-    { code: "P3",  data: "유가 Dubai",     source: "Opinet",    org: "한국석유공사",    period: "일간" },
-    { code: "P4",  data: "전력 예비율",    source: "전력거래소",  org: "전력거래소",     period: "일간/실시간" },
-    { code: "P5",  data: "LNG 재고",      source: "가스공사",    org: "한국가스공사",    period: "월간" },
-    { code: "R1",  data: "산업용 전력",    source: "전력거래소",  org: "전력거래소",     period: "월간" },
-    { code: "P6",  data: "원자재 가격지수", source: "ECOS",      org: "한국은행",       period: "월간" },
+    { code: "E1",  data: "소비자물가지수(CPI)", source: "ECOS",    org: "한국은행",       period: "월간 (익월 초)" },
+    { code: "E2",  data: "생산자물가지수(PPI)", source: "ECOS",    org: "한국은행",       period: "월간 (익월 초)" },
+    { code: "E3",  data: "수입물가지수(전년비)", source: "ECOS",   org: "한국은행",       period: "월간 (익월 초)" },
+    { code: "E4",  data: "수출물가지수(전년비)", source: "ECOS",   org: "한국은행",       period: "월간 (익월 초)" },
+    { code: "E5",  data: "상품수지(원자재대리)", source: "ECOS",   org: "한국은행",       period: "월간 (2개월 지연)" },
     // 인구/노화 출처 (구조축 — 향후 Track2 연동 예정)
     { code: "D1",  data: "합계출산율",     source: "KOSIS",     org: "통계청",         period: "연간 (익년 초)" },
     { code: "D2",  data: "고령화율",       source: "KOSIS",     org: "통계청",         period: "연간" },
