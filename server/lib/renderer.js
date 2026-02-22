@@ -1555,6 +1555,29 @@ async function renderDOCX(diagnosis, meta = {}) {
     }
   }
 
+  // ── narrative 섹션 4개 키 매핑 (report_template.json paragraphs[].source 기준) ──
+  // report_template.json의 narrative 섹션이 요구하는 키를 D 객체에 보장
+  if (D) {
+    // body_metaphor_narrative: 인체 비유 요약 — oneLiner + alertNarrative 조합
+    if (!D.body_metaphor_narrative) {
+      D.body_metaphor_narrative = [D.oneLiner, D.sec1_alertNarrative]
+        .filter(Boolean).join(' — ') || '';
+    }
+    // input_narrative: Input(유입계) 서사 — sec2_summaryNarrative
+    if (!D.input_narrative) {
+      D.input_narrative = D.sec2_summaryNarrative || '';
+    }
+    // output_narrative: Output(배출계) 서사 — sec3_summaryNarrative
+    if (!D.output_narrative) {
+      D.output_narrative = D.sec3_summaryNarrative || '';
+    }
+    // diah_narrative: DIAH 트리거 서사 — sec4_verdict + sec4_summary
+    if (!D.diah_narrative) {
+      D.diah_narrative = [D.sec4_verdict, D.sec4_summary]
+        .filter(Boolean).join(' ') || D.diahStatus || '';
+    }
+  }
+
   // 2) d 객체 빌드
   const d = _buildDataObject(diagnosis, D, meta);
 
