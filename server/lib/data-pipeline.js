@@ -635,14 +635,11 @@ const GAUGE_MAP = {
 
   E2_US_PMI: {
     id: 'E2_US_PMI',
-    source: 'FRED',
-    params: { series: 'KOREPUINDXM' },
-    transform: (data) => {
-      // KOREPUINDXM: 한국 구매관리자지수 절대값(pt) — 전월차 아님
-      if (!data || data.length === 0) return null;
-      const latest = parseFloat(data[0].value);
-      return isNaN(latest) ? null : latest;
-    }
+    source: 'TRADINGECONOMICS',
+    teSlug: 'united-states/manufacturing-pmi',
+    transform: (val) => val,
+    name: '미국 제조업 PMI',
+    unit: 'pt',
   },
 
   E3_VIX: {
@@ -732,7 +729,7 @@ const GAUGE_MAP = {
     source: 'ECOS',
     params: { statisticCode: '901Y027', itemCode1: 'I61BB', itemCode2: 'I28A', cycle: 'M' },
     transform: (data) => {
-      // 청년실업률 절대값(%) — 전월차 아님, 정상범위 5~15%
+      // 청년실업자수(천명) 절대값 — ECOS I61BB=청년실업자수, threshold min:200 max:800
       if (!data || data.length === 0) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
       return isNaN(latest) ? null : latest;

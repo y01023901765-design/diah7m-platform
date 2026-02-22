@@ -90,7 +90,7 @@ const GAUGE_THRESHOLDS = {
   L2_PARTICIPATION:   { min: -2,  max: 2,   invert: false, unit: '%p',   name: '경활률변화' },
   L3_WAGE:            { min: -3,  max: 5,   invert: false, unit: '%',    name: '임금(전년비%)' },
   L4_HOURS:           { min: -5,  max: 3,   invert: false, unit: '%',    name: '근로시간(전년비%)' },
-  L5_YOUTH_UNEMP:     { min: 5,   max: 15,  invert: true,  unit: '%',    name: '청년실업률' },
+  L5_YOUTH_UNEMP:     { min: 200, max: 800, invert: true,  unit: '천명', name: '청년실업자수' },
 
   // A9 재생/대외
   R1_ELECTRICITY:     { min: -5,  max: 5,   invert: false, unit: '%',    name: '전기생산(전년비%)' },
