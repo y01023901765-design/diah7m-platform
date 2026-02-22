@@ -638,10 +638,10 @@ const GAUGE_MAP = {
     source: 'FRED',
     params: { series: 'KOREPUINDXM' },
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      // KOREPUINDXM: 한국 구매관리자지수 절대값(pt) — 전월차 아님
+      if (!data || data.length === 0) return null;
       const latest = parseFloat(data[0].value);
-      const prev = parseFloat(data[1].value);
-      return latest - prev;
+      return isNaN(latest) ? null : latest;
     }
   },
 
@@ -732,10 +732,10 @@ const GAUGE_MAP = {
     source: 'ECOS',
     params: { statisticCode: '901Y027', itemCode1: 'I61BB', itemCode2: 'I28A', cycle: 'M' },
     transform: (data) => {
-      if (!data || data.length < 2) return null;
+      // 청년실업률 절대값(%) — 전월차 아님, 정상범위 5~15%
+      if (!data || data.length === 0) return null;
       const latest = parseFloat(data[0].DATA_VALUE);
-      const prev = parseFloat(data[1].DATA_VALUE);
-      return latest - prev;
+      return isNaN(latest) ? null : latest;
     }
   },
 };

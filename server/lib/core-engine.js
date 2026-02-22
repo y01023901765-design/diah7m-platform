@@ -53,7 +53,7 @@ const GAUGE_THRESHOLDS = {
 
   // A4 신경계
   S1_BSI:             { min: -10, max: 20,  invert: false, unit: 'pt차', name: 'BSI(전월차)' },
-  S3_NIGHTLIGHT:      { min: -5,  max: 5,   invert: false, unit: '%',    name: '야간광(anomaly%)' },
+  S3_NIGHTLIGHT:      { min: -20, max: 20,  invert: false, unit: '%',    name: '야간광(anomaly%)' },
   S4_CREDIT:          { min: -1,  max: 2,   invert: true,  unit: '%p',   name: '신용스프레드' },
   S5_EMPLOY:          { min: -500,max: 500, invert: false, unit: '천명', name: '취업자증감' },
   E3_VIX:             { min: -10, max: 20,  invert: true,  unit: '%',    name: 'VIX변화율' },
